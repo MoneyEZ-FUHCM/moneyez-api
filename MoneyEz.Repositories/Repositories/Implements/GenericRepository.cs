@@ -1,12 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 using MoneyEz.Repositories.Commons;
-using MoneyEz.Repositories.DbContext;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Repositories.Interfaces;
 using MoneyEz.Repositories.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -42,7 +43,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
             return await _dbSet.Where(x => !x.IsDeleted).ToListAsync();
         }
 
-        public async Task<TEntity?> GetByIdAsync(string id)
+        public async Task<TEntity?> GetByIdAsync(Guid id)
         {
             var result = await _dbSet.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             return result;
@@ -89,6 +90,62 @@ namespace MoneyEz.Repositories.Repositories.Implements
         {
             entity.UpdatedDate = CommonUtils.GetCurrentTime();
             _dbSet.Update(entity);
+        }
+
+        public async Task<Pagination<TEntity>> ToPaginationIncludeAsync(PaginationParameter paginationParameter, 
+            Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null, 
+            Expression<Func<TEntity, bool>> filter = null, 
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null)
+        {
+            IQueryable<TEntity> query = _dbSet;
+
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            if (orderBy != null)
+            {
+                query = orderBy(query);
+            }
+
+            var itemCount = await query.CountAsync();
+
+
+            // Implement pagination
+            query = query.Skip((paginationParameter.PageIndex - 1) * paginationParameter.PageSize)
+                        .Take(paginationParameter.PageSize);
+
+            var items = await query.AsNoTracking().ToListAsync();
+
+            var result = new Pagination<TEntity>(items, itemCount, paginationParameter.PageIndex, paginationParameter.PageSize);
+
+            return result;
+        }
+
+        public async Task<TEntity?> GetByIdIncludeAsync(Guid id,
+            Func<IQueryable<TEntity>, IQueryable<TEntity>>? include = null,
+            Expression<Func<TEntity, bool>> filter = null)
+        {
+            IQueryable<TEntity> query = _dbSet;
+
+            // Apply include if provided
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            // Apply filter if provided
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            return await query.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id);
         }
     }
 }

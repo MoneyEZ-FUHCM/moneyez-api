@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Services.Mappers;
 using MoneyEz.Services.Services.Implements;
@@ -16,6 +18,7 @@ namespace MoneyEz.API
         {
             // config swagger
 
+            #region config swagger
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "MoneyEz API", Version = "v.1.0" });
@@ -44,7 +47,11 @@ namespace MoneyEz.API
                 });
             });
 
+            #endregion
+
             // config authentication
+
+            #region config authen
 
             services.AddAuthentication(options =>
             {
@@ -81,7 +88,12 @@ namespace MoneyEz.API
                 };
             });
 
+            #endregion
+
             // config CORS
+
+            #region config CORS
+
             services.AddCors(options =>
             {
                 options.AddPolicy("app-cors",
@@ -93,6 +105,8 @@ namespace MoneyEz.API
                         .AllowAnyMethod();
                     });
             });
+
+            #endregion
 
             // config signalR
             services.AddSignalR(options =>
@@ -119,6 +133,8 @@ namespace MoneyEz.API
             // config claim service
             services.AddScoped<IClaimsService, ClaimsService>();
 
+            // config user service
+
 
             services.AddSignalR();
 
@@ -127,6 +143,11 @@ namespace MoneyEz.API
             #region config database
 
             // config database
+
+            services.AddDbContext<MoneyEzContext>(options =>
+            {
+                options.UseSqlServer(config.GetConnectionString("MoneyEzDbDocker"));
+            });
 
             #endregion
 

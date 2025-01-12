@@ -11,7 +11,7 @@ namespace MoneyEz.Repositories.Commons
     {
         const int maxPageSize = 50;
         public int PageIndex { get; set; } = 1;
-        private int _pageSize = 10;
+        private int _pageSize = 20;
 
         [JsonIgnore]
         public int PageSize

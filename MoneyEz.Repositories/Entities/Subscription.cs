@@ -1,0 +1,23 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace MoneyEz.Repositories.Entities;
+
+public partial class Subscription : BaseEntity
+{
+    public DateTime? EndDate { get; set; }
+
+    public int? Price { get; set; }
+
+    public int? Status { get; set; }
+
+    public Guid? UserId { get; set; }
+
+    public Guid? PlanId { get; set; }
+
+    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+
+    public virtual SubscriptionPlan? Plan { get; set; }
+
+    public virtual User? User { get; set; }
+}

@@ -8,7 +8,7 @@ namespace MoneyEz.Repositories.Entities
 {
     public class BaseEntity
     {
-        public required string Id { get; set; } = "";
+        public Guid Id { get; set; }
 
         public DateTime CreatedDate { get; set; }
 
