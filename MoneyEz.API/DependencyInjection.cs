@@ -146,7 +146,7 @@ namespace MoneyEz.API
 
             services.AddDbContext<MoneyEzContext>(options =>
             {
-                options.UseSqlServer(config.GetConnectionString("MoneyEzDbDocker"));
+                options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
             });
 
             #endregion
