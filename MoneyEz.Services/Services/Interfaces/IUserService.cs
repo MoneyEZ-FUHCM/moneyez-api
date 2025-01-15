@@ -18,7 +18,7 @@ namespace MoneyEz.Services.Services.Interfaces
 
         public Task<BaseResultModel> LoginWithEmailPassword(string email, string password);
 
-        public Task<AuthenModel> RefreshToken(string jwtToken);
+        public Task<BaseResultModel> RefreshToken(string jwtToken);
 
         //public Task<bool> ChangePasswordAsync(string email, ChangePasswordModel changePasswordModel);
 
@@ -40,9 +40,9 @@ namespace MoneyEz.Services.Services.Interfaces
 
         // manager user
 
-        public Task<UserModel> GetUserByIdAsync(int id);
+        public Task<BaseResultModel> GetUserByIdAsync(Guid id);
 
-        public Task<Pagination<UserModel>> GetUserPaginationAsync(PaginationParameter paginationParameter);
+        public Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter);
 
         public Task<UserModel> CreateUserAsync(CreateUserModel model);
 
