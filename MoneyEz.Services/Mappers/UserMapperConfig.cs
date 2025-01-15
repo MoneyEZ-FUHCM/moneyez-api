@@ -11,14 +11,9 @@ namespace MoneyEz.Services.Mappers
 {
     public partial class MapperConfig : Profile
     {
-        public MapperConfig() 
+        partial void UserMapperConfig()
         {
-            // user mapper
-            UserMapperConfig();
-
-            // transaction mapper
+            CreateMap<User, UserModel>();
         }
-
-        partial void UserMapperConfig();
     }
 }

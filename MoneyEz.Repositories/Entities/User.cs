@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MoneyEz.Repositories.Enums;
+using System;
 using System.Collections.Generic;
 
 namespace MoneyEz.Repositories.Entities;
@@ -7,13 +8,17 @@ public partial class User : BaseEntity
 {
     public string? Avatar { get; set; }
 
-    public int? Role { get; set; }
+    public RolesEnum? Role { get; set; }
 
     public string? FullName { get; set; }
 
+    public string? UnsignFullName { get; set; }
+
     public string? Email { get; set; }
 
-    public string? Phone { get; set; }
+    public bool? IsEmailConfirmed { get; set; } = false;
+
+    public string? PhoneNumber { get; set; }
 
     public DateTime? Dob { get; set; }
 
@@ -22,6 +27,8 @@ public partial class User : BaseEntity
     public string? PasswordHash { get; set; }
 
     public int? Gender { get; set; }
+
+    public CommonsStatus? Status { get; set; }
 
     public virtual ICollection<FixedTransaction> FixedTransactions { get; set; } = new List<FixedTransaction>();
 

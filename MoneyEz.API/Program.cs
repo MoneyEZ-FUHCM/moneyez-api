@@ -18,7 +18,7 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
             .Select(e => e.ErrorMessage)
             .ToList();
 
-        var response = new BaseResultModel<string>
+        var response = new BaseResultModel
         {
             Status = StatusCodes.Status400BadRequest,
             Message = string.Join("; ", errors)
