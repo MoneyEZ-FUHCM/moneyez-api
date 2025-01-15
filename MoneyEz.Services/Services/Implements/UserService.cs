@@ -91,10 +91,10 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = new
-                {
-                    users,
-                    metaData
+                Data = new ModelPaging 
+                { 
+                    Data = users,
+                    MetaData = metaData
                 }
             };
         }
