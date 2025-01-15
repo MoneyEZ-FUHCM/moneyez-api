@@ -30,5 +30,11 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _userService.RegisterAsync(signUpModel));
         }
+
+        [HttpPost("refresh-token")]
+        public Task<IActionResult> RefreshToken([FromBody] string token)
+        {
+            return ValidateAndExecute(() => _userService.RefreshToken(token));
+        }
     }
 }

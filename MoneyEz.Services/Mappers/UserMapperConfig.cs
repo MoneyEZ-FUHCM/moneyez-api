@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Services.BusinessModels.UserModels;
 using System;
@@ -14,6 +15,7 @@ namespace MoneyEz.Services.Mappers
         partial void UserMapperConfig()
         {
             CreateMap<User, UserModel>();
+            CreateMap<Pagination<User>, Pagination<UserModel>>().ConvertUsing<PaginationConverter<User, UserModel>>();
         }
     }
 }

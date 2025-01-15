@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
@@ -14,6 +15,7 @@ using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Utils;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -27,8 +29,8 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
 
-        public UserService(IUnitOfWork unitOfWork, 
-            IConfiguration configuration, 
+        public UserService(IUnitOfWork unitOfWork,
+            IConfiguration configuration,
             IMapper mapper)
         {
             _unitOfWork = unitOfWork;
@@ -45,14 +47,56 @@ namespace MoneyEz.Services.Services.Implements
             throw new NotImplementedException();
         }
 
-        public Task<UserModel> GetUserByIdAsync(int id)
+        public async Task<BaseResultModel> GetUserByIdAsync(Guid id)
         {
-            throw new NotImplementedException();
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(id);
+            if (user != null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = _mapper.Map<UserModel>(user)
+                };
+            }
+            else
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
+                };
+            }
         }
 
-        public Task<Pagination<UserModel>> GetUserPaginationAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter)
         {
-            throw new NotImplementedException();
+            var userList = await _unitOfWork.UsersRepository.ToPagination(paginationParameter);
+            var userModels = _mapper.Map<List<UserModel>>(userList);
+
+            var users = new Pagination<UserModel>(userModels,
+                userList.TotalCount,
+                userList.CurrentPage,
+                userList.PageSize);
+
+            var metaData = new
+            {
+                userList.TotalCount,
+                userList.PageSize,
+                userList.CurrentPage,
+                userList.TotalPages,
+                userList.HasNext,
+                userList.HasPrevious
+            };
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new
+                {
+                    users,
+                    metaData
+                }
+            };
         }
 
         // authen
@@ -107,12 +151,12 @@ namespace MoneyEz.Services.Services.Implements
                     return new BaseResultModel
                     {
                         Status = StatusCodes.Status200OK,
-                        Message = MessageConstants.LOGIN_SUCCESS,
                         Data = new AuthenModel
                         {
                             AccessToken = accessToken,
                             RefreshToken = refreshToken
-                        }
+                        },
+                        Message = MessageConstants.LOGIN_SUCCESS_MESSAGE
                     };
                 }
                 return new BaseResultModel
@@ -127,9 +171,59 @@ namespace MoneyEz.Services.Services.Implements
             }
         }
 
-        public Task<AuthenModel> RefreshToken(string jwtToken)
+        public async Task<BaseResultModel> RefreshToken(string jwtToken)
         {
-            throw new NotImplementedException();
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:SecretKey"]));
+            var handler = new JwtSecurityTokenHandler();
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = authSigningKey,
+                ValidateIssuer = true,
+                ValidIssuer = _configuration["JWT:ValidIssuer"],
+                ValidateAudience = true,
+                ValidAudience = _configuration["JWT:ValidAudience"],
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+            try
+            {
+                SecurityToken validatedToken;
+                var principal = handler.ValidateToken(jwtToken, validationParameters, out validatedToken);
+                var email = principal.Claims.FirstOrDefault(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress").Value;
+                if (email != null)
+                {
+                    var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email);
+                    if (existUser != null)
+                    {
+                        var accessToken = AuthenTokenUtils.GenerateAccessToken(email, existUser, _configuration);
+                        var refreshToken = AuthenTokenUtils.GenerateRefreshToken(email, _configuration);
+                        return new BaseResultModel
+                        {
+                            Status = StatusCodes.Status200OK,
+                            Data = new AuthenModel
+                            {
+                                AccessToken = accessToken,
+                                RefreshToken = refreshToken
+                            },
+                            Message = MessageConstants.TOKEN_REFRESH_SUCCESS_MESSAGE
+                        };
+                    }
+                }
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
+                };
+            }
+            catch
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.TOKEN_NOT_VALID
+                };
+            }
         }
 
         public async Task<BaseResultModel> RegisterAsync(SignUpModel model)
@@ -167,7 +261,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Data = _mapper.Map<UserModel>(newUser),
                     Status = StatusCodes.Status200OK,
-                    ErrorCode = MessageConstants.REGISTER_SUCCESS,
+                    Message = MessageConstants.REGISTER_SUCCESS_MESSAGE,
                 };
             }
             catch
