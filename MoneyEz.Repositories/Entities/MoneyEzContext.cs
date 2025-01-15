@@ -25,6 +25,8 @@ public partial class MoneyEzContext : DbContext
 
     public virtual DbSet<ChatHistory> ChatHistories { get; set; }
 
+    public virtual DbSet<ChatMessage> ChatMessages { get; set; }
+
     public virtual DbSet<FixedTransaction> FixedTransactions { get; set; }
 
     public virtual DbSet<Group> Groups { get; set; }
@@ -81,7 +83,6 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("BudgetModelsSubcategory");
 
-
             entity.HasOne(d => d.BudgetModel).WithMany(p => p.BudgetModelsSubcategories)
                 .HasForeignKey(d => d.BudgetModelId)
                 .HasConstraintName("FK_BudgetModelsSubcategory_BudgetModel");
@@ -106,7 +107,6 @@ public partial class MoneyEzContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK__Category__3214EC07B20984CB");
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
 
-
             entity.HasOne(d => d.BudgetModel).WithMany(p => p.CategoryBudgetModels)
                 .HasForeignKey(d => d.BudgetModelId)
                 .HasConstraintName("FK_CategoryBudgetModels_BudgetModel");
@@ -123,8 +123,27 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("ChatHistory");
 
-            entity.Property(e => e.Content).HasMaxLength(500);
-            entity.Property(e => e.Name).HasMaxLength(500).IsRequired(true);
+            entity.Property(e => e.ConservationName).HasMaxLength(500);
+            entity.Property(e => e.RoomNo).IsRequired(true);
+
+            entity.HasOne(d => d.User).WithMany(p => p.ChatHistories)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_ChatHistory_User");
+        });
+
+        modelBuilder.Entity<ChatMessage>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__ChatMess__3214EC07F429B993");
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+
+            entity.ToTable("ChatMessage");
+
+            entity.Property(e => e.Message).HasMaxLength(500);
+            entity.Property(e => e.Type).IsRequired(true);
+
+            entity.HasOne(d => d.ChatHistory).WithMany(p => p.ChatMessages)
+                .HasForeignKey(d => d.ChatHistoryId)
+                .HasConstraintName("FK_ChatMessage_ChatHistory");
         });
 
         modelBuilder.Entity<FixedTransaction>(entity =>
@@ -176,7 +195,6 @@ public partial class MoneyEzContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__InquiryR__3214EC074754794F");
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
-
         });
 
         modelBuilder.Entity<Notification>(entity =>
@@ -262,7 +280,6 @@ public partial class MoneyEzContext : DbContext
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
 
             entity.ToTable("Subscription");
-
 
             entity.HasOne(d => d.Plan).WithMany(p => p.Subscriptions)
                 .HasForeignKey(d => d.PlanId)
