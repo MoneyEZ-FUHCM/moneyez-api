@@ -19,6 +19,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IUserRepository _userRepository;
         private ICategoryRepository _categoryRepository;
 
+        private ISubCategoryRepository _subCategoryRepository;
+
+
         public UnitOfWork(MoneyEzContext context)
         {
             _context = context;
@@ -37,6 +40,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _categoryRepository ??= new CategoryRepository(_context);
+            }
+        }
+
+        public ISubCategoryRepository SubCategories
+        {
+            get
+            {
+                return _subCategoryRepository ??= new SubCategoryRepository(_context);
             }
         }
 
