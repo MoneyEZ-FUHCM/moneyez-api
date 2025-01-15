@@ -32,4 +32,6 @@ public partial class User : BaseEntity
     public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 
     public virtual ICollection<UserSetting> UserSettings { get; set; } = new List<UserSetting>();
+    
+    public virtual ICollection<ChatHistory> ChatHistories { get; set; } = new List<ChatHistory>();
 }
