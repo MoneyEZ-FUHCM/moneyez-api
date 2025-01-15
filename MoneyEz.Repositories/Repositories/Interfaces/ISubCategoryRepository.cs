@@ -9,7 +9,7 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
 {
     public interface ISubCategoryRepository : IGenericRepository<Subcategory>
     {
-        Task<List<Subcategory>> GetAllAsync();
-        Task<Subcategory?> GetByIdAsync(Guid id);
+        Task<List<Subcategory>> GetAllAsync();// get all subcategories
+        Task<Subcategory?> GetByIdAsync(Guid id);//get subcategory by id
     }
 }

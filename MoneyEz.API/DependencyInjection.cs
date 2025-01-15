@@ -145,6 +145,8 @@ namespace MoneyEz.API
             // config subcategory repository
             services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
 
+            // config transaction repository
+            services.AddScoped<ITransactionRepository, TransactionRepository>();
 
             services.AddSignalR();
 
