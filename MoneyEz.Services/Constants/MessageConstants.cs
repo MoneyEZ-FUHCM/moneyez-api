@@ -12,10 +12,14 @@ namespace MoneyEz.Services.Constants
         // syntax message: <CONSTANT_NAME_MESSAGE> = "Message here";
 
         // authen
-        public const string LOGIN_SUCCESS = "LoginSuccessfully";
-        public const string REGISTER_SUCCESS = "RegisterSuccessfully";
+        
         public const string ACCOUNT_NEED_CONFIRM_EMAIL = "AccountDoesNotVerifyEmail";
         public const string WRONG_PASSWORD = "PasswordIsIncorrect";
+        public const string TOKEN_NOT_VALID = "TokenNotValid";
+
+        public const string LOGIN_SUCCESS_MESSAGE = "Login successfully";
+        public const string TOKEN_REFRESH_SUCCESS_MESSAGE = "Token refresh successfully";
+        public const string REGISTER_SUCCESS_MESSAGE = "Register successfully";
 
         // account
         public const string ACCOUNT_NOT_EXIST = "AccountNotExist";
