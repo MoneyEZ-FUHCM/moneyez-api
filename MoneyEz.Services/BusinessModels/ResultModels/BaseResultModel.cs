@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace MoneyEz.Services.BusinessModels.ResultModels
 {
-    public class BaseResultModel<T>
+    public class BaseResultModel
     {
         public required int Status { get; set; }
+        public string ErrorCode { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
-        public T Data { get; set; } = default(T);
+        public object? Data { get; set; } = new object();
     }
 }
