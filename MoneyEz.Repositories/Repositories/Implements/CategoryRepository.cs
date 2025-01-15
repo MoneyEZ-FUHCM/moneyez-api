@@ -1,0 +1,41 @@
+﻿using Microsoft.EntityFrameworkCore;
+using MoneyEz.Repositories.Entities;
+using MoneyEz.Repositories.Repositories.Interfaces;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace MoneyEz.Repositories.Repositories.Implements
+{
+    public class CategoryRepository : GenericRepository<Category>, ICategoryRepository
+    {
+        private readonly MoneyEzContext _context;
+
+        public CategoryRepository(MoneyEzContext context) : base(context)
+        {
+            _context = context;
+        }
+
+        public async Task<bool> IsCategoryExistsAsync(string name)
+        {
+            return await _context.Categories
+                .AnyAsync(c => c.Name.ToLower() == name.ToLower() && !c.IsDeleted);
+        }
+
+        public async Task<Category?> GetByNameAsync(string name)
+        {
+            return await _context.Categories
+                .FirstOrDefaultAsync(c => c.Name.ToLower() == name.ToLower() && !c.IsDeleted);
+        }
+
+        public async Task<List<Category>> GetPagedCategoriesAsync(int pageIndex, int pageSize)
+        {
+            return await _context.Categories
+                .Where(c => !c.IsDeleted)
+                .OrderBy(c => c.Name)
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+    }
+}

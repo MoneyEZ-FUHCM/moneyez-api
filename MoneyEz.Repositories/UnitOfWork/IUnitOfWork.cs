@@ -12,6 +12,7 @@ namespace MoneyEz.Repositories.UnitOfWork
         // add interface repository here
 
         IUserRepository UsersRepository { get; }
+        ICategoryRepository Categories { get; }
 
         int Save();
         void Commit();

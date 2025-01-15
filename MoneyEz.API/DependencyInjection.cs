@@ -139,6 +139,9 @@ namespace MoneyEz.API
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
 
+            // config category repository
+            services.AddScoped<ICategoryRepository, CategoryRepository>();
+
             services.AddSignalR();
 
             #endregion

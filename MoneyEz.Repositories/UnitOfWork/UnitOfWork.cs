@@ -17,9 +17,10 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IDbContextTransaction _transaction;
 
         private IUserRepository _userRepository;
+        private ICategoryRepository _categoryRepository;
 
-        public UnitOfWork(MoneyEzContext context) 
-        { 
+        public UnitOfWork(MoneyEzContext context)
+        {
             _context = context;
         }
 
@@ -28,7 +29,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _userRepository ??= new UserRepository(_context);
+            }
+        }
 
+        public ICategoryRepository Categories
+        {
+            get
+            {
+                return _categoryRepository ??= new CategoryRepository(_context);
             }
         }
 
