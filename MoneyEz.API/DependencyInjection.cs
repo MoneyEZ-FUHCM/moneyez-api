@@ -142,6 +142,10 @@ namespace MoneyEz.API
             // config category repository
             services.AddScoped<ICategoryRepository, CategoryRepository>();
 
+            // config subcategory repository
+            services.AddScoped<ISubCategoryRepository, SubCategoryRepository>();
+
+
             services.AddSignalR();
 
             #endregion
