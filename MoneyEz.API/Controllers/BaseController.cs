@@ -8,7 +8,7 @@ namespace MoneyEz.API.Controllers
     [ApiController]
     public class BaseController : ControllerBase
     {
-        protected async Task<IActionResult> ValidateAndExecute(Func<Task<BaseResultModel<string>>> func)
+        protected async Task<IActionResult> ValidateAndExecute(Func<Task<BaseResultModel>> func)
         {
             if (!ModelState.IsValid)
             {
@@ -18,7 +18,7 @@ namespace MoneyEz.API.Controllers
             return GetActionResponse(await func());
         }
 
-        protected IActionResult GetActionResponse(BaseResultModel<string> baseResponse)
+        protected IActionResult GetActionResponse(BaseResultModel baseResponse)
         {
             return baseResponse.Status switch
             {
