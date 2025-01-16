@@ -46,18 +46,19 @@ namespace MoneyEz.API.Controllers
 
         // Get List Categories
         [HttpGet]
-        public Task<IActionResult> GetListCategories()
+        public async Task<IActionResult> GetAllCategories([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
         {
-            return ValidateAndExecute(async () =>
+            return await ValidateAndExecute(async () =>
             {
-                var categories = await _unitOfWork.Categories.GetAllAsync();
+                var paginatedCategories = await _unitOfWork.Categories.GetPaginatedCategoriesAsync(pageIndex, pageSize);
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status200OK,
-                    Data = categories
+                    Data = paginatedCategories
                 };
             });
         }
+
 
         // Get Category Details
         [HttpGet("{id:guid}")]
