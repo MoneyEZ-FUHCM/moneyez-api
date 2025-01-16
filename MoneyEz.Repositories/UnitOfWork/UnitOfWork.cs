@@ -22,6 +22,7 @@ namespace MoneyEz.Repositories.UnitOfWork
         private ISubCategoryRepository _subCategoryRepository;
 
         private ITransactionRepository _transactionRepository;
+        private IFixedTransactionRepository _fixedTransactionRepository;
 
         public UnitOfWork(MoneyEzContext context)
         {
@@ -51,11 +52,20 @@ namespace MoneyEz.Repositories.UnitOfWork
                 return _subCategoryRepository ??= new SubCategoryRepository(_context);
             }
         }
+
         public ITransactionRepository Transactions
         {
             get
             {
                 return _transactionRepository ??= new TransactionRepository(_context);
+            }
+        }
+
+        public IFixedTransactionRepository FixedTransactions
+        {
+            get
+            {
+                return _fixedTransactionRepository ??= new FixedTransactionRepository(_context);
             }
         }
 

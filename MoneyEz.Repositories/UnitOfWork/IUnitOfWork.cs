@@ -15,6 +15,7 @@ namespace MoneyEz.Repositories.UnitOfWork
         ICategoryRepository Categories { get; }
         ISubCategoryRepository SubCategories { get; }
         ITransactionRepository Transactions { get; }
+        IFixedTransactionRepository FixedTransactions { get; }
         int Save();
         void Commit();
         void Rollback();

@@ -148,6 +148,10 @@ namespace MoneyEz.API
             // config transaction repository
             services.AddScoped<ITransactionRepository, TransactionRepository>();
 
+            // config fixed transaction repository
+            services.AddScoped<IFixedTransactionRepository, FixedTransactionRepository>();
+
+
             services.AddSignalR();
 
             #endregion
