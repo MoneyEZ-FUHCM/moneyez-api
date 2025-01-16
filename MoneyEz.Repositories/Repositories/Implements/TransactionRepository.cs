@@ -61,14 +61,17 @@ namespace MoneyEz.Repositories.Repositories.Implements
 
         public async Task<Pagination<Transaction>> GetPaginatedTransactionsAsync(int pageIndex, int pageSize)
         {
-            var itemCount = await _context.Transactions.CountAsync();
-            var items = await _context.Transactions
+            var query = _context.Transactions.Where(t => !t.IsDeleted);
+
+            var totalItems = await query.CountAsync();
+            var items = await query
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
                 .AsNoTracking()
                 .ToListAsync();
 
-            return new Pagination<Transaction>(items, itemCount, pageIndex, pageSize);
+            return new Pagination<Transaction>(items, totalItems, pageIndex, pageSize);
         }
+
     }
 }

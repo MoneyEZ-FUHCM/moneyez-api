@@ -73,18 +73,19 @@ namespace MoneyEz.API.Controllers
 
         // Get all transactions
         [HttpGet]
-        public Task<IActionResult> GetAllTransactions()
+        public async Task<IActionResult> GetAllTransactions([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
         {
-            return ValidateAndExecute(async () =>
+            return await ValidateAndExecute(async () =>
             {
-                var transactions = await _unitOfWork.Transactions.GetAllAsync();
+                var paginatedTransactions = await _unitOfWork.Transactions.GetPaginatedTransactionsAsync(pageIndex, pageSize);
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status200OK,
-                    Data = transactions
+                    Data = paginatedTransactions
                 };
             });
         }
+
 
         // Get transaction by ID
         [HttpGet("{id:guid}")]
