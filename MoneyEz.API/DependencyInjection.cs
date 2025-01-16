@@ -133,6 +133,10 @@ namespace MoneyEz.API
             // config claim service
             services.AddScoped<IClaimsService, ClaimsService>();
 
+            // config redis service
+            services.Configure<RedisSettings>(config.GetSection("RedisSettings"));
+            services.AddScoped<IRedisService, RedisService>();
+
             // config user service
 
 
@@ -155,7 +159,8 @@ namespace MoneyEz.API
 
             services.AddStackExchangeRedisCache(options =>
             {
-                options.Configuration = "localhost";
+                options.Configuration = config.GetSection("RedisSettings:RedisConnectionString").Value;
+                options.InstanceName = config.GetSection("RedisSettings:InstanceName").Value;
                 options.ConfigurationOptions = new StackExchange.Redis.ConfigurationOptions()
                 {
                     AbortOnConnectFail = true,
