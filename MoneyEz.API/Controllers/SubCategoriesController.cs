@@ -46,17 +46,17 @@ namespace MoneyEz.API.Controllers
 
         // Get List SubCategories
         [HttpGet]
-        public Task<IActionResult> GetListSubCategories()
+        public async Task<IActionResult> GetAllSubcategories([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
         {
-            return ValidateAndExecute(async () =>
+            return await ValidateAndExecute(async () =>
             {
-                var subCategories = await _unitOfWork.SubCategories.GetAllAsync();
+                var paginatedSubcategories = await _unitOfWork.SubCategories.GetPaginatedSubcategoriesAsync(pageIndex, pageSize);
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status200OK,
-                    Data = subCategories
+                    Data = paginatedSubcategories
                 };
             });
         }
-    }
+}
 }
