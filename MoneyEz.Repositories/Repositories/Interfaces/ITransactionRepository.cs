@@ -12,6 +12,6 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
         Task<IEnumerable<Transaction>> GetTransactionsAsync(
             Expression<Func<Transaction, bool>>? filter = null,
             Func<IQueryable<Transaction>, IOrderedQueryable<Transaction>>? orderBy = null); // Get transactions
-        Task<Pagination<Transaction>> GetPaginatedTransactionsAsync(int pageIndex, int pageSize); // Get paginated transactions
+        Task<Pagination<Transaction>> GetPaginatedTransactionsAsync(int pageIndex, int pageSize); //get paginated transactions
     }
 }
