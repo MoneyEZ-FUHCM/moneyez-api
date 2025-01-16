@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using MoneyEz.Repositories.Commons;
 
 namespace MoneyEz.Repositories.Repositories.Implements
 {
@@ -18,10 +19,20 @@ namespace MoneyEz.Repositories.Repositories.Implements
             _context = context;
         }
 
-        public async Task<List<Subcategory>> GetAllAsync()
+        public async Task<Pagination<Subcategory>> GetPaginatedSubcategoriesAsync(int pageIndex, int pageSize)
         {
-            return await _context.Subcategories.Where(sc => !sc.IsDeleted).ToListAsync();
+            var query = _context.Subcategories.Where(sc => !sc.IsDeleted);
+
+            var totalItems = await query.CountAsync();
+            var items = await query
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return new Pagination<Subcategory>(items, totalItems, pageIndex, pageSize);
         }
+
 
         public async Task<Subcategory?> GetByIdAsync(Guid id)
         {
