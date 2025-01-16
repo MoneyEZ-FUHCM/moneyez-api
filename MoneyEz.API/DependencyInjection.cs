@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MoneyEz.Repositories.Entities;
+using MoneyEz.Repositories.Repositories.Implements;
+using MoneyEz.Repositories.Repositories.Interfaces;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Services.Mappers;
 using MoneyEz.Services.Services.Implements;
@@ -138,7 +140,8 @@ namespace MoneyEz.API
             services.AddScoped<IRedisService, RedisService>();
 
             // config user service
-
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUserService, UserService>();
 
             services.AddSignalR();
 
@@ -150,7 +153,8 @@ namespace MoneyEz.API
 
             services.AddDbContext<MoneyEzContext>(options =>
             {
-                options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
+                options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
+                //options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
             });
 
             #endregion

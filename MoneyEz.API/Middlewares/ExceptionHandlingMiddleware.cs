@@ -39,7 +39,7 @@ namespace MoneyEz.API.Middlewares
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = statusCode;
 
-            var response = new BaseResultModel<string>
+            var response = new BaseResultModel
             {
                 Status = statusCode,
                 Message = exception.Message,
