@@ -13,7 +13,7 @@ public partial class Target : BaseEntity
 
     public DateTime? EndDate { get; set; }
 
-    public Guid? GroupId { get; set; }
+    public Guid? GroupId { get; set; } // Nullable for user-specific targets
 
     public virtual Group? Group { get; set; }
 }

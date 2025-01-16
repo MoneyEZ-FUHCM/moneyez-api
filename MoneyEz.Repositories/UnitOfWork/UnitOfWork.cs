@@ -24,6 +24,8 @@ namespace MoneyEz.Repositories.UnitOfWork
         private ITransactionRepository _transactionRepository;
         private IFixedTransactionRepository _fixedTransactionRepository;
 
+        private ITargetRepository _targetRepository;
+
         public UnitOfWork(MoneyEzContext context)
         {
             _context = context;
@@ -66,6 +68,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _fixedTransactionRepository ??= new FixedTransactionRepository(_context);
+            }
+        }
+
+        public ITargetRepository Targets
+        {
+            get
+            {
+                return _targetRepository ??= new TargetRepository(_context);
             }
         }
 
