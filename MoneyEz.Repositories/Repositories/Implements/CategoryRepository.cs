@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Repositories.Interfaces;
 using System.Collections.Generic;
@@ -28,14 +29,19 @@ namespace MoneyEz.Repositories.Repositories.Implements
                 .FirstOrDefaultAsync(c => c.Name.ToLower() == name.ToLower() && !c.IsDeleted);
         }
 
-        public async Task<List<Category>> GetPagedCategoriesAsync(int pageIndex, int pageSize)
+        public async Task<Pagination<Category>> GetPaginatedCategoriesAsync(int pageIndex, int pageSize)
         {
-            return await _context.Categories
-                .Where(c => !c.IsDeleted)
-                .OrderBy(c => c.Name)
+            var query = _context.Categories.Where(c => !c.IsDeleted);
+
+            var totalItems = await query.CountAsync();
+            var items = await query
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
+                .AsNoTracking()
                 .ToListAsync();
+
+            return new Pagination<Category>(items, totalItems, pageIndex, pageSize);
         }
+
     }
 }
