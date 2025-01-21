@@ -21,15 +21,15 @@ namespace MoneyEz.Services.Services.Interfaces
 
         public Task<BaseResultModel> RefreshToken(string jwtToken);
 
-        //public Task<bool> ChangePasswordAsync(string email, ChangePasswordModel changePasswordModel);
+        public Task<BaseResultModel> ChangePasswordAsync(string email, ChangePasswordModel changePasswordModel);
 
         public Task<BaseResultModel> VerifyEmail(ConfirmOtpModel confirmOtpModel);
 
-        //public Task<bool> RequestResetPassword(string email);
+        public Task<BaseResultModel> RequestResetPassword(string email);
 
-        //public Task<bool> ConfirmResetPassword(ConfirmOtpModel confirmOtpModel);
+        public Task<BaseResultModel> ConfirmResetPassword(ConfirmOtpModel confirmOtpModel);
 
-        //public Task<bool> ExecuteResetPassword(ResetPasswordModel resetPasswordModel);
+        public Task<BaseResultModel> ExecuteResetPassword(ResetPasswordModel resetPasswordModel);
 
         //public Task<UserModel> GetLoginUserInformationAsync(string email);
 
