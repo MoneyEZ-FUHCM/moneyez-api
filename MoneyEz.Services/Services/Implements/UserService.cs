@@ -327,5 +327,121 @@ namespace MoneyEz.Services.Services.Implements
                 throw;
             }
         }
+
+        public async Task<BaseResultModel> ChangePasswordAsync(string email, ChangePasswordModel changePasswordModel)
+        {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email);
+            if (user != null)
+            {
+                bool checkPassword = PasswordUtils.VerifyPassword(changePasswordModel.OldPassword, user.Password);
+                if (checkPassword)
+                {
+                    user.Password = PasswordUtils.HashPassword(changePasswordModel.NewPassword);
+                    _unitOfWork.UsersRepository.UpdateAsync(user);
+                    _unitOfWork.Save();
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status200OK,
+                        Message = MessageConstants.CHANGE_PASSWORD_SUCCESS,
+                    };
+                }
+                else
+                {
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        ErrorCode = MessageConstants.OLD_PASSWORD_INVALID
+                    };
+                }
+            }
+            else
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
+                };
+            }
+        }
+
+        public async Task<BaseResultModel> RequestResetPassword(string email)
+        {
+            var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email);
+
+            if (existUser != null)
+            {
+                if (existUser.IsVerified == true)
+                {
+                    await _otpService.CreateOtpAsync(email, "reset", existUser.FullName);
+                    _unitOfWork.Save();
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status200OK,
+                        Message = MessageConstants.CHANGE_PASSWORD_SUCCESS,
+                    };
+                }
+                else
+                {
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        ErrorCode = MessageConstants.RESET_PASSWORD_FAILED
+                    };
+                }
+            }
+            else
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
+                };
+            }
+        }
+
+        public async Task<BaseResultModel> ConfirmResetPassword(ConfirmOtpModel confirmOtpModel)
+        {
+            var result = await _otpService.ValidateOtpAsync(confirmOtpModel.Email, confirmOtpModel.OtpCode);
+
+            if (result)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = MessageConstants.REQUEST_RESET_PASSWORD_CONFIRM_SUCCESS,
+                };
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status400BadRequest,
+                ErrorCode = MessageConstants.OTP_INVALID
+            };
+        }
+
+        public async Task<BaseResultModel> ExecuteResetPassword(ResetPasswordModel resetPasswordModel)
+        {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(resetPasswordModel.Email);
+            if (user != null)
+            {
+                user.Password = PasswordUtils.HashPassword(resetPasswordModel.Password);
+                _unitOfWork.UsersRepository.UpdateAsync(user);
+                _unitOfWork.Save();
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = MessageConstants.CHANGE_PASSWORD_SUCCESS,
+                };
+            }
+            else
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
+                };
+            }
+        }
     }
 }
+
