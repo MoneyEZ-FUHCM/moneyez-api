@@ -5,11 +5,6 @@ using System.Collections.Generic;
 
 namespace MoneyEz.Repositories.Entities;
 
-public partial class UserSetting : BaseEntity
+public partial class QuizSetting : BaseEntity
 {
-    public Guid? UserId { get; set; }
-
-    public string UserSettingKey { get; set; }
-
-    public string UserSettingValue { get; set; }
 }

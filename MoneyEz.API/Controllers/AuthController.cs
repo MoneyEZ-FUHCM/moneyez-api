@@ -14,7 +14,7 @@ namespace MoneyEz.API.Controllers
     {
         private readonly IUserService _userService;
 
-        public AuthController(IUserService userService) 
+        public AuthController(IUserService userService)
         {
             _userService = userService;
         }

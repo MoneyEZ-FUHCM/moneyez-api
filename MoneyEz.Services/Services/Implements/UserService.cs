@@ -91,8 +91,8 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = new ModelPaging 
-                { 
+                Data = new ModelPaging
+                {
                     Data = users,
                     MetaData = metaData
                 }
@@ -115,7 +115,7 @@ namespace MoneyEz.Services.Services.Implements
                     };
                 }
 
-                var verifyUser = PasswordUtils.VerifyPassword(password, existUser.PasswordHash);
+                var verifyUser = PasswordUtils.VerifyPassword(password, existUser.Password);
 
                 if (verifyUser)
                 {
@@ -234,11 +234,11 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Email = model.Email,
                     FullName = model.FullName,
-                    UnsignFullName = StringUtils.ConvertToUnSign(model.FullName),
+                    NameUnsign = StringUtils.ConvertToUnSign(model.FullName),
                     PhoneNumber = model.PhoneNumber,
                     Role = RolesEnum.USER,
                     Status = CommonsStatus.ACTIVE,
-                    IsEmailConfirmed = true
+                    IsVerified = true
                 };
 
                 var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(model.Email);
@@ -249,7 +249,7 @@ namespace MoneyEz.Services.Services.Implements
                 }
 
                 // hash password
-                newUser.PasswordHash = PasswordUtils.HashPassword(model.Password);
+                newUser.Password = PasswordUtils.HashPassword(model.Password);
 
                 await _unitOfWork.UsersRepository.AddAsync(newUser);
 
