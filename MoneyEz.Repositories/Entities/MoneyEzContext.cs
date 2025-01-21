@@ -70,6 +70,8 @@ public partial class MoneyEzContext : DbContext
     public virtual DbSet<UserSetting> UserSettings { get; set; }
 
     public virtual DbSet<UserSpendingModel> UserSpendingModels { get; set; }
+    
+    public virtual DbSet<Image> Images { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -79,7 +81,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("AssetAndLiability");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Amount).HasColumnType("decimal(15, 2)");
             entity.Property(e => e.Name).HasMaxLength(200);
             entity.Property(e => e.NameUnsign).HasMaxLength(200);
@@ -91,7 +93,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("Category");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(100);
@@ -104,7 +106,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("ChatHistory");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Intent).HasMaxLength(100);
             entity.Property(e => e.IntentUnsign).HasMaxLength(100);
 
@@ -119,7 +121,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("ChatMessage");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
 
             entity.HasOne(d => d.ChatHistory).WithMany(p => p.ChatMessages)
                 .HasForeignKey(d => d.ChatHistoryId)
@@ -132,7 +134,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("FinancialGoal");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.CurrentAmount)
                 .HasDefaultValue(0m)
                 .HasColumnType("decimal(15, 2)");
@@ -158,7 +160,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("FinancialReport");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(200);
@@ -174,7 +176,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("GroupFund");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.CurrentBalance)
                 .HasDefaultValue(0m)
                 .HasColumnType("decimal(15, 2)");
@@ -190,7 +192,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("GroupFundLog");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.ChangeDescription).IsRequired();
             entity.Property(e => e.ChangedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -208,7 +210,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("GroupMember");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.ContributionPercentage).HasColumnType("decimal(5, 2)");
 
             entity.HasOne(d => d.Group).WithMany(p => p.GroupMembers)
@@ -228,7 +230,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("GroupMemberLog");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.ChangedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
@@ -245,7 +247,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("Notification");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Title).HasMaxLength(255);
             entity.Property(e => e.TitleUnsign).HasMaxLength(255);
 
@@ -260,7 +262,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("Payment");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.PaymentCode).HasMaxLength(255);
             entity.Property(e => e.PaymentMethod).HasMaxLength(50);
             entity.Property(e => e.TransactionCode).HasMaxLength(255);
@@ -278,7 +280,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.HasIndex(e => e.PlanSettingKey, "UQ__PlanSett__2C9042B1C79BCF76").IsUnique();
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.PlanSettingKey).HasMaxLength(255);
 
             entity.HasOne(d => d.SubscriptionPlan).WithMany(p => p.PlanSettings)
@@ -292,7 +294,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("Quiz");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
         });
 
         modelBuilder.Entity<QuizAnswer>(entity =>
@@ -301,7 +303,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("QuizAnswer");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
 
             entity.HasOne(d => d.Question).WithMany(p => p.QuizAnswers)
                 .HasForeignKey(d => d.QuestionId)
@@ -314,7 +316,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("QuizQuestion");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
 
             entity.HasOne(d => d.Quiz).WithMany(p => p.QuizQuestions)
                 .HasForeignKey(d => d.QuizId)
@@ -327,7 +329,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("QuizSetting");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
         });
 
         modelBuilder.Entity<RecurringTransaction>(entity =>
@@ -336,7 +338,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("RecurringTransaction");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Amount).HasColumnType("decimal(15, 2)");
 
             entity.HasOne(d => d.Subcategory).WithMany(p => p.RecurringTransactions)
@@ -356,7 +358,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("SpendingModel");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(50);
@@ -369,7 +371,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("SpendingModelCategory");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.PercentageAmount).HasColumnType("decimal(10, 2)");
 
             entity.HasOne(d => d.Category).WithMany(p => p.SpendingModelCategories)
@@ -387,7 +389,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("Subcategory");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(50);
@@ -405,7 +407,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("Subscription");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
 
             entity.HasOne(d => d.SubscriptionPlan).WithMany(p => p.Subscriptions)
                 .HasForeignKey(d => d.SubscriptionPlanId)
@@ -422,7 +424,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("SubscriptionPlan");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Name).HasMaxLength(255);
         });
 
@@ -432,7 +434,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("Transaction");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Amount).HasColumnType("decimal(15, 2)");
             entity.Property(e => e.ApprovalRequired).HasDefaultValue(false);
 
@@ -455,7 +457,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("TransactionVote");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
 
             entity.HasOne(d => d.Transaction).WithMany(p => p.TransactionVotes)
                 .HasForeignKey(d => d.TransactionId)
@@ -473,14 +475,14 @@ public partial class MoneyEzContext : DbContext
 
             entity.HasIndex(e => e.Email, "UQ__User__A9D10534F6DE8EA9").IsUnique();
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.AvatarUrl).HasMaxLength(255);
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.AvatarUrl);
             entity.Property(e => e.Dob).HasColumnName("DOB");
             entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.GoogleId).HasMaxLength(200);
-            entity.Property(e => e.Name)
+            entity.Property(e => e.FullName)
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.NameUnsign).HasMaxLength(50);
@@ -496,7 +498,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("UserQuizResult");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.QuizData).IsRequired();
 
             entity.HasOne(d => d.Quiz).WithMany(p => p.UserQuizResults)
@@ -517,7 +519,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.HasIndex(e => e.UserSettingKey, "UQ__UserSett__DEE0F037A031DEF3").IsUnique();
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.UserSettingKey).HasMaxLength(255);
         });
 
@@ -527,7 +529,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.ToTable("UserSpendingModel");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
 
             entity.HasOne(d => d.SpendingModel).WithMany(p => p.UserSpendingModels)
                 .HasForeignKey(d => d.SpendingModelId)
@@ -536,6 +538,13 @@ public partial class MoneyEzContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.UserSpendingModels)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK__UserSpend__UserI__02084FDA");
+        });
+
+        modelBuilder.Entity<Image>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Image");
+            entity.ToTable("Image");
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
         });
 
         OnModelCreatingPartial(modelBuilder);

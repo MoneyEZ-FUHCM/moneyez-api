@@ -25,6 +25,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.AssetAndLiability", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Amount")
@@ -80,6 +81,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Category", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -121,6 +123,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.ChatHistory", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -163,6 +166,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.ChatMessage", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("ChatHistoryId")
@@ -203,6 +207,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.FinancialGoal", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -259,6 +264,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.FinancialReport", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -318,6 +324,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.GroupFund", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -370,6 +377,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.GroupFundLog", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ChangeDescription")
@@ -410,6 +418,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.GroupMember", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal?>("ContributionPercentage")
@@ -455,6 +464,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.GroupMemberLog", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int?>("ChangeType")
@@ -491,9 +501,48 @@ namespace MoneyEz.Repositories.Migrations
                     b.ToTable("GroupMemberLog", (string)null);
                 });
 
+            modelBuilder.Entity("MoneyEz.Repositories.Entities.Image", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EntityName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id")
+                        .HasName("PK_Image");
+
+                    b.ToTable("Image", (string)null);
+                });
+
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Notification", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -545,6 +594,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Payment", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int?>("Amount")
@@ -597,6 +647,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.PlanSetting", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -639,6 +690,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Quiz", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -668,6 +720,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.QuizAnswer", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AnswerContent")
@@ -705,6 +758,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.QuizQuestion", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -742,6 +796,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.QuizSetting", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -768,6 +823,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.RecurringTransaction", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Amount")
@@ -831,6 +887,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.SpendingModel", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -872,6 +929,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.SpendingModelCategory", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("CategoryId")
@@ -911,6 +969,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Subcategory", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("CategoryId")
@@ -954,6 +1013,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Subscription", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -1002,6 +1062,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.SubscriptionPlan", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -1041,6 +1102,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Transaction", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Amount")
@@ -1102,6 +1164,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.TransactionVote", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -1139,11 +1202,11 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AvatarUrl")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
@@ -1163,6 +1226,11 @@ namespace MoneyEz.Repositories.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("GoogleId")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -1172,11 +1240,6 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.Property<bool?>("IsVerified")
                         .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("NameUnsign")
                         .HasMaxLength(50)
@@ -1219,6 +1282,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.UserQuizResult", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -1259,6 +1323,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.UserSetting", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")
@@ -1299,6 +1364,7 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.UserSpendingModel", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CreatedBy")

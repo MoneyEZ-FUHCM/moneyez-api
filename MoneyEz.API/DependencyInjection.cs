@@ -140,8 +140,8 @@ namespace MoneyEz.API
             services.AddScoped<IRedisService, RedisService>();
 
             // config user service
-            services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IUserService, UserService>();
+            //services.AddScoped<IUserRepository, UserRepository>();
+            //services.AddScoped<IUserService, UserService>();
 
             services.AddSignalR();
 

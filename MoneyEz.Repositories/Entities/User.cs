@@ -7,7 +7,7 @@ namespace MoneyEz.Repositories.Entities;
 
 public partial class User : BaseEntity
 {
-    public string Name { get; set; }
+    public string FullName { get; set; }
 
     public string NameUnsign { get; set; }
 
