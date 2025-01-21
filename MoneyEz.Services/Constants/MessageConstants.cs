@@ -16,10 +16,11 @@ namespace MoneyEz.Services.Constants
         public const string ACCOUNT_NEED_CONFIRM_EMAIL = "AccountDoesNotVerifyEmail";
         public const string WRONG_PASSWORD = "PasswordIsIncorrect";
         public const string TOKEN_NOT_VALID = "TokenNotValid";
+        public const string OTP_INVALID = "OtpInvalid";
 
         public const string LOGIN_SUCCESS_MESSAGE = "Login successfully";
         public const string TOKEN_REFRESH_SUCCESS_MESSAGE = "Token refresh successfully";
-        public const string REGISTER_SUCCESS_MESSAGE = "Register successfully";
+        public const string REGISTER_SUCCESS_MESSAGE = "The OTP has been sent to your email. Please verify it to log in.";
 
         // account
         public const string ACCOUNT_NOT_EXIST = "AccountNotExist";
