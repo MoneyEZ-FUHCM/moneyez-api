@@ -297,7 +297,7 @@ namespace MoneyEz.Services.Services.Implements
                     PhoneNumber = model.PhoneNumber,
                     Role = RolesEnum.USER,
                     Status = CommonsStatus.ACTIVE,
-                    IsVerified = true
+                    IsVerified = false
                 };
 
                 var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(model.Email);
