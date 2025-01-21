@@ -16,21 +16,21 @@ namespace MoneyEz.Repositories.UnitOfWork
         private readonly MoneyEzContext _context;
         private IDbContextTransaction _transaction;
 
-        //private IUserRepository _userRepository;
+        private IUserRepository _userRepository;
 
         public UnitOfWork(MoneyEzContext context) 
         { 
             _context = context;
         }
 
-        //public IUserRepository UsersRepository
-        //{
-        //    get
-        //    {
-        //        return _userRepository ??= new UserRepository(_context);
+        public IUserRepository UsersRepository
+        {
+            get
+            {
+                return _userRepository ??= new UserRepository(_context);
 
-        //    }
-        //}
+            }
+        }
 
         public void Commit()
         {
