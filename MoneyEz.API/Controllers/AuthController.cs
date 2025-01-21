@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.API.ViewModels.RequestModels;
 using MoneyEz.Services.BusinessModels.AuthenModels;
+using MoneyEz.Services.BusinessModels.OtpModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
@@ -35,6 +36,12 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> RefreshToken([FromBody] string token)
         {
             return ValidateAndExecute(() => _userService.RefreshToken(token));
+        }
+
+        [HttpPost("verify-email")]
+        public Task<IActionResult> VerifyEmail([FromBody] ConfirmOtpModel confirmOtpModel)
+        {
+            return ValidateAndExecute(() => _userService.VerifyEmail(confirmOtpModel));
         }
     }
 }

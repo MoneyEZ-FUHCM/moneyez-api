@@ -1,5 +1,6 @@
 ﻿using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.AuthenModels;
+using MoneyEz.Services.BusinessModels.OtpModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.UserModels;
 using System;
@@ -22,7 +23,7 @@ namespace MoneyEz.Services.Services.Interfaces
 
         //public Task<bool> ChangePasswordAsync(string email, ChangePasswordModel changePasswordModel);
 
-        //public Task<AuthenModel> ConfirmEmail(ConfirmOtpModel confirmOtpModel);
+        public Task<BaseResultModel> VerifyEmail(ConfirmOtpModel confirmOtpModel);
 
         //public Task<bool> RequestResetPassword(string email);
 

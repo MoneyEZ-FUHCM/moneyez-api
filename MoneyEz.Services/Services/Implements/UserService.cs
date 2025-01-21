@@ -7,6 +7,7 @@ using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Services.BusinessModels.AuthenModels;
+using MoneyEz.Services.BusinessModels.OtpModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.UserModels;
 using MoneyEz.Services.Constants;
@@ -26,17 +27,75 @@ namespace MoneyEz.Services.Services.Implements
     public class UserService : IUserService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IOtpService _otpService;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
 
         public UserService(IUnitOfWork unitOfWork,
+            IOtpService otpService,
             IConfiguration configuration,
             IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _otpService = otpService;
             _configuration = configuration;
             _mapper = mapper;
         }
+
+        public async Task<BaseResultModel> VerifyEmail(ConfirmOtpModel confirmOtpModel)
+        {
+            try
+            {
+                bool checkOtp = await _otpService.ValidateOtpAsync(confirmOtpModel.Email, confirmOtpModel.OtpCode);
+
+                if (checkOtp)
+                {
+                    // return accesstoken
+
+                    var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(confirmOtpModel.Email);
+
+                    if (existUser == null)
+                    {
+                        return new BaseResultModel
+                        {
+                            Status = StatusCodes.Status401Unauthorized,
+                            ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
+                        };
+                    }
+
+                    // update verify email for user
+                    existUser.IsVerified = true;
+                    _unitOfWork.UsersRepository.UpdateAsync(existUser);
+
+                    var accessToken = AuthenTokenUtils.GenerateAccessToken(existUser.Email, existUser, _configuration);
+                    var refreshToken = AuthenTokenUtils.GenerateRefreshToken(existUser.Email, _configuration);
+
+                    _unitOfWork.Save();
+
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status200OK,
+                        Data = new AuthenModel
+                        {
+                            AccessToken = accessToken,
+                            RefreshToken = refreshToken
+                        },
+                        Message = MessageConstants.LOGIN_SUCCESS_MESSAGE
+                    };
+                }
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.OTP_INVALID
+                };
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         public Task<UserModel> CreateUserAsync(CreateUserModel model)
         {
             throw new NotImplementedException();
@@ -129,19 +188,19 @@ namespace MoneyEz.Services.Services.Implements
                         };
                     }
 
-                    //if (existUser.IsEmailConfirmed == false)
-                    //{
-                    //    // send otp email
-                    //    await _otpService.CreateOtpAsync(existUser.Email, "confirm", existUser.FullName);
+                    if (existUser.IsVerified == false)
+                    {
+                        // send otp email
+                        await _otpService.CreateOtpAsync(existUser.Email, "confirm", existUser.FullName);
 
-                    //    _unitOfWork.Save();
+                        _unitOfWork.Save();
 
-                    //    return new BaseResultModel<AuthenModel>
-                    //    {
-                    //        Status = StatusCodes.Status401Unauthorized,
-                    //        Message = MessageConstants.ACCOUNT_NEED_CONFIRM_EMAIL
-                    //    };
-                    //}
+                        return new BaseResultModel
+                        {
+                            Status = StatusCodes.Status401Unauthorized,
+                            Message = MessageConstants.ACCOUNT_NEED_CONFIRM_EMAIL
+                        };
+                    }
 
                     var accessToken = AuthenTokenUtils.GenerateAccessToken(email, existUser, _configuration);
                     var refreshToken = AuthenTokenUtils.GenerateRefreshToken(email, _configuration);
@@ -254,12 +313,11 @@ namespace MoneyEz.Services.Services.Implements
                 await _unitOfWork.UsersRepository.AddAsync(newUser);
 
                 // send otp email
-                //await _otpService.CreateOtpAsync(newUser.Email, "confirm", newUser.FullName);
+                await _otpService.CreateOtpAsync(newUser.Email, "confirm", newUser.FullName);
 
                 _unitOfWork.Save();
                 return new BaseResultModel
                 {
-                    Data = _mapper.Map<UserModel>(newUser),
                     Status = StatusCodes.Status200OK,
                     Message = MessageConstants.REGISTER_SUCCESS_MESSAGE,
                 };
