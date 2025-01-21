@@ -143,6 +143,12 @@ namespace MoneyEz.API
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
 
+            // config mail service
+            services.AddScoped<IMailService, MailService>();
+
+            // config otp service
+            services.AddScoped<IOtpService, OtpService>();
+
             services.AddSignalR();
 
             #endregion
