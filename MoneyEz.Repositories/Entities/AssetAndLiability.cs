@@ -24,4 +24,6 @@ public partial class AssetAndLiability : BaseEntity
     public string Description { get; set; }
 
     public int? OwnershipType { get; set; }
+
+    public virtual User User { get; set; }
 }

@@ -1,0 +1,161 @@
+﻿{
+   "CodeGenerationMode": 4,
+   "ContextClassName": "MoneyEzContext",
+   "ContextNamespace": null,
+   "FilterSchemas": false,
+   "IncludeConnectionString": false,
+   "ModelNamespace": null,
+   "OutputContextPath": null,
+   "OutputPath": "Entities",
+   "PreserveCasingWithRegex": true,
+   "ProjectRootNamespace": "MoneyEz.Repositories",
+   "Schemas": null,
+   "SelectedHandlebarsLanguage": 2,
+   "SelectedToBeGenerated": 0,
+   "T4TemplatePath": null,
+   "Tables": [
+      {
+         "Name": "[dbo].[AssetAndLiability]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Category]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ChatHistory]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ChatMessage]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FinancialGoal]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FinancialReport]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[GroupFund]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[GroupFundLog]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[GroupMember]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[GroupMemberLog]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Notification]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Payment]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PlanSetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Quiz]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[QuizAnswer]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[QuizQuestion]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[QuizSetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[RecurringTransaction]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SpendingModel]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SpendingModelCategory]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Subcategory]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Subscription]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SubscriptionPlan]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Transaction]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TransactionVote]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[User]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserQuizResult]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserSetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserSpendingModel]",
+         "ObjectType": 0
+      }
+   ],
+   "UiHint": null,
+   "UncountableWords": null,
+   "UseAsyncStoredProcedureCalls": true,
+   "UseBoolPropertiesWithoutDefaultSql": false,
+   "UseDatabaseNames": false,
+   "UseDatabaseNamesForRoutines": true,
+   "UseDateOnlyTimeOnly": true,
+   "UseDbContextSplitting": false,
+   "UseDecimalDataAnnotationForSprocResult": true,
+   "UseFluentApiOnly": true,
+   "UseHandleBars": false,
+   "UseHierarchyId": false,
+   "UseInflector": true,
+   "UseInternalAccessModifiersForSprocsAndFunctions": false,
+   "UseLegacyPluralizer": false,
+   "UseManyToManyEntity": false,
+   "UseNoDefaultConstructor": false,
+   "UseNoNavigations": false,
+   "UseNoObjectFilter": false,
+   "UseNodaTime": false,
+   "UseNullableReferences": false,
+   "UsePrefixNavigationNaming": false,
+   "UseSchemaFolders": false,
+   "UseSchemaNamespaces": false,
+   "UseSpatial": false,
+   "UseT4": false,
+   "UseT4Split": false
+}

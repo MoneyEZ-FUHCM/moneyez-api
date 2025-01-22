@@ -85,6 +85,10 @@ public partial class MoneyEzContext : DbContext
             entity.Property(e => e.Amount).HasColumnType("decimal(15, 2)");
             entity.Property(e => e.Name).HasMaxLength(200);
             entity.Property(e => e.NameUnsign).HasMaxLength(200);
+            entity.HasOne(d => d.User).WithMany(p => p.AssetAndLiabilities)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__AssetAndL__UserI__123EB7A3");
         });
 
         modelBuilder.Entity<Category>(entity =>
@@ -168,6 +172,15 @@ public partial class MoneyEzContext : DbContext
             entity.Property(e => e.NetBalance).HasColumnType("decimal(15, 2)");
             entity.Property(e => e.TotalExpense).HasColumnType("decimal(15, 2)");
             entity.Property(e => e.TotalIncome).HasColumnType("decimal(15, 2)");
+            entity.HasOne(d => d.User).WithMany(p => p.FinancialReports)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__FinancialReport__UserId");
+
+            entity.HasOne(d => d.GroupFund).WithMany(p => p.FinancialReports)
+                .HasForeignKey(d => d.GroupId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__FinancialReport__GroupFundId");
         });
 
         modelBuilder.Entity<GroupFund>(entity =>
@@ -521,6 +534,10 @@ public partial class MoneyEzContext : DbContext
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.UserSettingKey).HasMaxLength(255);
+            entity.HasOne(d => d.User).WithMany(p => p.UserSettings)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__UserSetting__UserId__12345678");
         });
 
         modelBuilder.Entity<UserSpendingModel>(entity =>
