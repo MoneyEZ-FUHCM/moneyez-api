@@ -10,7 +10,7 @@ namespace MoneyEz.Services.Mappers
 {
     public partial class MapperConfig : Profile
     {
-        partial void GroupFundConfig();
+
         partial void GroupFundConfig()
         {
             CreateMap<CreateGroupModel, GroupFund>();

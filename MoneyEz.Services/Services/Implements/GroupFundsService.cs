@@ -10,6 +10,7 @@ using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using Microsoft.AspNetCore.Http;
 using MoneyEz.Services.Constants;
+using MoneyEz.Repositories.Enums;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -54,16 +55,14 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = new CreateGroupModel
+                Data = new GroupFund
                 {
-                    Id = new Guid(),
                     Name = groupFund.Name,
-                    NameUnsign = groupFund.NameUnsign,
                     Description = groupFund.Description,
                     CurrentBalance = groupFund.CurrentBalance,
                     Leader = groupFund.Leader,
-                    Status = groupFund.Status,
-                    Visibility = groupFund.Visibility
+                    Status = CommonsStatus.ACTIVE,
+                    Visibility = VisibilityEnum.PUBLIC,
                 },
                 Message = MessageConstants.GROUP_CREATE_SUCCESS
             };

@@ -2,6 +2,7 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using MoneyEz.Repositories.Enums;
 
 namespace MoneyEz.Repositories.Entities;
 
@@ -17,9 +18,9 @@ public partial class GroupFund : BaseEntity
 
     public int Leader { get; set; }
 
-    public int? Status { get; set; }
+    public CommonsStatus? Status { get; set; }
 
-    public int? Visibility { get; set; }
+    public VisibilityEnum? Visibility { get; set; }
 
     public virtual ICollection<FinancialGoal> FinancialGoals { get; set; } = new List<FinancialGoal>();
 

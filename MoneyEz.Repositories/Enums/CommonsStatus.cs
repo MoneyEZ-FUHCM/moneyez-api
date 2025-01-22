@@ -12,4 +12,9 @@ namespace MoneyEz.Repositories.Enums
         INACTIVE,
         BLOCKED
     }
+    public enum VisibilityEnum
+    {
+        PUBLIC,
+        PRIVATE
+    }
 }

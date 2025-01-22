@@ -24,6 +24,7 @@ namespace MoneyEz.Services.Mappers
         }
 
         partial void UserMapperConfig();
+        partial void GroupFundConfig();
     }
 
     public class PaginationConverter<TSource, TDestination> : ITypeConverter<Pagination<TSource>, Pagination<TDestination>>

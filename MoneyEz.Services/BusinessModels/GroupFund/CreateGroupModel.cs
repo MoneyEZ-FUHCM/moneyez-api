@@ -11,14 +11,10 @@ namespace MoneyEz.Services.BusinessModels.GroupMember
 {
     public class CreateGroupModel
     {
-        public Guid Id { get; set; }
 
         [Required(ErrorMessage = "Vui lòng nhập tên nhóm.")]
         [Display(Name = "Name")]
         public string Name { get; set; }
-
-        public string NameUnsign { get; set; }
-
         [Display(Name = "Description")]
         public string Description { get; set; }
 
@@ -28,9 +24,5 @@ namespace MoneyEz.Services.BusinessModels.GroupMember
         [Required(ErrorMessage = "Vui lòng nhập mã trưởng nhóm.")]
         [Display(Name = "Leader")]
         public int Leader { get; set; }
-
-        public int? Status { get; set; }
-
-        public int? Visibility { get; set; }
     }
 }

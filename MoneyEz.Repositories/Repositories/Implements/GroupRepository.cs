@@ -18,16 +18,5 @@ namespace MoneyEz.Repositories.Repositories.Implements
             _context = context;
         }
 
-        public async Task<GroupFund> CreateGroupFundAsync(GroupFund groupFund)
-        {
-            //logic to save the group to the database
-            _context.GroupFunds.Add(groupFund);
-            await _context.SaveChangesAsync();
-            return groupFund;
-        }
-
-
-
-        // Add any additional methods specific to GroupRepository if needed
     }
 }

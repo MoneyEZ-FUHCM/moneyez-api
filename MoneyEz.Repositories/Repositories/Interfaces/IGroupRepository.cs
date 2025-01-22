@@ -9,7 +9,6 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
 {
     public interface IGroupRepository : IGenericRepository<GroupFund>
     {
-        // Add any additional methods specific to GroupRepository if needed
-        Task<GroupFund> CreateGroupFundAsync(GroupFund groupFund);
+
     }
 }
