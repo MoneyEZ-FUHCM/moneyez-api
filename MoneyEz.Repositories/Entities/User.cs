@@ -32,9 +32,13 @@ public partial class User : BaseEntity
 
     public CommonsStatus? Status { get; set; }
 
+    public virtual ICollection<AssetAndLiability> AssetAndLiabilities { get; set; } = new List<AssetAndLiability>();
+
     public virtual ICollection<ChatHistory> ChatHistories { get; set; } = new List<ChatHistory>();
 
     public virtual ICollection<FinancialGoal> FinancialGoals { get; set; } = new List<FinancialGoal>();
+
+    public virtual ICollection<FinancialReport> FinancialReports { get; set; } = new List<FinancialReport>();
 
     public virtual ICollection<GroupMember> GroupMembers { get; set; } = new List<GroupMember>();
 
@@ -47,6 +51,8 @@ public partial class User : BaseEntity
     public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 
     public virtual ICollection<UserQuizResult> UserQuizResults { get; set; } = new List<UserQuizResult>();
+
+    public virtual ICollection<UserSetting> UserSettings { get; set; } = new List<UserSetting>();
 
     public virtual ICollection<UserSpendingModel> UserSpendingModels { get; set; } = new List<UserSpendingModel>();
 }

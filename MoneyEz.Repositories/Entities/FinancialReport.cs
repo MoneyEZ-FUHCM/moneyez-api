@@ -26,4 +26,8 @@ public partial class FinancialReport : BaseEntity
     public decimal TotalExpense { get; set; }
 
     public decimal NetBalance { get; set; }
+
+    public virtual User User { get; set; }
+
+    public virtual GroupFund GroupFund { get; set; }
 }

@@ -23,6 +23,8 @@ public partial class GroupFund : BaseEntity
 
     public virtual ICollection<FinancialGoal> FinancialGoals { get; set; } = new List<FinancialGoal>();
 
+    public virtual ICollection<FinancialReport> FinancialReports { get; set; } = new List<FinancialReport>();
+
     public virtual ICollection<GroupFundLog> GroupFundLogs { get; set; } = new List<GroupFundLog>();
 
     public virtual ICollection<GroupMember> GroupMembers { get; set; } = new List<GroupMember>();

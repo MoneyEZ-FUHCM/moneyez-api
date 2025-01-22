@@ -12,4 +12,6 @@ public partial class UserSetting : BaseEntity
     public string UserSettingKey { get; set; }
 
     public string UserSettingValue { get; set; }
+
+    public virtual User User { get; set; }
 }
