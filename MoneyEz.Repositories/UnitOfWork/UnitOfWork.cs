@@ -17,9 +17,11 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IDbContextTransaction _transaction;
 
         private IUserRepository _userRepository;
+        private IGroupRepository _groupRepository;
 
-        public UnitOfWork(MoneyEzContext context) 
-        { 
+
+        public UnitOfWork(MoneyEzContext context)
+        {
             _context = context;
         }
 
@@ -32,6 +34,13 @@ namespace MoneyEz.Repositories.UnitOfWork
             }
         }
 
+        public IGroupRepository GroupRepository
+        {
+            get
+            {
+                return _groupRepository ??= new GroupRepository(_context);
+            }
+        }
         public void Commit()
         {
             try
@@ -64,6 +73,11 @@ namespace MoneyEz.Repositories.UnitOfWork
         public int Save()
         {
             return _context.SaveChanges();
+        }
+
+        public Task SaveAsync()
+        {
+            return _context.SaveChangesAsync();
         }
     }
 }

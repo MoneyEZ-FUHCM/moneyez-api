@@ -12,7 +12,7 @@ namespace MoneyEz.Services.Constants
         // syntax message: <CONSTANT_NAME_MESSAGE> = "Message here";
 
         // authen
-        
+
         public const string ACCOUNT_NEED_CONFIRM_EMAIL = "AccountDoesNotVerifyEmail";
         public const string WRONG_PASSWORD = "PasswordIsIncorrect";
         public const string TOKEN_NOT_VALID = "TokenNotValid";
@@ -28,8 +28,16 @@ namespace MoneyEz.Services.Constants
         public const string REQUEST_RESET_PASSWORD_CONFIRM_SUCCESS = "You can reset password now";
 
         // account
-        public const string ACCOUNT_NOT_EXIST = "AccountNotExist";
-        public const string ACCOUNT_EXISTED = "AccountAlreadyExisted";
-        public const string ACCOUNT_BLOCKED = "AccountWasBlocked";
+        public const string ACCOUNT_NOT_EXIST = "Account Not Exist";
+        public const string ACCOUNT_EXISTED = "Account Already Existed";
+        public const string ACCOUNT_BLOCKED = "Account Was Blocked";
+
+        // group
+        public const string GROUP_NOT_EXIST = "Group Not Exist";
+        public const string GROUP_EXISTED = "Group Already Existed";
+        public const string GROUP_MEMBER_NOT_EXIST = "Group Member Not Exist";
+        public const string GROUP_CREATE_SUCCESS = "Group created successfully";
+        public const string GROUP_UPDATE_SUCCESS = "Group updated successfully";
+        public const string GROUP_DELETE_SUCCESS = "Group deleted successfully";
     }
 }

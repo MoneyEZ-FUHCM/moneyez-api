@@ -12,10 +12,13 @@ namespace MoneyEz.Services.Mappers
 {
     public partial class MapperConfig : Profile
     {
-        public MapperConfig() 
+        public MapperConfig()
         {
             // user mapper
             UserMapperConfig();
+
+            // group fund mapper
+            GroupFundConfig();
 
             // transaction mapper
         }

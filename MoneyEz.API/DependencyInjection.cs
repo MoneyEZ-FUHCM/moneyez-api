@@ -149,6 +149,10 @@ namespace MoneyEz.API
             // config otp service
             services.AddScoped<IOtpService, OtpService>();
 
+            // config group service
+            services.AddScoped<IGroupRepository, GroupRepository>();
+            services.AddScoped<IGroupFundsService, GroupFundsService>();
+
             services.AddSignalR();
 
             #endregion
@@ -159,8 +163,8 @@ namespace MoneyEz.API
 
             services.AddDbContext<MoneyEzContext>(options =>
             {
-                //options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
-                options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
+                options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
+                //options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
             });
 
             #endregion

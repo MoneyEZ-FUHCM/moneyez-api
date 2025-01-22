@@ -12,9 +12,11 @@ namespace MoneyEz.Repositories.UnitOfWork
         // add interface repository here
 
         IUserRepository UsersRepository { get; }
+        IGroupRepository GroupRepository { get; }
 
         int Save();
         void Commit();
         void Rollback();
+        Task SaveAsync();
     }
 }
