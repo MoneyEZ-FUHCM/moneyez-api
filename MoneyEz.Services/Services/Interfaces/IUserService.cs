@@ -31,6 +31,8 @@ namespace MoneyEz.Services.Services.Interfaces
 
         public Task<BaseResultModel> ExecuteResetPassword(ResetPasswordModel resetPasswordModel);
 
+        //public Task<BaseResultModel> ResendOtpConfirmAsync(string email);
+
         //public Task<UserModel> GetLoginUserInformationAsync(string email);
 
         //public Task<AuthenModel> LoginWithGoogle(string credental);
@@ -43,9 +45,9 @@ namespace MoneyEz.Services.Services.Interfaces
 
         public Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter);
 
-        //public Task<BaseResultModel> CreateUserAsync(CreateUserModel model);
+        public Task<BaseResultModel> CreateUserAsync(CreateUserModel model);
 
-        //public Task<UserModel> UpdateUserAsync(UpdateUserModel model);
+        public Task<BaseResultModel> UpdateUserAsync(UpdateUserModel model);
 
         public Task<UserModel> DeleteUserAsync(int id, string currentEmail);
     }

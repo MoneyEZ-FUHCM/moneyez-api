@@ -16,6 +16,7 @@ namespace MoneyEz.Services.Mappers
         {
             CreateMap<User, UserModel>();
             CreateMap<Pagination<User>, Pagination<UserModel>>().ConvertUsing<PaginationConverter<User, UserModel>>();
+            CreateMap<CreateUserModel, User>();
         }
     }
 }

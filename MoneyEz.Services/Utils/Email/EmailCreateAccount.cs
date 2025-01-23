@@ -51,7 +51,7 @@ namespace MoneyEz.Services.Utils.Email
                       >
                         <div style=""display: table-cell; vertical-align: middle"">
                           <img
-                            src=""https://firebasestorage.googleapis.com/v0/b/exe201-9459a.appspot.com/o/MoneyEz%2Fimage%204.png?alt=media&token=be7edf0a-968d-4a97-86aa-3527aff5bc30""
+                            src=""https://firebasestorage.googleapis.com/v0/b/exe201-9459a.appspot.com/o/Fricks%2FEzMoney_v2.png?alt=media&token=24dc41a4-b872-4424-98f9-d72c82db8b13""
                             alt=""MoneyEz logo""
                             style=""height: 50px""
                           />
