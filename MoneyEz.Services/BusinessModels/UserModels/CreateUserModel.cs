@@ -25,7 +25,7 @@ namespace MoneyEz.Services.BusinessModels.UserModels
         [Display(Name = "Phone Number")]
         [DataType(DataType.PhoneNumber, ErrorMessage = "Số điện thoại không hợp lệ.")]
         [RegularExpression(@"^([0-9]{10})$", ErrorMessage = "Số điện thoại phải có 10 số.")]
-        public string? PhoneNumber { get; set; }
+        public string PhoneNumber { get; set; } = "";
 
         public string? Address { get; set; }
 

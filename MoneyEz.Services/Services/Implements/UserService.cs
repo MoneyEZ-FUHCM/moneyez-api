@@ -31,135 +31,134 @@ namespace MoneyEz.Services.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IOtpService _otpService;
+        private readonly IMailService _mailService;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
 
         public UserService(IUnitOfWork unitOfWork,
             IOtpService otpService,
             IConfiguration configuration,
+            IMailService mailService,
             IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _otpService = otpService;
+            _mailService = mailService;
             _configuration = configuration;
             _mapper = mapper;
         }
 
         public async Task<BaseResultModel> VerifyEmail(ConfirmOtpModel confirmOtpModel)
         {
-            try
+            bool checkOtp = await _otpService.ValidateOtpAsync(confirmOtpModel.Email, confirmOtpModel.OtpCode);
+
+            if (checkOtp)
             {
-                bool checkOtp = await _otpService.ValidateOtpAsync(confirmOtpModel.Email, confirmOtpModel.OtpCode);
+                // return accesstoken
 
-                if (checkOtp)
+                var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(confirmOtpModel.Email);
+
+                if (existUser == null)
                 {
-                    // return accesstoken
-
-                    var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(confirmOtpModel.Email);
-
-                    if (existUser == null)
-                    {
-                        return new BaseResultModel
-                        {
-                            Status = StatusCodes.Status404NotFound,
-                            ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
-                        };
-                    }
-
-                    // check account was verified
-                    if (existUser.IsVerified == true)
-                    {
-                        return new BaseResultModel
-                        {
-                            Status = StatusCodes.Status400BadRequest,
-                            ErrorCode = MessageConstants.ACCOUNT_VERIFIED
-                        };
-                    }
-
-                    // update verify email for user
-                    existUser.IsVerified = true;
-                    _unitOfWork.UsersRepository.UpdateAsync(existUser);
-
-                    var accessToken = AuthenTokenUtils.GenerateAccessToken(existUser.Email, existUser, _configuration);
-                    var refreshToken = AuthenTokenUtils.GenerateRefreshToken(existUser.Email, _configuration);
-
-                    _unitOfWork.Save();
-
                     return new BaseResultModel
                     {
-                        Status = StatusCodes.Status200OK,
-                        Data = new AuthenModel
-                        {
-                            AccessToken = accessToken,
-                            RefreshToken = refreshToken
-                        },
-                        Message = MessageConstants.LOGIN_SUCCESS_MESSAGE
+                        Status = StatusCodes.Status404NotFound,
+                        ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
                     };
                 }
 
+                // check account was verified
+                if (existUser.IsVerified == true)
+                {
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        ErrorCode = MessageConstants.ACCOUNT_VERIFIED
+                    };
+                }
+
+                // update verify email for user
+                existUser.IsVerified = true;
+                _unitOfWork.UsersRepository.UpdateAsync(existUser);
+
+                var accessToken = AuthenTokenUtils.GenerateAccessToken(existUser.Email, existUser, _configuration);
+                var refreshToken = AuthenTokenUtils.GenerateRefreshToken(existUser.Email, _configuration);
+
+                _unitOfWork.Save();
+
                 return new BaseResultModel
                 {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.OTP_INVALID
+                    Status = StatusCodes.Status200OK,
+                    Data = new AuthenModel
+                    {
+                        AccessToken = accessToken,
+                        RefreshToken = refreshToken
+                    },
+                    Message = MessageConstants.LOGIN_SUCCESS_MESSAGE
                 };
             }
-            catch
+
+            return new BaseResultModel
             {
-                throw;
-            }
+                Status = StatusCodes.Status401Unauthorized,
+                ErrorCode = MessageConstants.OTP_INVALID
+            };
         }
 
-        //public async Task<BaseResultModel> CreateUserAsync(CreateUserModel model)
-        //{
-        //    try
-        //    {
-        //        User newUser = _mapper.Map<User>(model);
-        //        newUser.Status = CommonsStatus.ACTIVE;
-        //        newUser.NameUnsign = StringUtils.ConvertToUnSign(model.FullName);
-        //        newUser.Role = model.Role;
-        //        newUser.Dob = model.Dob;
-        //        newUser.IsVerified = false;
+        public async Task<BaseResultModel> CreateUserAsync(CreateUserModel model)
+        {
+            User newUser = _mapper.Map<User>(model);
+            newUser.Status = CommonsStatus.ACTIVE;
+            newUser.NameUnsign = StringUtils.ConvertToUnSign(model.FullName);
+            newUser.Role = model.Role;
+            newUser.Dob = model.Dob;
+            newUser.IsVerified = false;
 
-        //        // check age
-        //        var userAge = CalculateAge(model.Dob);
-        //        if (userAge < 16)
-        //        {
-        //            throw new Exception("Để tạo tài khoản cần đủ 16 tuổi");
-        //        }
+            // check age
+            var userAge = CalculateAge(model.Dob);
+            if (userAge < 16)
+            {
+                throw new DefaultException(MessageConstants.ACCOUNT_NOT_ENOUGH_AGE);
+            }
 
-        //        var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(model.Email);
+            var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(model.Email);
 
-        //        if (existUser != null)
-        //        {
-        //            throw new Exception("Tài khoản đã tồn tại.");
-        //        }
+            if (existUser != null)
+            {
+                throw new DefaultException(MessageConstants.ACCOUNT_EXISTED);
+            }
 
-        //        // generate password
-        //        string password = PasswordUtils.GeneratePassword();
+            if (CheckExistPhone(model.PhoneNumber).Result)
+            {
+                throw new DefaultException(MessageConstants.DUPLICATE_PHONE_NUMBER);
+            }
 
-        //        // hash password
-        //        newUser.Password = PasswordUtils.HashPassword(password);
+            // generate password
+            string password = PasswordUtils.GeneratePassword();
 
-        //        await _unitOfWork.UsersRepository.AddAsync(newUser);
+            // hash password
+            newUser.Password = PasswordUtils.HashPassword(password);
 
-        //        // send email password
-        //        MailRequest passwordEmail = new MailRequest()
-        //        {
-        //            ToEmail = model.Email,
-        //            Subject = "Fricks Welcome",
-        //            Body = EmailCreateAccount.EmailSendCreateAccount(model.Email, password, model.FullName)
-        //        };
+            await _unitOfWork.UsersRepository.AddAsync(newUser);
+            _unitOfWork.Save();
 
-        //        await _mailService.SendEmailAsync(passwordEmail);
+            // send email password
+            MailRequest passwordEmail = new MailRequest()
+            {
+                ToEmail = model.Email,
+                Subject = "MoneyEz Welcome",
+                Body = EmailCreateAccount.EmailSendCreateAccount(model.Email, password, model.FullName)
+            };
 
-        //        _unitOfWork.Save();
-        //        return _mapper.Map<UserModel>(newUser);
-        //    }
-        //    catch
-        //    {
-        //        throw;
-        //    }
-        //}
+            await _mailService.SendEmailAsync(passwordEmail);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = _mapper.Map<UserModel>(newUser),
+                Message = MessageConstants.ACCCOUNT_CREATED_SUCCESS_MESSAGE
+            };
+        }
 
         public Task<UserModel> DeleteUserAsync(int id, string currentEmail)
         {
@@ -222,72 +221,65 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> LoginWithEmailPassword(string email, string password)
         {
-            try
+            var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email);
+            if (existUser == null)
             {
-                var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email);
-                if (existUser == null)
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
+                };
+            }
+
+            var verifyUser = PasswordUtils.VerifyPassword(password, existUser.Password);
+
+            if (verifyUser)
+            {
+                // check status user
+                if (existUser.Status == CommonsStatus.BLOCKED || existUser.IsDeleted == true)
                 {
                     return new BaseResultModel
                     {
                         Status = StatusCodes.Status401Unauthorized,
-                        ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
+                        ErrorCode = MessageConstants.ACCOUNT_BLOCKED
                     };
                 }
 
-                var verifyUser = PasswordUtils.VerifyPassword(password, existUser.Password);
-
-                if (verifyUser)
+                if (existUser.IsVerified == false)
                 {
-                    // check status user
-                    if (existUser.Status == CommonsStatus.BLOCKED || existUser.IsDeleted == true)
-                    {
-                        return new BaseResultModel
-                        {
-                            Status = StatusCodes.Status401Unauthorized,
-                            ErrorCode = MessageConstants.ACCOUNT_BLOCKED
-                        };
-                    }
+                    // send otp email
+                    await _otpService.CreateOtpAsync(existUser.Email, "confirm", existUser.FullName);
 
-                    if (existUser.IsVerified == false)
-                    {
-                        // send otp email
-                        await _otpService.CreateOtpAsync(existUser.Email, "confirm", existUser.FullName);
-
-                        _unitOfWork.Save();
-
-                        return new BaseResultModel
-                        {
-                            Status = StatusCodes.Status401Unauthorized,
-                            Message = MessageConstants.ACCOUNT_NEED_CONFIRM_EMAIL
-                        };
-                    }
-
-                    var accessToken = AuthenTokenUtils.GenerateAccessToken(email, existUser, _configuration);
-                    var refreshToken = AuthenTokenUtils.GenerateRefreshToken(email, _configuration);
-
-                    //_unitOfWork.Save();
+                    _unitOfWork.Save();
 
                     return new BaseResultModel
                     {
-                        Status = StatusCodes.Status200OK,
-                        Data = new AuthenModel
-                        {
-                            AccessToken = accessToken,
-                            RefreshToken = refreshToken
-                        },
-                        Message = MessageConstants.LOGIN_SUCCESS_MESSAGE
+                        Status = StatusCodes.Status401Unauthorized,
+                        Message = MessageConstants.ACCOUNT_NEED_CONFIRM_EMAIL
                     };
                 }
+
+                var accessToken = AuthenTokenUtils.GenerateAccessToken(email, existUser, _configuration);
+                var refreshToken = AuthenTokenUtils.GenerateRefreshToken(email, _configuration);
+
+                //_unitOfWork.Save();
+
                 return new BaseResultModel
                 {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.WRONG_PASSWORD
+                    Status = StatusCodes.Status200OK,
+                    Data = new AuthenModel
+                    {
+                        AccessToken = accessToken,
+                        RefreshToken = refreshToken
+                    },
+                    Message = MessageConstants.LOGIN_SUCCESS_MESSAGE
                 };
             }
-            catch
+            return new BaseResultModel
             {
-                throw;
-            }
+                Status = StatusCodes.Status401Unauthorized,
+                ErrorCode = MessageConstants.WRONG_PASSWORD
+            };
         }
 
         public async Task<BaseResultModel> RefreshToken(string jwtToken)
@@ -347,45 +339,43 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> RegisterAsync(SignUpModel model)
         {
-            try
+            User newUser = new User
             {
-                User newUser = new User
-                {
-                    Email = model.Email,
-                    FullName = model.FullName,
-                    NameUnsign = StringUtils.ConvertToUnSign(model.FullName),
-                    PhoneNumber = model.PhoneNumber,
-                    Role = RolesEnum.USER,
-                    Status = CommonsStatus.ACTIVE,
-                    IsVerified = false
-                };
+                Email = model.Email,
+                FullName = model.FullName,
+                NameUnsign = StringUtils.ConvertToUnSign(model.FullName),
+                PhoneNumber = model.PhoneNumber,
+                Role = RolesEnum.USER,
+                Status = CommonsStatus.ACTIVE,
+                IsVerified = false
+            };
 
-                var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(model.Email);
+            var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(model.Email);
 
-                if (existUser != null)
-                {
-                    throw new DefaultException(MessageConstants.ACCOUNT_EXISTED);
-                }
-
-                // hash password
-                newUser.Password = PasswordUtils.HashPassword(model.Password);
-
-                await _unitOfWork.UsersRepository.AddAsync(newUser);
-
-                // send otp email
-                await _otpService.CreateOtpAsync(newUser.Email, "confirm", newUser.FullName);
-
-                _unitOfWork.Save();
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status200OK,
-                    Message = MessageConstants.REGISTER_SUCCESS_MESSAGE,
-                };
-            }
-            catch
+            if (existUser != null)
             {
-                throw;
+                throw new DefaultException(MessageConstants.ACCOUNT_EXISTED);
             }
+
+            if (CheckExistPhone(model.PhoneNumber).Result)
+            {
+                throw new DefaultException(MessageConstants.DUPLICATE_PHONE_NUMBER);
+            }
+
+            // hash password
+            newUser.Password = PasswordUtils.HashPassword(model.Password);
+
+            await _unitOfWork.UsersRepository.AddAsync(newUser);
+
+            // send otp email
+            await _otpService.CreateOtpAsync(newUser.Email, "confirm", newUser.FullName);
+
+            _unitOfWork.Save();
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.REGISTER_SUCCESS_MESSAGE,
+            };
         }
 
         public async Task<BaseResultModel> ChangePasswordAsync(string email, ChangePasswordModel changePasswordModel)
@@ -468,7 +458,7 @@ namespace MoneyEz.Services.Services.Implements
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status200OK,
-                    Message = MessageConstants.REQUEST_RESET_PASSWORD_CONFIRM_SUCCESS,
+                    Message = MessageConstants.REQUEST_RESET_PASSWORD_CONFIRM_SUCCESS_MESSAGE,
                 };
             }
 
@@ -513,6 +503,52 @@ namespace MoneyEz.Services.Services.Implements
                 age--;
             }
             return age;
+        }
+
+        private async Task<bool> CheckExistPhone(string phoneNumber)
+        {
+            var users = await _unitOfWork.UsersRepository.GetAllAsync();
+            var existPhone = users.Find(x => x.PhoneNumber == phoneNumber);
+            return existPhone != null;
+        }
+
+        public async Task<BaseResultModel> UpdateUserAsync(UpdateUserModel model)
+        {
+            // check age
+            var userAge = CalculateAge(model.Dob);
+            if (userAge < 16)
+            {
+                throw new DefaultException(MessageConstants.ACCOUNT_NOT_ENOUGH_AGE);
+            }
+
+            var existUser = await _unitOfWork.UsersRepository.GetByIdAsync(model.Id);
+            if (existUser != null)
+            {
+                existUser.FullName = model.FullName;
+                existUser.NameUnsign = StringUtils.ConvertToUnSign(model.FullName);
+                existUser.PhoneNumber = model.PhoneNumber;
+                //existUser.Address = model.Address;
+                existUser.Dob = model.Dob;
+                //existUser.Gender = model.Gender;
+                if (model.Avatar != null)
+                {
+                    existUser.AvatarUrl = model.Avatar;
+                }
+
+                _unitOfWork.UsersRepository.UpdateAsync(existUser);
+                _unitOfWork.Save();
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = MessageConstants.ACCOUNT_UPDATE_SUCCESS_MESSAGE,
+                    Data = _mapper.Map<UserModel>(existUser)
+                };
+            }
+            else
+            {
+                throw new DefaultException(MessageConstants.ACCOUNT_NOT_EXIST);
+            }
         }
     }
 }
