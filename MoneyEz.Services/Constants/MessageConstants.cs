@@ -31,5 +31,15 @@ namespace MoneyEz.Services.Constants
         public const string ACCOUNT_NOT_EXIST = "AccountNotExist";
         public const string ACCOUNT_EXISTED = "AccountAlreadyExisted";
         public const string ACCOUNT_BLOCKED = "AccountWasBlocked";
+
+        // category
+        public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists"; // Danh mục đã tồn tại
+        public const string CATEGORY_CREATED_SUCCESS = "CategoryCreatedSuccessfully"; // Tạo danh mục thành công
+        public const string CATEGORY_NOT_FOUND = "CategoryNotFound"; // Danh mục không tồn tại
+        public const string CATEGORY_LIST_FETCHED_SUCCESS = "Category list fetched successfully."; // Thông báo lấy danh sách thành công
+        public const string CATEGORY_FETCHED_SUCCESS = "Category details fetched successfully."; // Thông báo lấy chi tiết danh mục thành công
+        public const string CATEGORY_UPDATED_SUCCESS = "CategoryUpdatedSuccessfully"; // Cập nhật danh mục thành công
+        public const string CATEGORY_DELETED_SUCCESS = "CategoryDeletedSuccessfully"; // Xóa danh mục thành công
+        public const string CATEGORY_HAS_DEPENDENCIES = "CategoryHasDependencies"; // Danh mục có liên kết không thể xóa
     }
 }

@@ -17,6 +17,8 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IDbContextTransaction _transaction;
 
         private IUserRepository _userRepository;
+        //category  
+        private ICategoriesRepository _categoriesRepository;
 
         public UnitOfWork(MoneyEzContext context) 
         { 
@@ -32,6 +34,13 @@ namespace MoneyEz.Repositories.UnitOfWork
             }
         }
 
+        public ICategoriesRepository CategoriesRepository
+        {
+            get
+            {
+                return _categoriesRepository ??= new CategoriesRepository(_context);
+            }
+        }
         public void Commit()
         {
             try

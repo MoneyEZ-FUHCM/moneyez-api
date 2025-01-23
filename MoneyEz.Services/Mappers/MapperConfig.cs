@@ -16,11 +16,13 @@ namespace MoneyEz.Services.Mappers
         {
             // user mapper
             UserMapperConfig();
-
+            //category mapper
+            CategoryMapperConfig();
             // transaction mapper
         }
 
         partial void UserMapperConfig();
+        partial void CategoryMapperConfig();
     }
 
     public class PaginationConverter<TSource, TDestination> : ITypeConverter<Pagination<TSource>, Pagination<TDestination>>

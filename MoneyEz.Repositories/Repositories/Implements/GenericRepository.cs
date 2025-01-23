@@ -74,6 +74,11 @@ namespace MoneyEz.Repositories.Repositories.Implements
             _dbSet.UpdateRange(entities);
         }
 
+        public async Task<TEntity?> FindByConditionAsync(Expression<Func<TEntity, bool>> predicate)
+        {
+            return await _dbSet.FirstOrDefaultAsync(predicate);
+        }
+
         public async Task<Pagination<TEntity>> ToPagination(PaginationParameter paginationParameter)
         {
             var itemCount = await _dbSet.CountAsync();

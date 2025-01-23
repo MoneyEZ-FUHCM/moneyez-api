@@ -143,6 +143,10 @@ namespace MoneyEz.API
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
 
+            // Đăng ký Service và Repository cho Category
+            services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<ICategoriesRepository, CategoriesRepository>();
+
             // config mail service
             services.AddScoped<IMailService, MailService>();
 
@@ -159,8 +163,8 @@ namespace MoneyEz.API
 
             services.AddDbContext<MoneyEzContext>(options =>
             {
-                //options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
-                options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
+                options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
+                //options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
             });
 
             #endregion
