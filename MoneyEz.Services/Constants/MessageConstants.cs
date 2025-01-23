@@ -19,6 +19,7 @@ namespace MoneyEz.Services.Constants
         public const string OTP_INVALID = "OtpInvalid";
         public const string OLD_PASSWORD_INVALID = "OldPasswordInvalid";
         public const string RESET_PASSWORD_FAILED = "CanNotResetPassword";
+        public const string ACCOUNT_VERIFIED = "AccountVerified";
 
         public const string LOGIN_SUCCESS_MESSAGE = "Login successfully";
         public const string TOKEN_REFRESH_SUCCESS_MESSAGE = "Token refresh successfully";

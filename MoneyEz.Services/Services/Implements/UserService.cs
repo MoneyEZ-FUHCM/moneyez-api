@@ -6,7 +6,9 @@ using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
+using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.AuthenModels;
+using MoneyEz.Services.BusinessModels.EmailModels;
 using MoneyEz.Services.BusinessModels.OtpModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.UserModels;
@@ -14,6 +16,7 @@ using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Utils;
+using MoneyEz.Services.Utils.Email;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -58,8 +61,18 @@ namespace MoneyEz.Services.Services.Implements
                     {
                         return new BaseResultModel
                         {
-                            Status = StatusCodes.Status401Unauthorized,
+                            Status = StatusCodes.Status404NotFound,
                             ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
+                        };
+                    }
+
+                    // check account was verified
+                    if (existUser.IsVerified == true)
+                    {
+                        return new BaseResultModel
+                        {
+                            Status = StatusCodes.Status400BadRequest,
+                            ErrorCode = MessageConstants.ACCOUNT_VERIFIED
                         };
                     }
 
@@ -96,10 +109,57 @@ namespace MoneyEz.Services.Services.Implements
             }
         }
 
-        public Task<UserModel> CreateUserAsync(CreateUserModel model)
-        {
-            throw new NotImplementedException();
-        }
+        //public async Task<BaseResultModel> CreateUserAsync(CreateUserModel model)
+        //{
+        //    try
+        //    {
+        //        User newUser = _mapper.Map<User>(model);
+        //        newUser.Status = CommonsStatus.ACTIVE;
+        //        newUser.NameUnsign = StringUtils.ConvertToUnSign(model.FullName);
+        //        newUser.Role = model.Role;
+        //        newUser.Dob = model.Dob;
+        //        newUser.IsVerified = false;
+
+        //        // check age
+        //        var userAge = CalculateAge(model.Dob);
+        //        if (userAge < 16)
+        //        {
+        //            throw new Exception("Để tạo tài khoản cần đủ 16 tuổi");
+        //        }
+
+        //        var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(model.Email);
+
+        //        if (existUser != null)
+        //        {
+        //            throw new Exception("Tài khoản đã tồn tại.");
+        //        }
+
+        //        // generate password
+        //        string password = PasswordUtils.GeneratePassword();
+
+        //        // hash password
+        //        newUser.Password = PasswordUtils.HashPassword(password);
+
+        //        await _unitOfWork.UsersRepository.AddAsync(newUser);
+
+        //        // send email password
+        //        MailRequest passwordEmail = new MailRequest()
+        //        {
+        //            ToEmail = model.Email,
+        //            Subject = "Fricks Welcome",
+        //            Body = EmailCreateAccount.EmailSendCreateAccount(model.Email, password, model.FullName)
+        //        };
+
+        //        await _mailService.SendEmailAsync(passwordEmail);
+
+        //        _unitOfWork.Save();
+        //        return _mapper.Map<UserModel>(newUser);
+        //    }
+        //    catch
+        //    {
+        //        throw;
+        //    }
+        //}
 
         public Task<UserModel> DeleteUserAsync(int id, string currentEmail)
         {
@@ -441,6 +501,18 @@ namespace MoneyEz.Services.Services.Implements
                     ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
                 };
             }
+        }
+
+        private static int CalculateAge(DateTime birthDate)
+        {
+            DateTime today = CommonUtils.GetCurrentTime();
+            int age = today.Year - birthDate.Year;
+
+            if (birthDate > today.AddYears(-age))
+            {
+                age--;
+            }
+            return age;
         }
     }
 }
