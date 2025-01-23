@@ -16,7 +16,7 @@ public partial class User : BaseEntity
 
     public string Password { get; set; }
 
-    public DateOnly? Dob { get; set; }
+    public DateTime? Dob { get; set; }
 
     public string PhoneNumber { get; set; }
 

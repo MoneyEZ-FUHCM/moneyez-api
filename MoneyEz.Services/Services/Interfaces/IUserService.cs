@@ -35,8 +35,6 @@ namespace MoneyEz.Services.Services.Interfaces
 
         //public Task<AuthenModel> LoginWithGoogle(string credental);
 
-        //public Task<UserModel> ResendOtpConfirmAsync(string email);
-
         //public Task<bool> CancelEmailConfrimAsync(string email);
 
         // manager user
@@ -45,7 +43,7 @@ namespace MoneyEz.Services.Services.Interfaces
 
         public Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter);
 
-        public Task<UserModel> CreateUserAsync(CreateUserModel model);
+        //public Task<BaseResultModel> CreateUserAsync(CreateUserModel model);
 
         //public Task<UserModel> UpdateUserAsync(UpdateUserModel model);
 
