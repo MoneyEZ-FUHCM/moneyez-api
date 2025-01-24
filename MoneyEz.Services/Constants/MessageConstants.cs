@@ -29,9 +29,19 @@ namespace MoneyEz.Services.Constants
                 public const string REQUEST_RESET_PASSWORD_CONFIRM_SUCCESS_MESSAGE = "You can reset password now";
 
                 // account
-                public const string ACCOUNT_NOT_EXIST = "Account Not Exist";
-                public const string ACCOUNT_EXISTED = "Account Already Existed";
-                public const string ACCOUNT_BLOCKED = "Account Was Blocked";
+                public const string ACCOUNT_NOT_EXIST = "AccountNotExist";
+                public const string ACCOUNT_EXISTED = "AccountAlreadyExisted";
+                public const string ACCOUNT_BLOCKED = "AccountWasBlocked";
+
+                // create account
+                public const string ACCOUNT_NOT_ENOUGH_AGE = "AccountMust16Age";
+                public const string DUPLICATE_PHONE_NUMBER = "DuplicatePhoneNumber";
+
+                public const string ACCCOUNT_CREATED_SUCCESS_MESSAGE = "Account created";
+
+                // update account
+                public const string ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Updated user successfully";
+
 
                 // group
                 public const string GROUP_NOT_EXIST = "Group Not Exist";

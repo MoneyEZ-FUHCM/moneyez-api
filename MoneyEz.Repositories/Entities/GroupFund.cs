@@ -16,9 +16,7 @@ public partial class GroupFund : BaseEntity
 
     public decimal? CurrentBalance { get; set; }
 
-    public int Leader { get; set; }
-
-    public CommonsStatus? Status { get; set; }
+    public int? Status { get; set; }
 
     public VisibilityEnum? Visibility { get; set; }
 
