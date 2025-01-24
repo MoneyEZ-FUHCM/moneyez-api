@@ -7,6 +7,7 @@ using MoneyEz.Services.Utils.Email;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
@@ -34,7 +35,7 @@ namespace MoneyEz.Services.Services.Implements
                 ExpiryTime = CommonUtils.GetCurrentTime().AddMinutes(5)
             };
 
-            await _redisService.SetAsync<OtpModel>(newOtp.OtpCode, newOtp);
+            await _redisService.SetAsync<OtpModel>(newOtp.OtpCode, newOtp, TimeSpan.FromMinutes(5));
             //await _unitOfWork.OtpsRepository.AddAsync(newOtp);
 
             if (type == "confirm")
