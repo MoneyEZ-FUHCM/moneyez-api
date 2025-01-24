@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Services.Services.Interfaces;
-using MoneyEz.Repositories.Commons;
 
 namespace MoneyEz.API.Controllers
 {
-    [Route("api/v1/categories")] // Định nghĩa route API gốc cho module Category
+    [Route("api/v1/categories")]
     [ApiController]
-    public class CategoriesController : ControllerBase
+    public class CategoriesController : BaseController
     {
         private readonly ICategoryService _categoryService;
 
@@ -17,44 +17,34 @@ namespace MoneyEz.API.Controllers
             _categoryService = categoryService;
         }
 
-        // API thêm mới danh mục
-        [HttpPost]
-        public async Task<IActionResult> AddCategory([FromBody] CreateCategoryModel model)
-        {
-            var result = await _categoryService.AddCategoryAsync(model);
-            return StatusCode(result.Status, result);
-        }
-
-        // API lấy danh sách danh mục (có phân trang)
         [HttpGet]
-        public async Task<IActionResult> GetCategories([FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetCategories([FromQuery] PaginationParameter paginationParameter)
         {
-            var result = await _categoryService.GetCategoriesAsync(paginationParameter);
-            return StatusCode(result.Status, result);
+            return ValidateAndExecute(() => _categoryService.GetCategoryPaginationAsync(paginationParameter));
         }
 
-        // API lấy chi tiết danh mục theo ID
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetCategoryDetails(Guid id)
+        public Task<IActionResult> GetCategoryById(Guid id)
         {
-            var result = await _categoryService.GetCategoryByIdAsync(id);
-            return StatusCode(result.Status, result);
+            return ValidateAndExecute(() => _categoryService.GetCategoryByIdAsync(id));
         }
 
-        // API cập nhật thông tin danh mục
+        [HttpPost]
+        public Task<IActionResult> AddCategory([FromBody] CreateCategoryModel model)
+        {
+            return ValidateAndExecute(() => _categoryService.AddCategoryAsync(model));
+        }
+
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateCategoryModel model)
+        public Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateCategoryModel model)
         {
-            var result = await _categoryService.UpdateCategoryAsync(id, model);
-            return StatusCode(result.Status, result);
+            return ValidateAndExecute(() => _categoryService.UpdateCategoryAsync(id, model));
         }
 
-        // API xóa danh mục
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCategory(Guid id)
+        public Task<IActionResult> DeleteCategory(Guid id)
         {
-            var result = await _categoryService.DeleteCategoryAsync(id);
-            return StatusCode(result.Status, result);
+            return ValidateAndExecute(() => _categoryService.DeleteCategoryAsync(id));
         }
     }
 }

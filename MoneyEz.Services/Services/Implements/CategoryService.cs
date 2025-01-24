@@ -1,13 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
-using MoneyEz.Repositories.Commons;
-using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.UnitOfWork;
+using MoneyEz.Repositories.Entities;
 using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Services.Interfaces;
-using MoneyEz.Services.Utils;
+using MoneyEz.Repositories.Commons;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -22,49 +21,16 @@ namespace MoneyEz.Services.Services.Implements
             _mapper = mapper;
         }
 
-        public async Task<BaseResultModel> AddCategoryAsync(CreateCategoryModel model)
-        {
-            var unsignName = StringUtils.ConvertToUnSign(model.Name);
-            var existingCategory = await _unitOfWork.CategoriesRepository
-                .FindByConditionAsync(c => c.NameUnsign == unsignName);
-
-            if (existingCategory != null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.CATEGORY_ALREADY_EXISTS
-                };
-            }
-
-            var category = _mapper.Map<Category>(model);
-            category.NameUnsign = unsignName;
-
-            await _unitOfWork.CategoriesRepository.AddAsync(category);
-            _unitOfWork.Save();
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status201Created,
-                Message = MessageConstants.CATEGORY_CREATED_SUCCESS
-            };
-        }
-
-        public async Task<BaseResultModel> GetCategoriesAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetCategoryPaginationAsync(PaginationParameter paginationParameter)
         {
             var categories = await _unitOfWork.CategoriesRepository.ToPagination(paginationParameter);
-            var categoryModels = _mapper.Map<List<CategoryModel>>(categories);
-
-            var paginatedResult = new Pagination<CategoryModel>(categoryModels,
-                categories.TotalCount,
-                categories.CurrentPage,
-                categories.PageSize);
+            var result = _mapper.Map<Pagination<CategoryModel>>(categories);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = MessageConstants.CATEGORY_LIST_FETCHED_SUCCESS,
-                Data = paginatedResult
+                Data = result,
+                Message = MessageConstants.CATEGORY_LIST_FETCHED_SUCCESS
             };
         }
 
@@ -76,17 +42,44 @@ namespace MoneyEz.Services.Services.Implements
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.CATEGORY_NOT_FOUND
+                    Message = MessageConstants.CATEGORY_NOT_FOUND
                 };
             }
 
-            var categoryModel = _mapper.Map<CategoryModel>(category);
+            var result = _mapper.Map<CategoryModel>(category);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = MessageConstants.CATEGORY_FETCHED_SUCCESS,
-                Data = categoryModel
+                Data = result,
+                Message = MessageConstants.CATEGORY_FETCHED_SUCCESS
+            };
+        }
+
+        public async Task<BaseResultModel> AddCategoryAsync(CreateCategoryModel model)
+        {
+            var unsignName = model.NameUnsign;
+            var existingCategory = await _unitOfWork.CategoriesRepository
+                .FindByConditionAsync(c => c.NameUnsign == unsignName);
+
+            if (existingCategory != null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Message = MessageConstants.CATEGORY_ALREADY_EXISTS
+                };
+            }
+
+            var category = _mapper.Map<Category>(model);
+
+            await _unitOfWork.CategoriesRepository.AddAsync(category);
+            _unitOfWork.Save();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status201Created,
+                Message = MessageConstants.CATEGORY_CREATED_SUCCESS
             };
         }
 
@@ -98,11 +91,11 @@ namespace MoneyEz.Services.Services.Implements
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.CATEGORY_NOT_FOUND
+                    Message = MessageConstants.CATEGORY_NOT_FOUND
                 };
             }
 
-            var unsignName = StringUtils.ConvertToUnSign(model.Name);
+            var unsignName = model.NameUnsign;
             var duplicateCategory = await _unitOfWork.CategoriesRepository
                 .FindByConditionAsync(c => c.NameUnsign == unsignName && c.Id != id);
 
@@ -111,12 +104,11 @@ namespace MoneyEz.Services.Services.Implements
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.CATEGORY_ALREADY_EXISTS
+                    Message = MessageConstants.CATEGORY_ALREADY_EXISTS
                 };
             }
 
             _mapper.Map(model, category);
-            category.NameUnsign = unsignName;
 
             _unitOfWork.CategoriesRepository.UpdateAsync(category);
             _unitOfWork.Save();
@@ -136,16 +128,7 @@ namespace MoneyEz.Services.Services.Implements
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.CATEGORY_NOT_FOUND
-                };
-            }
-
-            if (category.Subcategories.Any() || category.SpendingModelCategories.Any())
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.CATEGORY_HAS_DEPENDENCIES
+                    Message = MessageConstants.CATEGORY_NOT_FOUND
                 };
             }
 

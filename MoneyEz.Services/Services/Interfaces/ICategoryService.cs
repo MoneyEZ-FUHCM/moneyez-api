@@ -6,10 +6,10 @@ namespace MoneyEz.Services.Services.Interfaces
 {
     public interface ICategoryService
     {
-        Task<BaseResultModel> AddCategoryAsync(CreateCategoryModel model); // Thêm mới danh mục
-        Task<BaseResultModel> GetCategoriesAsync(PaginationParameter paginationParameter); // Lấy danh sách danh mục (có phân trang)
-        Task<BaseResultModel> GetCategoryByIdAsync(Guid id); // Lấy thông tin chi tiết danh mục theo ID
-        Task<BaseResultModel> UpdateCategoryAsync(Guid id, UpdateCategoryModel model); // Cập nhật danh mục
-        Task<BaseResultModel> DeleteCategoryAsync(Guid id); // Xóa danh mục
+        Task<BaseResultModel> GetCategoryPaginationAsync(PaginationParameter paginationParameter);
+        Task<BaseResultModel> GetCategoryByIdAsync(Guid id);
+        Task<BaseResultModel> AddCategoryAsync(CreateCategoryModel model);
+        Task<BaseResultModel> UpdateCategoryAsync(Guid id, UpdateCategoryModel model);
+        Task<BaseResultModel> DeleteCategoryAsync(Guid id);
     }
 }
