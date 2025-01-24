@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MoneyEz.Repositories.Entities;
 
@@ -11,9 +12,11 @@ using MoneyEz.Repositories.Entities;
 namespace MoneyEz.Repositories.Migrations
 {
     [DbContext(typeof(MoneyEzContext))]
-    partial class MoneyEzContextModelSnapshot : ModelSnapshot
+    [Migration("20250123145135_UpdateTableUser")]
+    partial class UpdateTableUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -74,8 +77,6 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.HasKey("Id")
                         .HasName("PK__AssetAnd__3214EC0799645AEF");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("AssetAndLiability", (string)null);
                 });
@@ -319,10 +320,6 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.HasKey("Id")
                         .HasName("PK__Financia__3214EC07A6D22F10");
-
-                    b.HasIndex("GroupId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("FinancialReport", (string)null);
                 });
@@ -1357,8 +1354,6 @@ namespace MoneyEz.Repositories.Migrations
                     b.HasKey("Id")
                         .HasName("PK__UserSett__3214EC0752B59B0B");
 
-                    b.HasIndex("UserId");
-
                     b.HasIndex(new[] { "UserSettingKey" }, "UQ__UserSett__DEE0F037A031DEF3")
                         .IsUnique()
                         .HasFilter("[UserSettingKey] IS NOT NULL");
@@ -1415,17 +1410,6 @@ namespace MoneyEz.Repositories.Migrations
                     b.ToTable("UserSpendingModel", (string)null);
                 });
 
-            modelBuilder.Entity("MoneyEz.Repositories.Entities.AssetAndLiability", b =>
-                {
-                    b.HasOne("MoneyEz.Repositories.Entities.User", "User")
-                        .WithMany("AssetAndLiabilities")
-                        .HasForeignKey("UserId")
-                        .IsRequired()
-                        .HasConstraintName("FK__AssetAndL__UserI__123EB7A3");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("MoneyEz.Repositories.Entities.ChatHistory", b =>
                 {
                     b.HasOne("MoneyEz.Repositories.Entities.User", "User")
@@ -1460,24 +1444,6 @@ namespace MoneyEz.Repositories.Migrations
                         .HasConstraintName("FK__Financial__UserI__7E37BEF6");
 
                     b.Navigation("Group");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("MoneyEz.Repositories.Entities.FinancialReport", b =>
-                {
-                    b.HasOne("MoneyEz.Repositories.Entities.GroupFund", "GroupFund")
-                        .WithMany("FinancialReports")
-                        .HasForeignKey("GroupId")
-                        .HasConstraintName("FK__FinancialReport__GroupFundId");
-
-                    b.HasOne("MoneyEz.Repositories.Entities.User", "User")
-                        .WithMany("FinancialReports")
-                        .HasForeignKey("UserId")
-                        .IsRequired()
-                        .HasConstraintName("FK__FinancialReport__UserId");
-
-                    b.Navigation("GroupFund");
 
                     b.Navigation("User");
                 });
@@ -1690,16 +1656,6 @@ namespace MoneyEz.Repositories.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MoneyEz.Repositories.Entities.UserSetting", b =>
-                {
-                    b.HasOne("MoneyEz.Repositories.Entities.User", "User")
-                        .WithMany("UserSettings")
-                        .HasForeignKey("UserId")
-                        .HasConstraintName("FK__UserSetting__UserId__12345678");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("MoneyEz.Repositories.Entities.UserSpendingModel", b =>
                 {
                     b.HasOne("MoneyEz.Repositories.Entities.SpendingModel", "SpendingModel")
@@ -1732,8 +1688,6 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.GroupFund", b =>
                 {
                     b.Navigation("FinancialGoals");
-
-                    b.Navigation("FinancialReports");
 
                     b.Navigation("GroupFundLogs");
 
@@ -1792,13 +1746,9 @@ namespace MoneyEz.Repositories.Migrations
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.User", b =>
                 {
-                    b.Navigation("AssetAndLiabilities");
-
                     b.Navigation("ChatHistories");
 
                     b.Navigation("FinancialGoals");
-
-                    b.Navigation("FinancialReports");
 
                     b.Navigation("GroupMembers");
 
@@ -1811,8 +1761,6 @@ namespace MoneyEz.Repositories.Migrations
                     b.Navigation("Transactions");
 
                     b.Navigation("UserQuizResults");
-
-                    b.Navigation("UserSettings");
 
                     b.Navigation("UserSpendingModels");
                 });
