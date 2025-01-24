@@ -39,6 +39,9 @@ namespace MoneyEz.Services.Constants
 
         public const string ACCCOUNT_CREATED_SUCCESS_MESSAGE = "Account created";
 
+        // update account
+        public const string ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Updated user successfully";
+
 
         // group
         public const string GROUP_NOT_EXIST = "Group Not Exist";
