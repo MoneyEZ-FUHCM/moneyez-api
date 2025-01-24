@@ -46,5 +46,11 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _categoryService.DeleteCategoryAsync(id));
         }
+
+        [HttpPost("bulk")]
+        public Task<IActionResult> AddListCategories([FromBody] List<CreateCategoryModel> models)
+        {
+            return ValidateAndExecute(() => _categoryService.AddListCategoriesAsync(models));
+        }
     }
 }

@@ -30,9 +30,6 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
 
         void PermanentDeletedListAsync(List<TEntity> entities);
 
-        Task<TEntity?> FindByConditionAsync(Expression<Func<TEntity, bool>> predicate);
-
-
         Task<Pagination<TEntity>> ToPagination(PaginationParameter paginationParameter);
 
         Task<Pagination<TEntity>> ToPaginationIncludeAsync(

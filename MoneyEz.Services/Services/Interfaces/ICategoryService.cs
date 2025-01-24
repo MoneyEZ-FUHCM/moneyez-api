@@ -11,5 +11,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> AddCategoryAsync(CreateCategoryModel model);
         Task<BaseResultModel> UpdateCategoryAsync(Guid id, UpdateCategoryModel model);
         Task<BaseResultModel> DeleteCategoryAsync(Guid id);
+        Task<BaseResultModel> AddListCategoriesAsync(List<CreateCategoryModel> models);
+
     }
 }
