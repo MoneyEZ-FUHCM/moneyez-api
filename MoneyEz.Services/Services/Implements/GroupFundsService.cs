@@ -11,6 +11,7 @@ using MoneyEz.Services.BusinessModels.ResultModels;
 using Microsoft.AspNetCore.Http;
 using MoneyEz.Services.Constants;
 using MoneyEz.Repositories.Enums;
+using MoneyEz.Services.Utils;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -58,9 +59,9 @@ namespace MoneyEz.Services.Services.Implements
                 Data = new GroupFund
                 {
                     Name = groupFund.Name,
+                    NameUnsign = StringUtils.ConvertToUnSign(groupFund.Name),
                     Description = groupFund.Description,
                     CurrentBalance = groupFund.CurrentBalance,
-                    Leader = groupFund.Leader,
                     Status = CommonsStatus.ACTIVE,
                     Visibility = VisibilityEnum.PUBLIC,
                 },
