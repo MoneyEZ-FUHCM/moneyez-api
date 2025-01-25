@@ -17,9 +17,16 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IDbContextTransaction _transaction;
 
         private IUserRepository _userRepository;
+
+        //spending model
+        private ISpendingModelRepository _spendingModelRepository;
+
+        //spending model category
+        private ISpendingModelCategoryRepository _spendingModelCategoryRepository;
+
         //category  
         private ICategoriesRepository _categoriesRepository;
-
+        
         public UnitOfWork(MoneyEzContext context) 
         { 
             _context = context;
@@ -31,6 +38,22 @@ namespace MoneyEz.Repositories.UnitOfWork
             {
                 return _userRepository ??= new UserRepository(_context);
 
+            }
+        }
+
+        public ISpendingModelRepository SpendingModelRepository
+        {
+            get
+            {
+                return _spendingModelRepository ??= new SpendingModelRepository(_context);
+            }
+        }
+
+        public ISpendingModelCategoryRepository SpendingModelCategoryRepository
+        {
+            get
+            {
+                return _spendingModelCategoryRepository ??= new SpendingModelCategoryRepository(_context);
             }
         }
 
