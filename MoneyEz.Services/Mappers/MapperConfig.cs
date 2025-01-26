@@ -16,6 +16,8 @@ namespace MoneyEz.Services.Mappers
         {
             // user mapper
             UserMapperConfig();
+            // spending model mapper
+            SpendingModelMapperConfig();
             //category mapper
             CategoryMapperConfig();
             // group fund mapper
@@ -25,6 +27,7 @@ namespace MoneyEz.Services.Mappers
         }
 
         partial void UserMapperConfig();
+        partial void SpendingModelMapperConfig();
         partial void CategoryMapperConfig();
         partial void GroupFundConfig();
     }
