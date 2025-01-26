@@ -33,6 +33,16 @@ namespace MoneyEz.Services.Constants
                 public const string ACCOUNT_EXISTED = "AccountAlreadyExisted";
                 public const string ACCOUNT_BLOCKED = "AccountWasBlocked";
 
+                // category
+                public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists";
+                public const string CATEGORY_CREATED_SUCCESS = "CategoryCreatedSuccessfully";
+                public const string CATEGORY_NOT_FOUND = "CategoryNotFound";
+                public const string CATEGORY_LIST_FETCHED_SUCCESS = "Category list fetched successfully.";
+                public const string CATEGORY_FETCHED_SUCCESS = "Category details fetched successfully.";
+                public const string CATEGORY_UPDATED_SUCCESS = "CategoryUpdatedSuccessfully";
+                public const string CATEGORY_DELETED_SUCCESS = "CategoryDeletedSuccessfully";
+                public const string CATEGORY_HAS_DEPENDENCIES = "CategoryHasDependencies";
+
                 // create account
                 public const string ACCOUNT_NOT_ENOUGH_AGE = "AccountMust16Age";
                 public const string DUPLICATE_PHONE_NUMBER = "DuplicatePhoneNumber";
@@ -41,6 +51,7 @@ namespace MoneyEz.Services.Constants
 
                 // update account
                 public const string ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Updated user successfully";
+
 
 
                 // group
