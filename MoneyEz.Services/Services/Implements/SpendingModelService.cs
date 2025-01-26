@@ -36,16 +36,30 @@ namespace MoneyEz.Services.Services.Implements
             // Map từ SpendingModel sang SpendingModelModel
             var result = _mapper.Map<Pagination<SpendingModelModel>>(spendingModels);
 
-            // Trả về kết quả
+            // Chuẩn bị metadata
+            var response = new ModelPaging
+            {
+                Data = result,
+                MetaData = new
+                {
+                    result.TotalCount,
+                    result.PageSize,
+                    result.CurrentPage,
+                    result.TotalPages,
+                    result.HasNext,
+                    result.HasPrevious
+                }
+            };
+
+            // Trả về BaseResultModel
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.SPENDING_MODEL_LIST_FETCHED_SUCCESS,
-                Data = result
+                Data = response
             };
         }
 
-        // GetSpendingModelByIdAsync
         public async Task<BaseResultModel> GetSpendingModelByIdAsync(Guid id)
         {
             // Lấy SpendingModel từ repository cùng các danh mục liên quan
@@ -130,10 +144,9 @@ namespace MoneyEz.Services.Services.Implements
                 Message = $"{newSpendingModels.Count} spending models were added successfully."
             };
         }
-
-        public async Task<BaseResultModel> UpdateSpendingModelAsync(Guid id, UpdateSpendingModelModel model)
+        public async Task<BaseResultModel> UpdateSpendingModelAsync(UpdateSpendingModelModel model)
         {
-            var spendingModel = await _unitOfWork.SpendingModelRepository.GetByIdAsync(id);
+            var spendingModel = await _unitOfWork.SpendingModelRepository.GetByIdAsync(model.Id);
             if (spendingModel == null || spendingModel.IsDeleted)
             {
                 return new BaseResultModel
@@ -146,7 +159,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var unsignName = model.NameUnsign; // Xử lý tự động từ model
             var allSpendingModels = await _unitOfWork.SpendingModelRepository.GetAllAsync();
-            if (allSpendingModels.Any(sm => sm.NameUnsign == unsignName && sm.Id != id))
+            if (allSpendingModels.Any(sm => sm.NameUnsign == unsignName && sm.Id != model.Id))
             {
                 return new BaseResultModel
                 {
@@ -197,7 +210,7 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            // Thực hiện xóa mềm SpendingModel
+            // Xóa mềm SpendingModel
             _unitOfWork.SpendingModelRepository.SoftDeleteAsync(spendingModel);
             _unitOfWork.Save();
 
@@ -208,7 +221,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> AddCategoriesToSpendingModelAsync(Guid spendingModelId, AddCategoriesToSpendingModelModel model)
+        public async Task<BaseResultModel> AddCategoriesToSpendingModelAsync(AddCategoriesToSpendingModelModel model)
         {
             if (model == null || model.CategoryIds == null || !model.CategoryIds.Any())
             {
@@ -237,7 +250,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var spendingModel = await _unitOfWork.SpendingModelRepository.GetByIdIncludeAsync(
-                spendingModelId,
+                model.SpendingModelId,
                 include: query => query.Include(sm => sm.SpendingModelCategories)
             );
 
@@ -306,7 +319,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     newCategories.Add(new SpendingModelCategory
                     {
-                        SpendingModelId = spendingModelId,
+                        SpendingModelId = model.SpendingModelId,
                         CategoryId = newCategoryIds[i],
                         PercentageAmount = model.PercentageAmounts[i]
                     });
@@ -316,7 +329,7 @@ namespace MoneyEz.Services.Services.Implements
             {
                 newCategories = newCategoryIds.Select(id => new SpendingModelCategory
                 {
-                    SpendingModelId = spendingModelId,
+                    SpendingModelId = model.SpendingModelId,
                     CategoryId = id,
                     PercentageAmount = 0
                 }).ToList();
@@ -332,10 +345,10 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> UpdateCategoryPercentageAsync(Guid spendingModelId, UpdateCategoryPercentageModel model)
+        public async Task<BaseResultModel> UpdateCategoryPercentageAsync(UpdateCategoryPercentageModel model)
         {
             var spendingModel = await _unitOfWork.SpendingModelRepository.GetByIdIncludeAsync(
-                spendingModelId,
+                 model.SpendingModelId,
                 include: query => query.Include(sm => sm.SpendingModelCategories)
             );
 
@@ -387,11 +400,11 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> RemoveCategoriesFromSpendingModelAsync(Guid spendingModelId, List<Guid> categoryIds)
+        public async Task<BaseResultModel> RemoveCategoriesFromSpendingModelAsync(RemoveCategoriesFromSpendingModelModel model)
         {
             // Lấy SpendingModel từ database cùng với các danh mục liên quan
             var spendingModel = await _unitOfWork.SpendingModelRepository.GetByIdIncludeAsync(
-                spendingModelId,
+                model.SpendingModelId,
                 include: query => query.Include(sm => sm.SpendingModelCategories)
             );
 
@@ -407,7 +420,7 @@ namespace MoneyEz.Services.Services.Implements
 
             // Lấy danh sách các danh mục hiện có trong SpendingModel
             var categoriesToRemove = spendingModel.SpendingModelCategories
-                .Where(smc => categoryIds.Contains(smc.CategoryId.Value))
+                .Where(smc => model.CategoryIds.Contains(smc.CategoryId.Value))
                 .ToList();
 
             if (!categoriesToRemove.Any())

@@ -6,8 +6,9 @@ namespace MoneyEz.Services.BusinessModels.SpendingModelModels
 {
     public class UpdateCategoryPercentageModel
     {
+        public Guid SpendingModelId { get; set; }
         [Required(ErrorMessage = "Danh sách danh mục là bắt buộc.")]
-        public List<CategoryPercentageModel> Categories { get; set; }
+        public required List<CategoryPercentageModel> Categories { get; set; }
     }
 
     public class CategoryPercentageModel

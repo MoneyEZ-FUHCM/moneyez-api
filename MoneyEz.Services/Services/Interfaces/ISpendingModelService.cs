@@ -9,10 +9,10 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetSpendingModelsPaginationAsync(PaginationParameter paginationParameter);
         Task<BaseResultModel> GetSpendingModelByIdAsync(Guid id);
         Task<BaseResultModel> AddSpendingModelsAsync(List<CreateSpendingModelModel> models);
-        Task<BaseResultModel> UpdateSpendingModelAsync(Guid id, UpdateSpendingModelModel model);
+        Task<BaseResultModel> UpdateSpendingModelAsync(UpdateSpendingModelModel model);
         Task<BaseResultModel> DeleteSpendingModelAsync(Guid id);
-        Task<BaseResultModel> AddCategoriesToSpendingModelAsync(Guid spendingModelId, AddCategoriesToSpendingModelModel model);
-        Task<BaseResultModel> UpdateCategoryPercentageAsync(Guid id, UpdateCategoryPercentageModel model);
-        Task<BaseResultModel> RemoveCategoriesFromSpendingModelAsync(Guid id, List<Guid> categoryIds);
+        Task<BaseResultModel> AddCategoriesToSpendingModelAsync(AddCategoriesToSpendingModelModel model);
+        Task<BaseResultModel> UpdateCategoryPercentageAsync(UpdateCategoryPercentageModel model);
+        Task<BaseResultModel> RemoveCategoriesFromSpendingModelAsync(RemoveCategoriesFromSpendingModelModel model);
     }
 }

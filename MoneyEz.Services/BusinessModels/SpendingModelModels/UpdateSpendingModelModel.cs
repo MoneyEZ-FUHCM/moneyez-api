@@ -6,8 +6,9 @@ namespace MoneyEz.Services.BusinessModels.SpendingModelModels
 {
     public class UpdateSpendingModelModel
     {
+        public Guid Id { get; set; }
         [Required(ErrorMessage = "Tên mô hình là bắt buộc.")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         public string Description { get; set; }
 

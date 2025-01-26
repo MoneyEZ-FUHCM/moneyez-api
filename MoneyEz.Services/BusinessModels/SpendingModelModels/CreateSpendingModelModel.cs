@@ -8,7 +8,7 @@ namespace MoneyEz.Services.BusinessModels.SpendingModelModels
     public class CreateSpendingModelModel
     {
         [Required(ErrorMessage = "Tên mô hình là bắt buộc.")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         public string Description { get; set; }
 

@@ -6,7 +6,7 @@ using MoneyEz.Services.Services.Interfaces;
 
 namespace MoneyEz.API.Controllers
 {
-    [Route("api/v1/spendingmodels")]
+    [Route("api/v1/spending-models")]
     [ApiController]
     public class SpendingModelsController : BaseController
     {
@@ -35,10 +35,10 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _spendingModelService.AddSpendingModelsAsync(models));
         }
 
-        [HttpPut("{id}")]
-        public Task<IActionResult> UpdateSpendingModel(Guid id, [FromBody] UpdateSpendingModelModel model)
+        [HttpPut]
+        public Task<IActionResult> UpdateSpendingModel([FromBody] UpdateSpendingModelModel model)
         {
-            return ValidateAndExecute(() => _spendingModelService.UpdateSpendingModelAsync(id, model));
+            return ValidateAndExecute(() => _spendingModelService.UpdateSpendingModelAsync(model));
         }
 
         [HttpDelete("{id}")]
@@ -47,22 +47,22 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _spendingModelService.DeleteSpendingModelAsync(id));
         }
 
-        [HttpPost("{id}/categories")]
-        public Task<IActionResult> AddCategoriesToSpendingModel(Guid id, [FromBody] AddCategoriesToSpendingModelModel model)
+        [HttpPost("categories")]
+        public Task<IActionResult> AddCategoriesToSpendingModel([FromBody] AddCategoriesToSpendingModelModel model)
         {
-            return ValidateAndExecute(() => _spendingModelService.AddCategoriesToSpendingModelAsync(id, model));
+            return ValidateAndExecute(() => _spendingModelService.AddCategoriesToSpendingModelAsync(model));
         }
 
-        [HttpPut("{id}/categories")]
-        public Task<IActionResult> UpdateCategoryPercentage(Guid id, [FromBody] UpdateCategoryPercentageModel model)
+        [HttpPut("categories")]
+        public Task<IActionResult> UpdateCategoryPercentage([FromBody] UpdateCategoryPercentageModel model)
         {
-            return ValidateAndExecute(() => _spendingModelService.UpdateCategoryPercentageAsync(id, model));
+            return ValidateAndExecute(() => _spendingModelService.UpdateCategoryPercentageAsync(model));
         }
 
-        [HttpDelete("{id}/categories")]
-        public Task<IActionResult> RemoveCategoriesFromSpendingModel(Guid id, [FromBody] List<Guid> categoryIds)
+        [HttpDelete("categories")]
+        public Task<IActionResult> RemoveCategoriesFromSpendingModel([FromBody] RemoveCategoriesFromSpendingModelModel model)
         {
-            return ValidateAndExecute(() => _spendingModelService.RemoveCategoriesFromSpendingModelAsync(id, categoryIds));
+            return ValidateAndExecute(() => _spendingModelService.RemoveCategoriesFromSpendingModelAsync(model));
         }
     }
 }
