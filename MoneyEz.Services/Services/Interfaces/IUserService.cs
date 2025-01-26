@@ -35,7 +35,7 @@ namespace MoneyEz.Services.Services.Interfaces
 
         //public Task<UserModel> GetLoginUserInformationAsync(string email);
 
-        //public Task<AuthenModel> LoginWithGoogle(string credental);
+        public Task<BaseResultModel> LoginWithGoogle(string credental);
 
         //public Task<bool> CancelEmailConfrimAsync(string email);
 
@@ -49,6 +49,8 @@ namespace MoneyEz.Services.Services.Interfaces
 
         public Task<BaseResultModel> UpdateUserAsync(UpdateUserModel model);
 
-        public Task<UserModel> DeleteUserAsync(int id, string currentEmail);
+        public Task<BaseResultModel> DeleteUserAsync(Guid id, string currentEmail);
+
+        public Task<BaseResultModel> BanUserAsync(Guid id, string currentEmail);
     }
 }

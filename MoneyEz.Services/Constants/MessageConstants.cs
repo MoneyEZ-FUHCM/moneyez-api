@@ -22,9 +22,10 @@ namespace MoneyEz.Services.Constants
                 public const string ACCOUNT_VERIFIED = "AccountVerified";
                 // authen
 
-               
+
 
                 public const string LOGIN_SUCCESS_MESSAGE = "Login successfully";
+                public const string LOGIN_GOOGLE_SUCCESS_MESSAGE = "Login with google successfully";
                 public const string TOKEN_REFRESH_SUCCESS_MESSAGE = "Token refresh successfully";
                 public const string REGISTER_SUCCESS_MESSAGE = "The OTP has been sent to your email. Please verify it to log in.";
                 public const string CHANGE_PASSWORD_SUCCESS = "Change password successfully";
@@ -68,7 +69,7 @@ namespace MoneyEz.Services.Constants
                 public const string CATEGORY_UPDATED_SUCCESS = "CategoryUpdatedSuccessfully";
                 public const string CATEGORY_DELETED_SUCCESS = "CategoryDeletedSuccessfully";
                 public const string CATEGORY_HAS_DEPENDENCIES = "CategoryHasDependencies";
-             
+
                 // create account
                 public const string ACCOUNT_NOT_ENOUGH_AGE = "AccountMust16Age";
                 public const string DUPLICATE_PHONE_NUMBER = "DuplicatePhoneNumber";
@@ -78,14 +79,5 @@ namespace MoneyEz.Services.Constants
                 // update account
                 public const string ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Updated user successfully";
 
-
-
-                // group
-                public const string GROUP_NOT_EXIST = "Group Not Exist";
-                public const string GROUP_EXISTED = "Group Already Existed";
-                public const string GROUP_MEMBER_NOT_EXIST = "Group Member Not Exist";
-                public const string GROUP_CREATE_SUCCESS = "Group created successfully";
-                public const string GROUP_UPDATE_SUCCESS = "Group updated successfully";
-                public const string GROUP_DELETE_SUCCESS = "Group deleted successfully";
         }
 }
