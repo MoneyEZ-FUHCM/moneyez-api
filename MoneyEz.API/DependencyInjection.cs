@@ -160,6 +160,18 @@ namespace MoneyEz.API
             // config otp service
             services.AddScoped<IOtpService, OtpService>();
 
+            // config group service
+            services.AddScoped<IGroupRepository, GroupRepository>();
+            services.AddScoped<IGroupFundsService, GroupFundsService>();
+
+
+            // config group log service
+            services.AddScoped<IGroupFundLogRepository, GroupFundLogRepository>();
+
+            //config group member service
+            services.AddScoped<IGroupMemberRepository, GroupMemberRepository>();
+            services.AddScoped<IGroupMemberService, GroupMemberService>();
+
             services.AddSignalR();
 
             #endregion

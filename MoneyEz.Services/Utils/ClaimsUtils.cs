@@ -18,5 +18,14 @@ namespace MoneyEz.Services.Utils
             }
             return null;
         }
+        public static string GetIdFromIdentity(ClaimsIdentity identity)
+        {
+            if (identity != null)
+            {
+                var userClaims = identity.Claims;
+                return userClaims.FirstOrDefault(x => x.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+            }
+            return null;
+        }
     }
 }
