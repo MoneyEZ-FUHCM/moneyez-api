@@ -75,5 +75,9 @@ namespace MoneyEz.Services.Constants
                 public const string CATEGORY_DELETED_SUCCESS = "CategoryDeletedSuccessfully";
                 public const string CATEGORY_HAS_DEPENDENCIES = "CategoryHasDependencies";
 
+
+                // group
+                public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
+
         }
 }

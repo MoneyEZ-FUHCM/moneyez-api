@@ -13,7 +13,7 @@ public partial class GroupMember : BaseEntity
 
     public decimal? ContributionPercentage { get; set; }
 
-    public RoleEnum? Role { get; set; }
+    public RoleGroup? Role { get; set; }
 
     public CommonsStatus? Status { get; set; }
 

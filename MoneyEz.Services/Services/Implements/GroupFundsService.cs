@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using MoneyEz.Services.Constants;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.Utils;
+using MoneyEz.Repositories.Utils;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -38,10 +39,10 @@ namespace MoneyEz.Services.Services.Implements
             {
                  new GroupMember
             {
-                UserId = _claimsService.GetCurrentUserId,
-                ContributionPercentage = 100, // Assuming the leader contributes 100%
-                Role = RoleEnum.ADMIN, // Assuming you have an enum for roles
-                Status = CommonsStatus.ACTIVE // Assuming you have an enum for status
+                UserId = _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail).Result.Id,
+                ContributionPercentage = 100,
+                Role = RoleGroup.LEADER,
+                Status = CommonsStatus.ACTIVE,
             }
             };
             groupFund.GroupFundLogs = new List<GroupFundLog>
@@ -49,21 +50,13 @@ namespace MoneyEz.Services.Services.Implements
                  new GroupFundLog
             {
                 ChangeDescription = "Group created",
-                ChangedAt = DateTime.UtcNow,
-                Group = groupFund,
+                ChangedAt = CommonUtils.GetCurrentTime(),
+                Action = GroupAction.CREATED,
+
             }
             };
 
-            // Check if the groupFund is null (which it shouldn't be due to the mapping)
-            if (groupFund == null)
-            {
-                // Return an error result if groupFund is null
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
-                };
-            }
+
 
             // Add the groupFund to the repository and save changes again
             await _unitOfWork.GroupRepository.AddAsync(groupFund);
@@ -82,7 +75,7 @@ namespace MoneyEz.Services.Services.Implements
                     Status = CommonsStatus.ACTIVE,
                     Visibility = VisibilityEnum.PRIVATE,
                 },
-                Message = MessageConstants.GROUP_CREATE_SUCCESS
+                Message = MessageConstants.GROUP_CREATE_SUCCESS_MESSAGE
             };
         }
     }

@@ -9,6 +9,5 @@ namespace MoneyEz.Services.Services.Interfaces
     public interface IClaimsService
     {
         public string GetCurrentUserEmail { get; }
-        public Guid GetCurrentUserId { get; }
     }
 }
