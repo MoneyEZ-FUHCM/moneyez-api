@@ -12,7 +12,7 @@ namespace MoneyEz.Services.Mappers
 {
     public partial class MapperConfig : Profile
     {
-        public MapperConfig() 
+        public MapperConfig()
         {
             // user mapper
             UserMapperConfig();
@@ -20,12 +20,16 @@ namespace MoneyEz.Services.Mappers
             SpendingModelMapperConfig();
             //category mapper
             CategoryMapperConfig();
+            // group fund mapper
+            GroupFundConfig();
+
             // transaction mapper
         }
 
         partial void UserMapperConfig();
         partial void SpendingModelMapperConfig();
         partial void CategoryMapperConfig();
+        partial void GroupFundConfig();
     }
 
     public class PaginationConverter<TSource, TDestination> : ITypeConverter<Pagination<TSource>, Pagination<TDestination>>

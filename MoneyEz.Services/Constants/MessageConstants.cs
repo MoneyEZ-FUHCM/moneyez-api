@@ -12,7 +12,6 @@ namespace MoneyEz.Services.Constants
         // syntax message: <CONSTANT_NAME_MESSAGE> = "Message here";
 
         // authen
-
         public const string ACCOUNT_NEED_CONFIRM_EMAIL = "AccountDoesNotVerifyEmail";
         public const string WRONG_PASSWORD = "PasswordIsIncorrect";
         public const string TOKEN_NOT_VALID = "TokenNotValid";
@@ -78,14 +77,8 @@ namespace MoneyEz.Services.Constants
         public const string CATEGORY_LIST_EMPTY = "CategoryListEmpty";
         public const string CATEGORY_DUPLICATE_IN_LIST = "CategoryDuplicateInList";
 
-        // create account
-        public const string ACCOUNT_NOT_ENOUGH_AGE = "AccountMust16Age";
-        public const string DUPLICATE_PHONE_NUMBER = "DuplicatePhoneNumber";
-
-        public const string ACCCOUNT_CREATED_SUCCESS_MESSAGE = "Account created";
-
-        // update account
-        public const string ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Updated user successfully";
+        // group
+        public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
 
     }
 }
