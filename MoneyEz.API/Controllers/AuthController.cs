@@ -28,6 +28,12 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _userService.LoginWithEmailPassword(loginModel.Email, loginModel.Password));
         }
 
+        [HttpPost("login/google")]
+        public Task<IActionResult> LoginWithGoogle([FromBody] string credential)
+        {
+            return ValidateAndExecute(() => _userService.LoginWithGoogle(credential));
+        }
+
         [HttpPost("register")]
         public Task<IActionResult> Register(SignUpModel signUpModel)
         {

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using FirebaseAdmin.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -60,21 +61,13 @@ namespace MoneyEz.Services.Services.Implements
 
                 if (existUser == null)
                 {
-                    return new BaseResultModel
-                    {
-                        Status = StatusCodes.Status404NotFound,
-                        ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
-                    };
+                    throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
                 }
 
                 // check account was verified
                 if (existUser.IsVerified == true)
                 {
-                    return new BaseResultModel
-                    {
-                        Status = StatusCodes.Status400BadRequest,
-                        ErrorCode = MessageConstants.ACCOUNT_VERIFIED
-                    };
+                    throw new DefaultException("", MessageConstants.ACCOUNT_VERIFIED);
                 }
 
                 // update verify email for user
@@ -118,27 +111,19 @@ namespace MoneyEz.Services.Services.Implements
             var userAge = CalculateAge(model.Dob);
             if (userAge < 16)
             {
-                throw new DefaultException(MessageConstants.ACCOUNT_NOT_ENOUGH_AGE);
+                throw new DefaultException("", MessageConstants.ACCOUNT_NOT_ENOUGH_AGE);
             }
 
             var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(model.Email);
 
             if (existUser != null)
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.ACCOUNT_VERIFIED
-                };
+                throw new DefaultException("", MessageConstants.ACCOUNT_VERIFIED);
             }
 
             if (CheckExistPhone(model.PhoneNumber).Result)
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.DUPLICATE_PHONE_NUMBER
-                };
+                throw new DefaultException("", MessageConstants.DUPLICATE_PHONE_NUMBER);
             }
 
             // generate password
@@ -164,13 +149,51 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Status = StatusCodes.Status200OK,
                 Data = _mapper.Map<UserModel>(newUser),
-                Message = MessageConstants.ACCCOUNT_CREATED_SUCCESS_MESSAGE
+                Message = MessageConstants.ACCOUNT_CREATED_SUCCESS_MESSAGE
             };
         }
 
-        public Task<UserModel> DeleteUserAsync(int id, string currentEmail)
+        public async Task<BaseResultModel> DeleteUserAsync(Guid id, string currentEmail)
         {
-            throw new NotImplementedException();
+            var existUser = await _unitOfWork.UsersRepository.GetByIdAsync(id);
+            if (existUser != null)
+            {
+                // check current user
+                if (existUser.Email == currentEmail)
+                {
+                    throw new DefaultException("Account is current user, can not delete", MessageConstants.ACCOUNT_CURRENT_USER);
+                }
+
+                // check confirm email
+                if (existUser.IsVerified == true)
+                {
+                    _unitOfWork.UsersRepository.SoftDeleteAsync(existUser);
+                    _unitOfWork.Save();
+
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status200OK,
+                        Data = _mapper.Map<UserModel>(existUser),
+                        Message = MessageConstants.ACCOUNT_DELETE_SUCCESS_MESSAGE,
+                    };
+                }
+                else
+                {
+                    _unitOfWork.UsersRepository.PermanentDeletedAsync(existUser);
+                    _unitOfWork.Save();
+
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status200OK,
+                        Data = _mapper.Map<UserModel>(existUser),
+                        Message = MessageConstants.ACCOUNT_DELETE_SUCCESS_MESSAGE,
+                    };
+                }
+            }
+            else
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
         }
 
         public async Task<BaseResultModel> GetUserByIdAsync(Guid id)
@@ -186,11 +209,7 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
-                };
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
         }
 
@@ -269,8 +288,6 @@ namespace MoneyEz.Services.Services.Implements
 
                 var accessToken = AuthenTokenUtils.GenerateAccessToken(email, existUser, _configuration);
                 var refreshToken = AuthenTokenUtils.GenerateRefreshToken(email, _configuration);
-
-                //_unitOfWork.Save();
 
                 return new BaseResultModel
                 {
@@ -362,20 +379,12 @@ namespace MoneyEz.Services.Services.Implements
 
             if (existUser != null)
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.ACCOUNT_EXISTED
-                };
+                throw new DefaultException("", MessageConstants.ACCOUNT_EXISTED);
             }
 
             if (CheckExistPhone(model.PhoneNumber).Result)
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.DUPLICATE_PHONE_NUMBER
-                };
+                throw new DefaultException("", MessageConstants.DUPLICATE_PHONE_NUMBER);
             }
 
             // hash password
@@ -413,20 +422,12 @@ namespace MoneyEz.Services.Services.Implements
                 }
                 else
                 {
-                    return new BaseResultModel
-                    {
-                        Status = StatusCodes.Status400BadRequest,
-                        ErrorCode = MessageConstants.OLD_PASSWORD_INVALID
-                    };
+                    throw new DefaultException("", MessageConstants.OLD_PASSWORD_INVALID);
                 }
             }
             else
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
-                };
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
         }
 
@@ -448,20 +449,12 @@ namespace MoneyEz.Services.Services.Implements
                 }
                 else
                 {
-                    return new BaseResultModel
-                    {
-                        Status = StatusCodes.Status400BadRequest,
-                        ErrorCode = MessageConstants.RESET_PASSWORD_FAILED
-                    };
+                    throw new DefaultException("", MessageConstants.RESET_PASSWORD_FAILED);
                 }
             }
             else
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
-                };
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
         }
 
@@ -478,11 +471,7 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status400BadRequest,
-                ErrorCode = MessageConstants.OTP_INVALID
-            };
+            throw new DefaultException("", MessageConstants.OTP_INVALID);
         }
 
         public async Task<BaseResultModel> ExecuteResetPassword(ResetPasswordModel resetPasswordModel)
@@ -501,31 +490,8 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
-                };
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
-        }
-
-        private static int CalculateAge(DateTime birthDate)
-        {
-            DateTime today = CommonUtils.GetCurrentTime();
-            int age = today.Year - birthDate.Year;
-
-            if (birthDate > today.AddYears(-age))
-            {
-                age--;
-            }
-            return age;
-        }
-
-        private async Task<bool> CheckExistPhone(string phoneNumber)
-        {
-            var users = await _unitOfWork.UsersRepository.GetAllAsync();
-            var existPhone = users.Find(x => x.PhoneNumber == phoneNumber);
-            return existPhone != null;
         }
 
         public async Task<BaseResultModel> UpdateUserAsync(UpdateUserModel model)
@@ -563,7 +529,129 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
-                throw new DefaultException(MessageConstants.ACCOUNT_NOT_EXIST);
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+        }
+
+        public async Task<BaseResultModel> BanUserAsync(Guid id, string currentEmail)
+        {
+            var existUser = await _unitOfWork.UsersRepository.GetByIdAsync(id);
+            if (existUser != null)
+            {
+                // check current user
+                if (existUser.Email == currentEmail)
+                {
+                    throw new DefaultException("Account is current user, can not ban", MessageConstants.ACCOUNT_CURRENT_USER);
+                }
+
+                // change status
+                existUser.Status = CommonsStatus.BLOCKED;
+
+                _unitOfWork.UsersRepository.UpdateAsync(existUser);
+                _unitOfWork.Save();
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = _mapper.Map<UserModel>(existUser),
+                    Message = MessageConstants.ACCOUNT_BAN_SUCCESS_MESSAGE,
+                };
+            }
+            else
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+        }
+        private static int CalculateAge(DateTime birthDate)
+        {
+            DateTime today = CommonUtils.GetCurrentTime();
+            int age = today.Year - birthDate.Year;
+
+            if (birthDate > today.AddYears(-age))
+            {
+                age--;
+            }
+            return age;
+        }
+
+        private async Task<bool> CheckExistPhone(string phoneNumber)
+        {
+            var users = await _unitOfWork.UsersRepository.GetAllAsync();
+            var existPhone = users.Find(x => x.PhoneNumber == phoneNumber);
+            return existPhone != null;
+        }
+
+        public async Task<BaseResultModel> LoginWithGoogle(string credental)
+        {
+            FirebaseToken decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(credental);
+
+            string uid = decodedToken.Uid;
+
+            UserRecord userGoogle = await FirebaseAuth.DefaultInstance.GetUserAsync(uid);
+
+            if (userGoogle == null)
+            {
+                throw new DefaultException("", MessageConstants.TOKEN_NOT_VALID);
+            }
+
+            var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userGoogle.Email);
+
+            if (existUser != null)
+            {
+
+                if (existUser.Status == CommonsStatus.BLOCKED)
+                {
+                    throw new DefaultException("", MessageConstants.ACCOUNT_BLOCKED);
+                }
+                else
+                {
+                    var accessToken = AuthenTokenUtils.GenerateAccessToken(existUser.Email, existUser, _configuration);
+                    var refreshToken = AuthenTokenUtils.GenerateRefreshToken(existUser.Email, _configuration);
+
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status200OK,
+                        Data = new AuthenModel
+                        {
+                            AccessToken = accessToken,
+                            RefreshToken = refreshToken
+                        },
+                        Message = MessageConstants.LOGIN_SUCCESS_MESSAGE
+                    };
+                }
+            }
+            else
+            {
+                var newUser = new User
+                {
+                    Email = userGoogle.Email,
+                    IsVerified = userGoogle.EmailVerified,
+                    FullName = userGoogle.DisplayName,
+                    NameUnsign = StringUtils.ConvertToUnSign(userGoogle.DisplayName),
+                    AvatarUrl = userGoogle.PhotoUrl,
+                    Status = CommonsStatus.ACTIVE,
+                    GoogleId = userGoogle.Uid,
+                    Role = RolesEnum.USER
+                };
+
+                await _unitOfWork.UsersRepository.AddAsync(newUser);
+                _unitOfWork.Save();
+
+                // create accesstoken
+                var accessToken = AuthenTokenUtils.GenerateAccessToken(newUser.Email, newUser, _configuration);
+                var refreshToken = AuthenTokenUtils.GenerateRefreshToken(newUser.Email, _configuration);
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = new AuthenModel
+                    {
+                        AccessToken = accessToken,
+                        RefreshToken = refreshToken
+                    },
+                    Message = MessageConstants.LOGIN_GOOGLE_SUCCESS_MESSAGE
+                };
+
             }
         }
     }

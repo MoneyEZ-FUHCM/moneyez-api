@@ -26,7 +26,11 @@ namespace MoneyEz.API.Middlewares
             }
             catch (DefaultException ex)
             {
-                await HandleExceptionAsync(context, ex, StatusCodes.Status400BadRequest);
+                await HandleDefaultExceptionAsync(context, ex, StatusCodes.Status400BadRequest);
+            }
+            catch (NotExistException ex)
+            {
+                await HandleNotExistExceptionAsync(context, ex, StatusCodes.Status404NotFound);
             }
             catch (Exception ex)
             {
@@ -42,6 +46,50 @@ namespace MoneyEz.API.Middlewares
             var response = new BaseResultModel
             {
                 Status = statusCode,
+                Message = exception.Message,
+            };
+
+            var jsonResponse = JsonConvert.SerializeObject(response, new JsonSerializerSettings
+            {
+                ContractResolver = new DefaultContractResolver
+                {
+                    NamingStrategy = new CamelCaseNamingStrategy()
+                }
+            });
+            return context.Response.WriteAsync(jsonResponse);
+        }
+
+        private static Task HandleDefaultExceptionAsync(HttpContext context, DefaultException exception, int statusCode)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = statusCode;
+
+            var response = new BaseResultModel
+            {
+                Status = statusCode,
+                ErrorCode = exception.ErrorCode,
+                Message = exception.Message,
+            };
+
+            var jsonResponse = JsonConvert.SerializeObject(response, new JsonSerializerSettings
+            {
+                ContractResolver = new DefaultContractResolver
+                {
+                    NamingStrategy = new CamelCaseNamingStrategy()
+                }
+            });
+            return context.Response.WriteAsync(jsonResponse);
+        }
+
+        private static Task HandleNotExistExceptionAsync(HttpContext context, NotExistException exception, int statusCode)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = statusCode;
+
+            var response = new BaseResultModel
+            {
+                Status = statusCode,
+                ErrorCode = exception.ErrorCode,
                 Message = exception.Message,
             };
 
