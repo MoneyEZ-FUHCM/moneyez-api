@@ -16,8 +16,8 @@ jobs:
 
       - name: Create firebase-adminsdk.json
         run: |
-          mkdir -p ./MoneyEz.API
-          echo "${{ secrets.GOOGLE_CREDENTIALS }}" > ./MoneyEz.API/firebase-adminsdk.json
+            mkdir -p ./MoneyEz.API
+            echo "${{ secrets.GOOGLE_CREDENTIALS }}" | base64 --decode > ./MoneyEz.API/firebase-adminsdk.json
 
       # Set up Docker Buildx
       - name: Set up Docker Buildx
