@@ -17,7 +17,6 @@ namespace MoneyEz.Services.BusinessModels.GroupMember
         public string Name { get; set; }
         [Display(Name = "Description")]
         public string Description { get; set; }
-
         [Range(0, double.MaxValue, ErrorMessage = "Số dư hiện tại không hợp lệ.")]
         public decimal? CurrentBalance { get; set; }
 

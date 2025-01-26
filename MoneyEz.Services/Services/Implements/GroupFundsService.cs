@@ -30,15 +30,29 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> CreateGroupFundsAsync(CreateGroupModel model)
         {
-            // Map the incoming model to a GroupFund entity
-            var groupEntity = _mapper.Map<GroupFund>(model);
 
-            // Add the new group entity to the repository and save changes
-            await _unitOfWork.GroupRepository.AddAsync(groupEntity);
-            await _unitOfWork.SaveAsync();
 
             // Map the model to a new GroupFund entity and set its Id to the one generated for groupEntity
             var groupFund = _mapper.Map<GroupFund>(model);
+            groupFund.GroupMembers = new List<GroupMember>
+            {
+                 new GroupMember
+            {
+                UserId = _claimsService.GetCurrentUserId,
+                ContributionPercentage = 100, // Assuming the leader contributes 100%
+                Role = RoleEnum.ADMIN, // Assuming you have an enum for roles
+                Status = CommonsStatus.ACTIVE // Assuming you have an enum for status
+            }
+            };
+            groupFund.GroupFundLogs = new List<GroupFundLog>
+            {
+                 new GroupFundLog
+            {
+                ChangeDescription = "Group created",
+                ChangedAt = DateTime.UtcNow,
+                Group = groupFund,
+            }
+            };
 
             // Check if the groupFund is null (which it shouldn't be due to the mapping)
             if (groupFund == null)
@@ -50,38 +64,15 @@ namespace MoneyEz.Services.Services.Implements
                     ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
                 };
             }
-            // Create a new GroupMember entity
-            var groupMember = new GroupMember
-            {
-                GroupId = groupEntity.Id,
-                UserId = _claimsService.GetCurrentUserId,
-                ContributionPercentage = 100, // Assuming the leader contributes 100%
-                Role = RoleEnum.ADMIN, // Assuming you have an enum for roles
-                Status = CommonsStatus.ACTIVE // Assuming you have an enum for status
-            };
-
-            // Add the GroupMember entry to the repository and save changes
-            await _unitOfWork.GroupMemberRepository.AddAsync(groupMember);
-            await _unitOfWork.SaveAsync();
-
-            var groupFundLog = new GroupFundLog
-            {
-                GroupId = groupEntity.Id,
-                ChangeDescription = "Group created",
-                ChangedAt = DateTime.UtcNow
-            };
-            // Add the GroupFundLog entry to the repository and save changes
-            await _unitOfWork.GroupFundLogRepository.AddAsync(groupFundLog);
 
             // Add the groupFund to the repository and save changes again
             await _unitOfWork.GroupRepository.AddAsync(groupFund);
-            await _unitOfWork.SaveAsync();
-
+            _unitOfWork.Save();
 
             // Return a success result with the created groupFund
             return new BaseResultModel
             {
-                Status = StatusCodes.Status200OK,
+                Status = StatusCodes.Status201Created,
                 Data = new GroupFund
                 {
                     Name = groupFund.Name,
@@ -89,7 +80,7 @@ namespace MoneyEz.Services.Services.Implements
                     Description = groupFund.Description,
                     CurrentBalance = groupFund.CurrentBalance,
                     Status = CommonsStatus.ACTIVE,
-                    Visibility = VisibilityEnum.PUBLIC,
+                    Visibility = VisibilityEnum.PRIVATE,
                 },
                 Message = MessageConstants.GROUP_CREATE_SUCCESS
             };
