@@ -8,10 +8,10 @@ namespace MoneyEz.Services.Utils
 {
     public class NumberUtils
     {
-        public static int GenerateSixDigitNumber()
+        public static int GenerateFiveDigitNumber()
         {
             Random random = new Random();
-            int number = random.Next(100000, 1000000);
+            int number = random.Next(10000, 100000);
             return number;
         }
 
