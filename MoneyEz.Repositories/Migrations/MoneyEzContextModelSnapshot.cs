@@ -37,8 +37,8 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
@@ -75,6 +75,8 @@ namespace MoneyEz.Repositories.Migrations
                     b.HasKey("Id")
                         .HasName("PK__AssetAnd__3214EC0799645AEF");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("AssetAndLiability", (string)null);
                 });
 
@@ -95,9 +97,6 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
-
-                    b.Property<Guid?>("ModelId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -221,8 +220,8 @@ namespace MoneyEz.Repositories.Migrations
                         .HasColumnType("decimal(15, 2)")
                         .HasDefaultValue(0m);
 
-                    b.Property<DateOnly>("Deadline")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("Deadline")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid?>("GroupId")
                         .HasColumnType("uniqueidentifier");
@@ -273,8 +272,8 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateOnly>("EndDate")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid?>("GroupId")
                         .HasColumnType("uniqueidentifier");
@@ -297,8 +296,8 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<int?>("ReportType")
                         .HasColumnType("int");
 
-                    b.Property<DateOnly>("StartDate")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<decimal>("TotalExpense")
                         .HasColumnType("decimal(15, 2)");
@@ -317,6 +316,10 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.HasKey("Id")
                         .HasName("PK__Financia__3214EC07A6D22F10");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("FinancialReport", (string)null);
                 });
@@ -1202,6 +1205,10 @@ namespace MoneyEz.Repositories.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<string>("AvatarUrl")
                         .HasColumnType("nvarchar(max)");
 
@@ -1227,6 +1234,9 @@ namespace MoneyEz.Repositories.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Gender")
+                        .HasColumnType("int");
 
                     b.Property<string>("GoogleId")
                         .HasMaxLength(200)
@@ -1351,6 +1361,8 @@ namespace MoneyEz.Repositories.Migrations
                     b.HasKey("Id")
                         .HasName("PK__UserSett__3214EC0752B59B0B");
 
+                    b.HasIndex("UserId");
+
                     b.HasIndex(new[] { "UserSettingKey" }, "UQ__UserSett__DEE0F037A031DEF3")
                         .IsUnique()
                         .HasFilter("[UserSettingKey] IS NOT NULL");
@@ -1407,6 +1419,17 @@ namespace MoneyEz.Repositories.Migrations
                     b.ToTable("UserSpendingModel", (string)null);
                 });
 
+            modelBuilder.Entity("MoneyEz.Repositories.Entities.AssetAndLiability", b =>
+                {
+                    b.HasOne("MoneyEz.Repositories.Entities.User", "User")
+                        .WithMany("AssetAndLiabilities")
+                        .HasForeignKey("UserId")
+                        .IsRequired()
+                        .HasConstraintName("FK__AssetAndL__UserI__123EB7A3");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MoneyEz.Repositories.Entities.ChatHistory", b =>
                 {
                     b.HasOne("MoneyEz.Repositories.Entities.User", "User")
@@ -1441,6 +1464,24 @@ namespace MoneyEz.Repositories.Migrations
                         .HasConstraintName("FK__Financial__UserI__7E37BEF6");
 
                     b.Navigation("Group");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MoneyEz.Repositories.Entities.FinancialReport", b =>
+                {
+                    b.HasOne("MoneyEz.Repositories.Entities.GroupFund", "GroupFund")
+                        .WithMany("FinancialReports")
+                        .HasForeignKey("GroupId")
+                        .HasConstraintName("FK__FinancialReport__GroupFundId");
+
+                    b.HasOne("MoneyEz.Repositories.Entities.User", "User")
+                        .WithMany("FinancialReports")
+                        .HasForeignKey("UserId")
+                        .IsRequired()
+                        .HasConstraintName("FK__FinancialReport__UserId");
+
+                    b.Navigation("GroupFund");
 
                     b.Navigation("User");
                 });
@@ -1653,6 +1694,16 @@ namespace MoneyEz.Repositories.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("MoneyEz.Repositories.Entities.UserSetting", b =>
+                {
+                    b.HasOne("MoneyEz.Repositories.Entities.User", "User")
+                        .WithMany("UserSettings")
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("FK__UserSetting__UserId__12345678");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MoneyEz.Repositories.Entities.UserSpendingModel", b =>
                 {
                     b.HasOne("MoneyEz.Repositories.Entities.SpendingModel", "SpendingModel")
@@ -1685,6 +1736,8 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.GroupFund", b =>
                 {
                     b.Navigation("FinancialGoals");
+
+                    b.Navigation("FinancialReports");
 
                     b.Navigation("GroupFundLogs");
 
@@ -1743,9 +1796,13 @@ namespace MoneyEz.Repositories.Migrations
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.User", b =>
                 {
+                    b.Navigation("AssetAndLiabilities");
+
                     b.Navigation("ChatHistories");
 
                     b.Navigation("FinancialGoals");
+
+                    b.Navigation("FinancialReports");
 
                     b.Navigation("GroupMembers");
 
@@ -1758,6 +1815,8 @@ namespace MoneyEz.Repositories.Migrations
                     b.Navigation("Transactions");
 
                     b.Navigation("UserQuizResults");
+
+                    b.Navigation("UserSettings");
 
                     b.Navigation("UserSpendingModels");
                 });

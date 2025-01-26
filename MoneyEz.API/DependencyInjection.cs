@@ -143,6 +143,17 @@ namespace MoneyEz.API
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IUserService, UserService>();
 
+            //config spending model service
+            services.AddScoped<ISpendingModelService, SpendingModelService>();
+            services.AddScoped<ISpendingModelRepository, SpendingModelRepository>();
+
+            //config spending model category service
+            services.AddScoped<ISpendingModelCategoryRepository, SpendingModelCategoryRepository>();
+
+            // config category service
+            services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<ICategoriesRepository, CategoriesRepository>();
+
             // config mail service
             services.AddScoped<IMailService, MailService>();
 

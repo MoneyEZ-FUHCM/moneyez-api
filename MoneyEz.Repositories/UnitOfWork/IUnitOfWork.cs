@@ -13,6 +13,15 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         IUserRepository UsersRepository { get; }
 
+        //spending model
+        ISpendingModelRepository SpendingModelRepository { get; }
+
+        //spending model category
+        ISpendingModelCategoryRepository SpendingModelCategoryRepository { get; }
+
+        //category
+        ICategoriesRepository CategoriesRepository { get; }
+
         int Save();
         void Commit();
         void Rollback();
