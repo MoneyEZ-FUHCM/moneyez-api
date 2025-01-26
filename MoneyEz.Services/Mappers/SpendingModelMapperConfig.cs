@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Services.BusinessModels.SpendingModelModels;
@@ -19,6 +20,7 @@ namespace MoneyEz.Services.Mappers
                 .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => src.NameUnsign))
                 .ForMember(dest => dest.IsTemplate, opt => opt.MapFrom(src => src.IsTemplate));
 
+
             // Map từ SpendingModel -> SpendingModelModel
             CreateMap<SpendingModel, SpendingModelModel>()
                 .ForMember(dest => dest.Categories, opt => opt.MapFrom(src => src.SpendingModelCategories.Select(smc => new SpendingModelCategoryModel
@@ -37,6 +39,10 @@ namespace MoneyEz.Services.Mappers
                         UpdatedBy = smc.Category.UpdatedBy
                     }
                 })));
+
+            // Map từ Pagination<SpendingModel> -> Pagination<SpendingModelModel>
+            CreateMap<Pagination<SpendingModel>, Pagination<SpendingModelModel>>()
+              .ConvertUsing<PaginationConverter<SpendingModel, SpendingModelModel>>();
         }
     }
 }

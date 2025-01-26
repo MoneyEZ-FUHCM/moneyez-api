@@ -36,16 +36,30 @@ namespace MoneyEz.Services.Services.Implements
             // Map từ SpendingModel sang SpendingModelModel
             var result = _mapper.Map<Pagination<SpendingModelModel>>(spendingModels);
 
-            // Trả về kết quả
+            // Chuẩn bị metadata
+            var response = new ModelPaging
+            {
+                Data = result,
+                MetaData = new
+                {
+                    result.TotalCount,
+                    result.PageSize,
+                    result.CurrentPage,
+                    result.TotalPages,
+                    result.HasNext,
+                    result.HasPrevious
+                }
+            };
+
+            // Trả về BaseResultModel
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.SPENDING_MODEL_LIST_FETCHED_SUCCESS,
-                Data = result
+                Data = response
             };
         }
 
-        // GetSpendingModelByIdAsync
         public async Task<BaseResultModel> GetSpendingModelByIdAsync(Guid id)
         {
             // Lấy SpendingModel từ repository cùng các danh mục liên quan
@@ -197,7 +211,7 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            // Thực hiện xóa mềm SpendingModel
+            // Xóa mềm SpendingModel
             _unitOfWork.SpendingModelRepository.SoftDeleteAsync(spendingModel);
             _unitOfWork.Save();
 
