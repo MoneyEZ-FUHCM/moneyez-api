@@ -18,6 +18,15 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         private IUserRepository _userRepository;
 
+        //spending model
+        private ISpendingModelRepository _spendingModelRepository;
+
+        //spending model category
+        private ISpendingModelCategoryRepository _spendingModelCategoryRepository;
+
+        //category  
+        private ICategoriesRepository _categoriesRepository;
+        
         public UnitOfWork(MoneyEzContext context) 
         { 
             _context = context;
@@ -32,6 +41,29 @@ namespace MoneyEz.Repositories.UnitOfWork
             }
         }
 
+        public ISpendingModelRepository SpendingModelRepository
+        {
+            get
+            {
+                return _spendingModelRepository ??= new SpendingModelRepository(_context);
+            }
+        }
+
+        public ISpendingModelCategoryRepository SpendingModelCategoryRepository
+        {
+            get
+            {
+                return _spendingModelCategoryRepository ??= new SpendingModelCategoryRepository(_context);
+            }
+        }
+
+        public ICategoriesRepository CategoriesRepository
+        {
+            get
+            {
+                return _categoriesRepository ??= new CategoriesRepository(_context);
+            }
+        }
         public void Commit()
         {
             try

@@ -37,8 +37,8 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
@@ -97,9 +97,6 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
-
-                    b.Property<Guid?>("ModelId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -223,8 +220,8 @@ namespace MoneyEz.Repositories.Migrations
                         .HasColumnType("decimal(15, 2)")
                         .HasDefaultValue(0m);
 
-                    b.Property<DateOnly>("Deadline")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("Deadline")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid?>("GroupId")
                         .HasColumnType("uniqueidentifier");
@@ -275,8 +272,8 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateOnly>("EndDate")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid?>("GroupId")
                         .HasColumnType("uniqueidentifier");
@@ -299,8 +296,8 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<int?>("ReportType")
                         .HasColumnType("int");
 
-                    b.Property<DateOnly>("StartDate")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<decimal>("TotalExpense")
                         .HasColumnType("decimal(15, 2)");
@@ -1208,6 +1205,10 @@ namespace MoneyEz.Repositories.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<string>("AvatarUrl")
                         .HasColumnType("nvarchar(max)");
 
@@ -1233,6 +1234,9 @@ namespace MoneyEz.Repositories.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Gender")
+                        .HasColumnType("int");
 
                     b.Property<string>("GoogleId")
                         .HasMaxLength(200)
