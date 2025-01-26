@@ -15,8 +15,6 @@ namespace MoneyEz.Services.BusinessModels.CategoryModels
 
         public string Description { get; set; } // Mô tả mới
 
-        public Guid? ModelId { get; set; } // Mô hình liên quan (nếu có)
-
         // Tương tự CreateCategoryModel, `NameUnsign` được xử lý tự động
         public string NameUnsign => StringUtils.ConvertToUnSign(Name);
     }

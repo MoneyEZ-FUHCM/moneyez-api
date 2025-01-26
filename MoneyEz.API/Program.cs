@@ -1,3 +1,6 @@
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
+using Microsoft.AspNetCore.Builder.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.API;
 using MoneyEz.API.Middlewares;
@@ -33,6 +36,12 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddWebAPIService(builder);
 builder.Services.AddInfractstructure(builder.Configuration);
+
+// config firebase
+FirebaseApp.Create(new AppOptions()
+{
+    Credential = GoogleCredential.FromFile("firebase-adminsdk.json")
+});
 
 var app = builder.Build();
 
