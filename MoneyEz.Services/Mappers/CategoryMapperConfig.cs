@@ -8,12 +8,15 @@ namespace MoneyEz.Services.Mappers
     {
         partial void CategoryMapperConfig()
         {
+            // Map từ CreateCategoryModel -> Category
             CreateMap<CreateCategoryModel, Category>()
                 .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => src.NameUnsign));
 
+            // Map từ UpdateCategoryModel -> Category
             CreateMap<UpdateCategoryModel, Category>()
                 .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => src.NameUnsign));
 
+            // Map từ Category -> CategoryModel
             CreateMap<Category, CategoryModel>();
         }
     }
