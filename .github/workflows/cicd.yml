@@ -14,6 +14,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create firebase-adminsdk.json
+        run: |
+            mkdir -p ./MoneyEz.API
+            echo "${{ secrets.GOOGLE_CREDENTIALS }}" | base64 --decode > ./MoneyEz.API/firebase-adminsdk.json
+
       # Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
