@@ -125,12 +125,20 @@ namespace MoneyEz.Services.Services.Implements
 
             if (existUser != null)
             {
-                throw new DefaultException(MessageConstants.ACCOUNT_EXISTED);
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.ACCOUNT_VERIFIED
+                };
             }
 
             if (CheckExistPhone(model.PhoneNumber).Result)
             {
-                throw new DefaultException(MessageConstants.DUPLICATE_PHONE_NUMBER);
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.DUPLICATE_PHONE_NUMBER
+                };
             }
 
             // generate password
@@ -255,7 +263,7 @@ namespace MoneyEz.Services.Services.Implements
                     return new BaseResultModel
                     {
                         Status = StatusCodes.Status401Unauthorized,
-                        Message = MessageConstants.ACCOUNT_NEED_CONFIRM_EMAIL
+                        ErrorCode = MessageConstants.ACCOUNT_NEED_CONFIRM_EMAIL
                     };
                 }
 
@@ -354,12 +362,20 @@ namespace MoneyEz.Services.Services.Implements
 
             if (existUser != null)
             {
-                throw new DefaultException(MessageConstants.ACCOUNT_EXISTED);
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.ACCOUNT_EXISTED
+                };
             }
 
             if (CheckExistPhone(model.PhoneNumber).Result)
             {
-                throw new DefaultException(MessageConstants.DUPLICATE_PHONE_NUMBER);
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.DUPLICATE_PHONE_NUMBER
+                };
             }
 
             // hash password
