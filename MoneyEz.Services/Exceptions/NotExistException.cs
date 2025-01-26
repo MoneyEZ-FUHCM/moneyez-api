@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace MoneyEz.Services.Exceptions
 {
-    public class DefaultException : Exception
+    public class NotExistException : Exception
     {
-        public DefaultException(string message) : base(message) { }
+        public NotExistException(string message) : base(message) { }
 
-        public DefaultException(string message, string errorCode) : base(message)
+        public NotExistException(string message, string errorCode) : base(message)
         {
             ErrorCode = errorCode;
         }
