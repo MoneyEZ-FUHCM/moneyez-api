@@ -20,9 +20,6 @@ namespace MoneyEz.Services.Constants
                 public const string OLD_PASSWORD_INVALID = "OldPasswordInvalid";
                 public const string RESET_PASSWORD_FAILED = "CanNotResetPassword";
                 public const string ACCOUNT_VERIFIED = "AccountVerified";
-                // authen
-
-
 
                 public const string LOGIN_SUCCESS_MESSAGE = "Login successfully";
                 public const string LOGIN_GOOGLE_SUCCESS_MESSAGE = "Login with google successfully";
@@ -36,6 +33,14 @@ namespace MoneyEz.Services.Constants
                 public const string ACCOUNT_NOT_EXIST = "AccountNotExist";
                 public const string ACCOUNT_EXISTED = "AccountAlreadyExisted";
                 public const string ACCOUNT_BLOCKED = "AccountWasBlocked";
+                public const string ACCOUNT_NOT_ENOUGH_AGE = "AccountMust16Age";
+                public const string DUPLICATE_PHONE_NUMBER = "DuplicatePhoneNumber";
+                public const string ACCOUNT_CURRENT_USER = "AccountIsCurrentUser";
+
+                public const string ACCOUNT_CREATED_SUCCESS_MESSAGE = "Account created";
+                public const string ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Updated user successfully";
+                public const string ACCOUNT_DELETE_SUCCESS_MESSAGE = "Deleted user successfully";
+                public const string ACCOUNT_BAN_SUCCESS_MESSAGE = "Banned user successfully";
 
                 // Spending model
                 public const string SPENDING_MODEL_LIST_FETCHED_SUCCESS = "SpendingModelListFetched"; //Spending model list fetched successfully.
@@ -69,15 +74,6 @@ namespace MoneyEz.Services.Constants
                 public const string CATEGORY_UPDATED_SUCCESS = "CategoryUpdatedSuccessfully";
                 public const string CATEGORY_DELETED_SUCCESS = "CategoryDeletedSuccessfully";
                 public const string CATEGORY_HAS_DEPENDENCIES = "CategoryHasDependencies";
-
-                // create account
-                public const string ACCOUNT_NOT_ENOUGH_AGE = "AccountMust16Age";
-                public const string DUPLICATE_PHONE_NUMBER = "DuplicatePhoneNumber";
-
-                public const string ACCCOUNT_CREATED_SUCCESS_MESSAGE = "Account created";
-
-                // update account
-                public const string ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Updated user successfully";
 
         }
 }
