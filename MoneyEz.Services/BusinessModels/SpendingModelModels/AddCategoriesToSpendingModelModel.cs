@@ -6,6 +6,7 @@ namespace MoneyEz.Services.BusinessModels.SpendingModelModels
 {
     public class AddCategoriesToSpendingModelModel
     {
+        public Guid SpendingModelId { get; set; }
 
         [Required(ErrorMessage = "The list of category IDs cannot be empty.")]
         public List<Guid> CategoryIds { get; set; } // Danh sách các CategoryId cần thêm
