@@ -17,9 +17,12 @@ namespace MoneyEz.Services.Services.Implements
             // todo implementation to get the current userId
             var identity = httpContextAccessor.HttpContext?.User?.Identity as ClaimsIdentity;
             var extractedId = ClaimsUtils.GetEmailFromIdentity(identity);
+
             GetCurrentUserEmail = extractedId;
         }
 
         public string GetCurrentUserEmail { get; }
+
+        public Guid GetCurrentUserId { get; }
     }
 }

@@ -20,7 +20,8 @@ namespace MoneyEz.Repositories.UnitOfWork
         //category  
         private ICategoriesRepository _categoriesRepository;
         private IGroupRepository _groupRepository;
-
+        private IGroupFundLogRepository _groupFundLogRepository;
+        private IGroupMemberRepository _groupMemberRepository;
 
         public UnitOfWork(MoneyEzContext context)
         {
@@ -48,6 +49,20 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _groupRepository ??= new GroupRepository(_context);
+            }
+        }
+        public IGroupFundLogRepository GroupFundLogRepository
+        {
+            get
+            {
+                return _groupFundLogRepository ??= new GroupFundLogRepository(_context);
+            }
+        }
+        public IGroupMemberRepository GroupMemberRepository
+        {
+            get
+            {
+                return _groupMemberRepository ??= new GroupMemberRepository(_context);
             }
         }
         public void Commit()

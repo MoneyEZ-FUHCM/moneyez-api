@@ -17,4 +17,9 @@ namespace MoneyEz.Repositories.Enums
         PUBLIC,
         PRIVATE
     }
+    public enum RoleEnum
+    {
+        ADMIN,
+        MEMBER
+    }
 }

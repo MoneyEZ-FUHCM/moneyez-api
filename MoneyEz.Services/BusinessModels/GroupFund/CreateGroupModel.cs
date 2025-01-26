@@ -21,8 +21,5 @@ namespace MoneyEz.Services.BusinessModels.GroupMember
         [Range(0, double.MaxValue, ErrorMessage = "Số dư hiện tại không hợp lệ.")]
         public decimal? CurrentBalance { get; set; }
 
-        [Required(ErrorMessage = "Vui lòng nhập mã trưởng nhóm.")]
-        [Display(Name = "Leader")]
-        public int Leader { get; set; }
     }
 }

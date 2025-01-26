@@ -19,12 +19,15 @@ namespace MoneyEz.Services.Services.Implements
     {
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IClaimsService _claimsService;
 
-        public GroupFundsService(IMapper mapper, IUnitOfWork unitOfWork)
+        public GroupFundsService(IMapper mapper, IUnitOfWork unitOfWork, IClaimsService claimsService)
         {
             _mapper = mapper;
             _unitOfWork = unitOfWork;
+            _claimsService = claimsService;
         }
+
         public async Task<BaseResultModel> CreateGroupFundsAsync(CreateGroupModel model)
         {
             // Map the incoming model to a GroupFund entity
@@ -47,10 +50,33 @@ namespace MoneyEz.Services.Services.Implements
                     ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST
                 };
             }
+            // Create a new GroupMember entity
+            var groupMember = new GroupMember
+            {
+                GroupId = groupEntity.Id,
+                UserId = _claimsService.GetCurrentUserId,
+                ContributionPercentage = 100, // Assuming the leader contributes 100%
+                Role = RoleEnum.ADMIN, // Assuming you have an enum for roles
+                Status = CommonsStatus.ACTIVE // Assuming you have an enum for status
+            };
+
+            // Add the GroupMember entry to the repository and save changes
+            await _unitOfWork.GroupMemberRepository.AddAsync(groupMember);
+            await _unitOfWork.SaveAsync();
+
+            var groupFundLog = new GroupFundLog
+            {
+                GroupId = groupEntity.Id,
+                ChangeDescription = "Group created",
+                ChangedAt = DateTime.UtcNow
+            };
+            // Add the GroupFundLog entry to the repository and save changes
+            await _unitOfWork.GroupFundLogRepository.AddAsync(groupFundLog);
 
             // Add the groupFund to the repository and save changes again
             await _unitOfWork.GroupRepository.AddAsync(groupFund);
             await _unitOfWork.SaveAsync();
+
 
             // Return a success result with the created groupFund
             return new BaseResultModel

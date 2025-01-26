@@ -2,6 +2,7 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using MoneyEz.Repositories.Enums;
 
 namespace MoneyEz.Repositories.Entities;
 
@@ -13,9 +14,9 @@ public partial class GroupMember : BaseEntity
 
     public decimal? ContributionPercentage { get; set; }
 
-    public int? Role { get; set; }
+    public RoleEnum? Role { get; set; }
 
-    public int? Status { get; set; }
+    public CommonsStatus? Status { get; set; }
 
     public virtual GroupFund Group { get; set; }
 

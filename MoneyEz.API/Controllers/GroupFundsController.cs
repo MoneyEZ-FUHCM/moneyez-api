@@ -7,7 +7,7 @@ namespace MoneyEz.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class GroupFundController : ControllerBase
+    public class GroupFundController : BaseController
     {
         private readonly IGroupFundsService _groupFundService;
 
@@ -19,8 +19,7 @@ namespace MoneyEz.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateGroupFund([FromBody] CreateGroupModel model)
         {
-            var result = await _groupFundService.CreateGroupFundsAsync(model);
-            return StatusCode(result.Status, result);
+            return await ValidateAndExecute(() => _groupFundService.CreateGroupFundsAsync(model));
         }
 
 

@@ -14,7 +14,11 @@ namespace MoneyEz.Repositories.UnitOfWork
         IUserRepository UsersRepository { get; }
         //category
         ICategoriesRepository CategoriesRepository { get; }
+        //group
         IGroupRepository GroupRepository { get; }
+        IGroupFundLogRepository GroupFundLogRepository { get; }
+        IGroupMemberRepository GroupMemberRepository { get; }
+
 
         int Save();
         void Commit();
