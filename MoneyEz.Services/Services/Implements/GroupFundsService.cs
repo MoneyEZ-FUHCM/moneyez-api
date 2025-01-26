@@ -31,8 +31,6 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> CreateGroupFundsAsync(CreateGroupModel model)
         {
-
-
             // Map the model to a new GroupFund entity and set its Id to the one generated for groupEntity
             var groupFund = _mapper.Map<GroupFund>(model);
             groupFund.GroupMembers = new List<GroupMember>
@@ -55,13 +53,9 @@ namespace MoneyEz.Services.Services.Implements
 
             }
             };
-
-
-
             // Add the groupFund to the repository and save changes again
             await _unitOfWork.GroupRepository.AddAsync(groupFund);
             _unitOfWork.Save();
-
             // Return a success result with the created groupFund
             return new BaseResultModel
             {
