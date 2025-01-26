@@ -31,7 +31,7 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Id = Guid.NewGuid(),
                 Email = email,
-                OtpCode = NumberUtils.GenerateSixDigitNumber().ToString(),
+                OtpCode = NumberUtils.GenerateFiveDigitNumber().ToString(),
                 ExpiryTime = CommonUtils.GetCurrentTime().AddMinutes(5)
             };
 
