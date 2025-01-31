@@ -26,9 +26,12 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //category  
         private ICategoriesRepository _categoriesRepository;
-        
-        public UnitOfWork(MoneyEzContext context) 
-        { 
+        private IGroupRepository _groupRepository;
+        private IGroupFundLogRepository _groupFundLogRepository;
+        private IGroupMemberRepository _groupMemberRepository;
+
+        public UnitOfWork(MoneyEzContext context)
+        {
             _context = context;
         }
 
@@ -64,6 +67,27 @@ namespace MoneyEz.Repositories.UnitOfWork
                 return _categoriesRepository ??= new CategoriesRepository(_context);
             }
         }
+        public IGroupRepository GroupRepository
+        {
+            get
+            {
+                return _groupRepository ??= new GroupRepository(_context);
+            }
+        }
+        public IGroupFundLogRepository GroupFundLogRepository
+        {
+            get
+            {
+                return _groupFundLogRepository ??= new GroupFundLogRepository(_context);
+            }
+        }
+        public IGroupMemberRepository GroupMemberRepository
+        {
+            get
+            {
+                return _groupMemberRepository ??= new GroupMemberRepository(_context);
+            }
+        }
         public void Commit()
         {
             try
@@ -96,6 +120,11 @@ namespace MoneyEz.Repositories.UnitOfWork
         public int Save()
         {
             return _context.SaveChanges();
+        }
+
+        public Task SaveAsync()
+        {
+            return _context.SaveChangesAsync();
         }
     }
 }

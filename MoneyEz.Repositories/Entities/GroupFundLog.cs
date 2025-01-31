@@ -1,6 +1,7 @@
 ﻿#nullable disable
 using System;
 using System.Collections.Generic;
+using MoneyEz.Repositories.Enums;
 
 namespace MoneyEz.Repositories.Entities;
 
@@ -12,5 +13,9 @@ public partial class GroupFundLog : BaseEntity
 
     public DateTime? ChangedAt { get; set; }
 
+    public GroupAction? Action { get; set; }
+
     public virtual GroupFund Group { get; set; }
+
+
 }
