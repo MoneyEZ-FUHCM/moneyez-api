@@ -26,6 +26,11 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //category  
         private ICategoriesRepository _categoriesRepository;
+
+        //subcategory
+        private ISubcategoryRepository _subcategoryRepository;
+
+        //group
         private IGroupRepository _groupRepository;
         private IGroupFundLogRepository _groupFundLogRepository;
         private IGroupMemberRepository _groupMemberRepository;
@@ -67,6 +72,15 @@ namespace MoneyEz.Repositories.UnitOfWork
                 return _categoriesRepository ??= new CategoriesRepository(_context);
             }
         }
+
+        public ISubcategoryRepository SubcategoryRepository
+        {
+            get
+            {
+                return _subcategoryRepository ??= new SubcategoryRepository(_context);
+            }
+        }
+
         public IGroupRepository GroupRepository
         {
             get

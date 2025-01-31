@@ -74,6 +74,20 @@ namespace MoneyEz.Services.Constants
         public const string CATEGORY_DELETED_SUCCESS = "CategoryDeletedSuccessfully";
         public const string CATEGORY_HAS_DEPENDENCIES = "CategoryHasDependencies";
 
+        // subcategory
+        public const string SUBCATEGORY_LIST_FETCHED_SUCCESS = "SubcategoryListFetched";
+        public const string SUBCATEGORY_FETCHED_SUCCESS = "SubcategoryFetched";
+        public const string SUBCATEGORY_CREATED_SUCCESS = "SubcategoryCreatedSuccessfully";
+        public const string SUBCATEGORY_UPDATED_SUCCESS = "SubcategoryUpdatedSuccessfully";
+        public const string SUBCATEGORY_DELETED_SUCCESS = "SubcategoryDeletedSuccessfully";
+        public const string SUBCATEGORY_HAS_DEPENDENCIES = "SubcategoryHasDependencies";
+
+        public const string SUBCATEGORY_NOT_FOUND = "SubcategoryNotFound";
+        public const string SUBCATEGORY_ALREADY_EXISTS = "SubcategoryAlreadyExists";
+        public const string DUPLICATE_SUBCATEGORY_NAMES = "DuplicateSubcategoryNames";
+        public const string EMPTY_SUBCATEGORY_LIST = "EmptySubcategoryList";
+        public const string CATEGORY_ID_REQUIRED = "CategoryIdRequired"; // Each subcategory must have a valid CategoryId.
+
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
 
