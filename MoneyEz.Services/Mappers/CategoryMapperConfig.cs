@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Services.BusinessModels.CategoryModels;
+using MoneyEz.Services.Utils;
 
 namespace MoneyEz.Services.Mappers
 {
@@ -8,16 +10,20 @@ namespace MoneyEz.Services.Mappers
     {
         partial void CategoryMapperConfig()
         {
-            // Map từ CreateCategoryModel -> Category
+            CreateMap<Category, CategoryModel>()
+                .ForMember(dest => dest.Subcategories, opt => opt.MapFrom(src => src.Subcategories));
+
+            // Map từ CreateCategoryModel sang Category entity
             CreateMap<CreateCategoryModel, Category>()
-                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => src.NameUnsign));
+                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => StringUtils.ConvertToUnSign(src.Name)));
 
-            // Map từ UpdateCategoryModel -> Category
+            // Map từ UpdateCategoryModel sang Category entity
             CreateMap<UpdateCategoryModel, Category>()
-                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => src.NameUnsign));
+                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => StringUtils.ConvertToUnSign(src.Name)));
 
-            // Map từ Category -> CategoryModel
-            CreateMap<Category, CategoryModel>();
+            // Map từ Pagination<Category> sang Pagination<CategoryModel>
+            CreateMap<Pagination<Category>, Pagination<CategoryModel>>()
+                .ConvertUsing<PaginationConverter<Category, CategoryModel>>();
         }
     }
 }

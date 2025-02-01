@@ -10,12 +10,11 @@ namespace MoneyEz.Services.BusinessModels.CategoryModels
 {
     public class UpdateCategoryModel
     {
+        public required Guid Id { get; set; }
         [Required(ErrorMessage = "Tên danh mục là bắt buộc.")]
-        public string Name { get; set; } // Tên mới của danh mục
+        public required string Name { get; set; }
+        public string Description { get; set; }
 
-        public string Description { get; set; } // Mô tả mới
-
-        // Tương tự CreateCategoryModel, `NameUnsign` được xử lý tự động
         public string NameUnsign => StringUtils.ConvertToUnSign(Name);
     }
 }
