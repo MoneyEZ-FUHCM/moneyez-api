@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace MoneyEz.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/group-funds")]
     public class GroupFundController : BaseController
     {
         private readonly IGroupFundsService _groupFundService;
