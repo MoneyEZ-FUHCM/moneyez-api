@@ -86,5 +86,66 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.GROUP_GET_ALL_SUCCESS_MESSAGE
             };
         }
+
+        public async Task<BaseResultModel> DisbandGroupAsync(Guid groupId)
+        {
+            // Retrieve the group fund by its Id
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(groupId);
+            if (groupFund == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = MessageConstants.GROUP_NOT_FOUND_MESSAGE
+                };
+            }
+
+            // Check if the current user is the leader of the group
+            var currentUser = _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail).Result;
+
+            var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
+
+            if (!isLeader)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Message = MessageConstants.GROUP_DISBAND_FORBIDDEN_MESSAGE
+                };
+            }
+
+            // Check if the group fund has any transactions
+            var transactions = await _unitOfWork.TransactionRepository.GetByIdAsync(groupId);
+            if (transactions == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Message = MessageConstants.GROUP_DISBAND_FAIL_MESSAGE
+                };
+            }
+
+            // Update the status of the group fund to disbanded
+            groupFund.Status = CommonsStatus.INACTIVE;
+
+            // Add a log entry for the disband action
+            groupFund.GroupFundLogs.Add(new GroupFundLog
+            {
+                ChangeDescription = "Group disbanded",
+                ChangedAt = CommonUtils.GetCurrentTime(),
+                Action = GroupAction.DELETED,
+            });
+
+            // Save the changes to the repository
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            _unitOfWork.Save();
+
+            // Return a success result
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.GROUP_DISBAND_SUCCESS_MESSAGE
+            };
+        }
     }
 }

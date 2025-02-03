@@ -17,9 +17,5 @@ namespace MoneyEz.Repositories.Repositories.Implements
             _context = context;
         }
 
-        public async Task<IEnumerable<Transaction>> GetTransactionsByGroupIdAsync(Guid groupId)
-        {
-            return await _context.Transactions.Where(t => t.GroupId == groupId).ToListAsync();
-        }
     }
 }

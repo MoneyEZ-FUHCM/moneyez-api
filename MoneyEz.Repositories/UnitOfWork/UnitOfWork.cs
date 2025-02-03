@@ -32,8 +32,12 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //group
         private IGroupFundRepository _groupFundRepository;
+        //group fund log
         private IGroupFundLogRepository _groupFundLogRepository;
+        //group member
         private IGroupMemberRepository _groupMemberRepository;
+        //transaction
+        private ITransactionRepository _transactionRepository;
 
         public UnitOfWork(MoneyEzContext context)
         {
@@ -101,6 +105,10 @@ namespace MoneyEz.Repositories.UnitOfWork
             {
                 return _groupMemberRepository ??= new GroupMemberRepository(_context);
             }
+        }
+        public ITransactionRepository TransactionRepository
+        {
+            get { return _transactionRepository ??= new TransactionRepository(_context); }
         }
         public void Commit()
         {

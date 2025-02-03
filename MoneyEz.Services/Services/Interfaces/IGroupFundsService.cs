@@ -13,5 +13,7 @@ namespace MoneyEz.Services.Services.Interfaces
     {
         Task<BaseResultModel> CreateGroupFundsAsync(CreateGroupModel model);
         Task<BaseResultModel> GetAllGroupFunds();
+        Task<BaseResultModel> DisbandGroupAsync(Guid groupId);
+
     }
 }
