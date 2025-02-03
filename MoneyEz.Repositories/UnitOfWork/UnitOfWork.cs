@@ -26,7 +26,7 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //category  
         private ICategoriesRepository _categoriesRepository;
-        private IGroupRepository _groupRepository;
+        private IGroupFundRepository _groupFundRepository;
         private IGroupFundLogRepository _groupFundLogRepository;
         private IGroupMemberRepository _groupMemberRepository;
 
@@ -67,11 +67,11 @@ namespace MoneyEz.Repositories.UnitOfWork
                 return _categoriesRepository ??= new CategoriesRepository(_context);
             }
         }
-        public IGroupRepository GroupRepository
+        public IGroupFundRepository GroupFundRepository
         {
             get
             {
-                return _groupRepository ??= new GroupRepository(_context);
+                return _groupFundRepository ??= new GroupRepository(_context);
             }
         }
         public IGroupFundLogRepository GroupFundLogRepository

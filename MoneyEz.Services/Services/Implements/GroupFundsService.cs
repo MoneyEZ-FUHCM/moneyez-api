@@ -55,7 +55,7 @@ namespace MoneyEz.Services.Services.Implements
             }
             };
             // Add the groupFund to the repository and save changes again
-            await _unitOfWork.GroupRepository.AddAsync(groupFund);
+            await _unitOfWork.GroupFundRepository.AddAsync(groupFund);
             _unitOfWork.Save();
             // Return a success result with the created groupFund
             return new BaseResultModel
@@ -77,7 +77,7 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> GetAllGroupFunds()
         {
             // Get all groupFunds from the repository
-            var groupFunds = await _unitOfWork.GroupRepository.GetAllAsync();
+            var groupFunds = await _unitOfWork.GroupFundLogRepository.GetAllAsync();
             // Return a success result with the groupFunds
             return new BaseResultModel
             {

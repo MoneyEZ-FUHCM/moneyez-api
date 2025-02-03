@@ -22,7 +22,7 @@ namespace MoneyEz.Repositories.UnitOfWork
         //category
         ICategoriesRepository CategoriesRepository { get; }
         //group
-        IGroupRepository GroupRepository { get; }
+        IGroupFundRepository GroupFundRepository { get; }
         IGroupFundLogRepository GroupFundLogRepository { get; }
         IGroupMemberRepository GroupMemberRepository { get; }
 
