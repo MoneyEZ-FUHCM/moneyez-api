@@ -12,7 +12,6 @@ namespace MoneyEz.Services.Constants
                 // syntax message: <CONSTANT_NAME_MESSAGE> = "Message here";
 
                 // authen
-
                 public const string ACCOUNT_NEED_CONFIRM_EMAIL = "AccountDoesNotVerifyEmail";
                 public const string WRONG_PASSWORD = "PasswordIsIncorrect";
                 public const string TOKEN_NOT_VALID = "TokenNotValid";
@@ -69,15 +68,19 @@ namespace MoneyEz.Services.Constants
                 public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists";
                 public const string CATEGORY_CREATED_SUCCESS = "CategoryCreatedSuccessfully";
                 public const string CATEGORY_NOT_FOUND = "CategoryNotFound";
-                public const string CATEGORY_LIST_FETCHED_SUCCESS = "Category list fetched successfully.";
-                public const string CATEGORY_FETCHED_SUCCESS = "Category details fetched successfully.";
+
+                public const string CATEGORY_LIST_FETCHED_SUCCESS = "CategoryListFetchedSuccessfully";
+                public const string CATEGORY_FETCHED_SUCCESS = "CategoryDetailsFetchedSuccessfully";
                 public const string CATEGORY_UPDATED_SUCCESS = "CategoryUpdatedSuccessfully";
                 public const string CATEGORY_DELETED_SUCCESS = "CategoryDeletedSuccessfully";
                 public const string CATEGORY_HAS_DEPENDENCIES = "CategoryHasDependencies";
-
+                public const string CATEGORY_LIST_EMPTY = "CategoryListEmpty";
+                public const string CATEGORY_DUPLICATE_IN_LIST = "CategoryDuplicateInList";
 
                 // group
                 public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
+
+                public const string GROUP_GET_ALL_SUCCESS_MESSAGE = "Group list fetched successfully";
 
         }
 }

@@ -13,6 +13,7 @@ using MoneyEz.Services.Constants;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.Utils;
 using MoneyEz.Repositories.Utils;
+using MoneyEz.Services.BusinessModels.GroupFund;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -70,6 +71,19 @@ namespace MoneyEz.Services.Services.Implements
                     Visibility = VisibilityEnum.PRIVATE,
                 },
                 Message = MessageConstants.GROUP_CREATE_SUCCESS_MESSAGE
+            };
+        }
+
+        public async Task<BaseResultModel> GetAllGroupFunds()
+        {
+            // Get all groupFunds from the repository
+            var groupFunds = await _unitOfWork.GroupRepository.GetAllAsync();
+            // Return a success result with the groupFunds
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = groupFunds,
+                Message = MessageConstants.GROUP_GET_ALL_SUCCESS_MESSAGE
             };
         }
     }
