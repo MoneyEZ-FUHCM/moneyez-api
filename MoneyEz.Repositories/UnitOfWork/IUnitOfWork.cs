@@ -21,6 +21,10 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //category
         ICategoriesRepository CategoriesRepository { get; }
+
+        //subcategory
+        ISubcategoryRepository SubcategoryRepository { get; }
+
         //group
         IGroupFundRepository GroupFundRepository { get; }
         IGroupFundLogRepository GroupFundLogRepository { get; }

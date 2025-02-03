@@ -154,6 +154,10 @@ namespace MoneyEz.API
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<ICategoriesRepository, CategoriesRepository>();
 
+            // config sub category service
+            services.AddScoped<ISubcategoryService, SubcategoryService>();
+            services.AddScoped<ISubcategoryRepository, SubcategoryRepository>();
+
             // config mail service
             services.AddScoped<IMailService, MailService>();
 

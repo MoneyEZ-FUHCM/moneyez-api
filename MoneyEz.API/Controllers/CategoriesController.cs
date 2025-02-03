@@ -39,10 +39,10 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _categoryService.AddCategoriesAsync(models));
         }
 
-        [HttpPut("{id}")]
-        public Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateCategoryModel model)
+        [HttpPut]
+        public Task<IActionResult> UpdateCategory([FromBody] UpdateCategoryModel model)
         {
-            return ValidateAndExecute(() => _categoryService.UpdateCategoryAsync(id, model));
+            return ValidateAndExecute(() => _categoryService.UpdateCategoryAsync(model));
         }
 
         [HttpDelete("{id}")]
