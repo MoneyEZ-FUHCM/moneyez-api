@@ -284,8 +284,8 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Calculate financial ratios
-            var totalIncome = groupFund.Transactions.Where(t => t.Type == 0).Sum(t => (int?)t.Amount) ?? 0;
-            var totalDebt = groupFund.Transactions.Where(t => t.Type == 1).Sum(t => (int?)t.Amount) ?? 0;
+            var totalIncome = groupFund.Transactions.Where(t => t.Type == TransactionType.INCOME).Sum(t => (int?)t.Amount) ?? 0;
+            var totalDebt = groupFund.Transactions.Where(t => t.Type == TransactionType.EXPENSE).Sum(t => (int?)t.Amount) ?? 0;
             var totalSavings = totalIncome - totalDebt;
 
             var savingRatio = (totalSavings / totalIncome) * 100;
