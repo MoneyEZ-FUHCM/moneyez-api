@@ -16,7 +16,7 @@ public partial class Transaction : BaseEntity
 
     public Guid? SubcategoryId { get; set; }
 
-    public DateOnly Date { get; set; }
+    public DateTime? TransactionDate { get; set; }
 
     public string Description { get; set; }
 
