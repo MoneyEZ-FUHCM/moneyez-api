@@ -38,6 +38,7 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IGroupMemberRepository _groupMemberRepository;
         //transaction
         private ITransactionRepository _transactionRepository;
+        private ISubscriptionRepository _subscriptionRepository;
 
         public UnitOfWork(MoneyEzContext context)
         {
@@ -110,6 +111,12 @@ namespace MoneyEz.Repositories.UnitOfWork
         {
             get { return _transactionRepository ??= new TransactionRepository(_context); }
         }
+
+        public ISubscriptionRepository SubscriptionRepository
+        {
+            get { return _subscriptionRepository ??= new SubscriptionRepository(_context); }
+        }
+
         public void Commit()
         {
             try

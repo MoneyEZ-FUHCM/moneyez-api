@@ -33,7 +33,8 @@ namespace MoneyEz.Repositories.UnitOfWork
         //transaction
         ITransactionRepository TransactionRepository { get; }
 
-
+        //subscription
+        ISubscriptionRepository SubscriptionRepository { get; }
 
         int Save();
         void Commit();
