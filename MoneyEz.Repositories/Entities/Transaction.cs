@@ -23,7 +23,7 @@ public partial class Transaction : BaseEntity
 
     public bool? ApprovalRequired { get; set; }
 
-    public int? Status { get; set; }
+    public TransactionStatus Status { get; set; } = TransactionStatus.PENDING; // Mặc định là PENDING
 
     public virtual GroupFund Group { get; set; }
 
