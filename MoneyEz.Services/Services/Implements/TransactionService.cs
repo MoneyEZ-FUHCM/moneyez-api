@@ -232,7 +232,7 @@ namespace MoneyEz.Services.Services.Implements
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.CATEGORY_NOT_FOUND,
+                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND,
                     Message = "Subcategory does not exist."
                 };
             }
