@@ -17,6 +17,11 @@ using MoneyEz.Services.BusinessModels.GroupFund;
 using StackExchange.Redis;
 using System.Net.Mail;
 using System.Web;
+using MoneyEz.Services.BusinessModels.EmailModels;
+using MoneyEz.Services.Utils.Email;
+using static System.Net.WebRequestMethods;
+using MoneyEz.Services.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -26,13 +31,15 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsService _claimsService;
         private readonly IRedisService _redisService;
+        private readonly IMailService _mailService;
 
-        public GroupFundsService(IMapper mapper, IUnitOfWork unitOfWork, IClaimsService claimsService, IRedisService redisService)
+        public GroupFundsService(IMapper mapper, IUnitOfWork unitOfWork, IClaimsService claimsService, IRedisService redisService, IMailService mailService)
         {
             _mapper = mapper;
             _unitOfWork = unitOfWork;
             _claimsService = claimsService;
             _redisService = redisService;
+            _mailService = mailService;
         }
 
         public async Task<BaseResultModel> CreateGroupFundsAsync(CreateGroupModel model)
@@ -322,10 +329,12 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> InviteMemberAsync(Guid groupId, string email)
+        public async Task<BaseResultModel> InviteMemberAsync(InviteMemberModel inviteMemberModel, string currentEmail)
         {
             // Retrieve the group fund by its Id
-            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(groupId);
+            var groupFund = await _unitOfWork.GroupFundRepository
+                .GetByIdIncludeAsync(inviteMemberModel.GroupId, include: query => query.Include(c => c.GroupMembers));
+
             if (groupFund == null)
             {
                 return new BaseResultModel
@@ -336,7 +345,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Check if the current user is the leader of the group
-            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(currentEmail);
             var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
 
             if (!isLeader)
@@ -348,28 +357,32 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            // check invite member
+            var inviteUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(inviteMemberModel.Email);
+            if (inviteUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
             // Generate an invitation link
             var invitationToken = Guid.NewGuid().ToString();
-            var invitationLink = $"https://example.com/api/group/{groupId}/accept-invitation?token={HttpUtility.UrlEncode(invitationToken)}";
+            var invitationLink = $"https://easymoney.anttravel.online/api/groups/{inviteMemberModel.GroupId}/accept-invitation?token={HttpUtility.UrlEncode(invitationToken)}";
+            //var invitationLink = $"https://localhost:7262/api/groups/{inviteMemberModel.GroupId}/accept-invitation?token={HttpUtility.UrlEncode(invitationToken)}";
 
             // Save the invitation token to Redis
             var redisKey = $"group_invitation:{invitationToken}";
-            await _redisService.SetAsync(redisKey, email, TimeSpan.FromDays(1));
+            await _redisService.SetAsync(redisKey, inviteMemberModel.Email, TimeSpan.FromDays(1));
 
-            // Send the invitation email
-            var mailMessage = new MailMessage
+            // send mail
+            MailRequest newEmail = new MailRequest()
             {
-                From = new MailAddress("noreply@example.com"),
-                Subject = "Group Invitation",
-                Body = $"You have been invited to join the group. Click the link to accept the invitation: {invitationLink}",
-                IsBodyHtml = true
+                ToEmail = inviteMemberModel.Email,
+                Subject = $"[MoneyEz] Lời mời tham gia nhóm {groupFund.Name}",
+                Body = $"Bạn đã được {currentUser.FullName} mời vào nhóm {groupFund.Name}. Ấn vào link để tham gia: {invitationLink}"
             };
-            mailMessage.To.Add(email);
 
-            using (var smtpClient = new SmtpClient("smtp.example.com"))
-            {
-                await smtpClient.SendMailAsync(mailMessage);
-            }
+            // send mail
+            await _mailService.SendEmailAsync(newEmail);
 
             // Return a success result
             return new BaseResultModel
