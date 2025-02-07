@@ -88,6 +88,28 @@ namespace MoneyEz.Services.Constants
         public const string EMPTY_SUBCATEGORY_LIST = "EmptySubcategoryList";
         public const string CATEGORY_ID_REQUIRED = "CategoryIdRequired"; // Each subcategory must have a valid CategoryId.
 
+        // transaction
+        public const string TRANSACTION_CREATED_SUCCESS = "TransactionCreatedSuccessfully";
+        public const string TRANSACTION_UPDATED_SUCCESS = "TransactionUpdatedSuccessfully";
+        public const string TRANSACTION_DELETED_SUCCESS = "TransactionDeletedSuccessfully";
+        public const string TRANSACTION_FETCHED_SUCCESS = "TransactionFetchedSuccessfully";
+        public const string TRANSACTION_LIST_FETCHED_SUCCESS = "TransactionListFetchedSuccessfully";
+        public const string TRANSACTION_NOT_FOUND = "TransactionNotFound";
+        public const string TRANSACTION_APPROVED_SUCCESS = "TransactionApprovedSuccessfully";
+        public const string TRANSACTION_REJECTED_SUCCESS = "TransactionRejectedSuccessfully";
+        public const string TRANSACTION_ALREADY_APPROVED = "TransactionAlreadyApproved";
+        public const string TRANSACTION_ALREADY_REJECTED = "TransactionAlreadyRejected";
+        public const string TRANSACTION_CANNOT_REJECT_SELF = "UserCannotRejectTheirOwnTransaction";
+        public const string USER_NOT_FOUND = "UserNotFound";
+        public const string INVALID_TRANSACTION_REQUEST = "InvalidTransactionRequest";
+        public const string TRANSACTION_ID_REQUIRED = "TransactionIdRequired";
+        public const string TRANSACTION_AMOUNT_REQUIRED = "TransactionAmountRequired";
+        public const string TRANSACTION_TYPE_INVALID = "TransactionTypeInvalid";
+        public const string TRANSACTION_SUBCATEGORY_REQUIRED = "TransactionSubcategoryRequired";
+        public const string TRANSACTION_DATE_REQUIRED = "TransactionDateRequired";
+        public const string TRANSACTION_CANNOT_UPDATE_APPROVED = "TransactionCannotUpdateApproved";
+
+
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
         public const string GROUP_GET_ALL_SUCCESS_MESSAGE = "Group get all successfully";

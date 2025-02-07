@@ -29,7 +29,8 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //subcategory
         private ISubcategoryRepository _subcategoryRepository;
-
+        //transaction
+        private ITransactionRepository _transactionsRepository;
         //group
         private IGroupFundRepository _groupFundRepository;
         //group fund log
@@ -81,6 +82,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _subcategoryRepository ??= new SubcategoryRepository(_context);
+            }
+        }
+
+        public ITransactionRepository TransactionsRepository
+        {
+            get
+            {
+                return _transactionsRepository ??= new TransactionRepository(_context);
             }
         }
 
