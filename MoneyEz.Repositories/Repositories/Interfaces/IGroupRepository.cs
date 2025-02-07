@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace MoneyEz.Repositories.Repositories.Interfaces
 {
-    public interface IGroupRepository : IGenericRepository<GroupFund>
+    public interface IGroupFundRepository : IGenericRepository<GroupFund>
     {
-
+        
     }
 }

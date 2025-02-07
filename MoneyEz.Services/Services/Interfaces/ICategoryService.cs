@@ -9,7 +9,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetCategoryPaginationAsync(PaginationParameter paginationParameter);
         Task<BaseResultModel> GetCategoryByIdAsync(Guid id);
         Task<BaseResultModel> AddCategoriesAsync(List<CreateCategoryModel> models);
-        Task<BaseResultModel> UpdateCategoryAsync(Guid id, UpdateCategoryModel model);
+        Task<BaseResultModel> UpdateCategoryAsync(UpdateCategoryModel model);
         Task<BaseResultModel> DeleteCategoryAsync(Guid id);
     }
 }

@@ -154,6 +154,14 @@ namespace MoneyEz.API
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<ICategoriesRepository, CategoriesRepository>();
 
+            //config subcategory service
+            services.AddScoped<ISubcategoryService, SubcategoryService>();
+            services.AddScoped<ISubcategoryRepository, SubcategoryRepository>();
+
+            // config transaction service
+            services.AddScoped<ITransactionService, TransactionService>();
+            services.AddScoped<ITransactionRepository, TransactionRepository>();
+
             // config mail service
             services.AddScoped<IMailService, MailService>();
 
@@ -161,9 +169,8 @@ namespace MoneyEz.API
             services.AddScoped<IOtpService, OtpService>();
 
             // config group service
-            services.AddScoped<IGroupRepository, GroupRepository>();
+            services.AddScoped<IGroupFundRepository, GroupRepository>();
             services.AddScoped<IGroupFundsService, GroupFundsService>();
-
 
             // config group log service
             services.AddScoped<IGroupFundLogRepository, GroupFundLogRepository>();

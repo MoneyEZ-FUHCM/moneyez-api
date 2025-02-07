@@ -68,17 +68,72 @@ namespace MoneyEz.Services.Constants
         public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists";
         public const string CATEGORY_CREATED_SUCCESS = "CategoryCreatedSuccessfully";
         public const string CATEGORY_NOT_FOUND = "CategoryNotFound";
-
-        public const string CATEGORY_LIST_FETCHED_SUCCESS = "CategoryListFetchedSuccessfully";
-        public const string CATEGORY_FETCHED_SUCCESS = "CategoryDetailsFetchedSuccessfully";
+        public const string CATEGORY_LIST_FETCHED_SUCCESS = "Category list fetched successfully.";
+        public const string CATEGORY_FETCHED_SUCCESS = "Category details fetched successfully.";
         public const string CATEGORY_UPDATED_SUCCESS = "CategoryUpdatedSuccessfully";
         public const string CATEGORY_DELETED_SUCCESS = "CategoryDeletedSuccessfully";
         public const string CATEGORY_HAS_DEPENDENCIES = "CategoryHasDependencies";
-        public const string CATEGORY_LIST_EMPTY = "CategoryListEmpty";
-        public const string CATEGORY_DUPLICATE_IN_LIST = "CategoryDuplicateInList";
+
+        // subcategory
+        public const string SUBCATEGORY_LIST_FETCHED_SUCCESS = "SubcategoryListFetched";
+        public const string SUBCATEGORY_FETCHED_SUCCESS = "SubcategoryFetched";
+        public const string SUBCATEGORY_CREATED_SUCCESS = "SubcategoryCreatedSuccessfully";
+        public const string SUBCATEGORY_UPDATED_SUCCESS = "SubcategoryUpdatedSuccessfully";
+        public const string SUBCATEGORY_DELETED_SUCCESS = "SubcategoryDeletedSuccessfully";
+        public const string SUBCATEGORY_HAS_DEPENDENCIES = "SubcategoryHasDependencies";
+
+        public const string SUBCATEGORY_NOT_FOUND = "SubcategoryNotFound";
+        public const string SUBCATEGORY_ALREADY_EXISTS = "SubcategoryAlreadyExists";
+        public const string DUPLICATE_SUBCATEGORY_NAMES = "DuplicateSubcategoryNames";
+        public const string EMPTY_SUBCATEGORY_LIST = "EmptySubcategoryList";
+        public const string CATEGORY_ID_REQUIRED = "CategoryIdRequired"; // Each subcategory must have a valid CategoryId.
+
+        // transaction
+        public const string TRANSACTION_CREATED_SUCCESS = "TransactionCreatedSuccessfully";
+        public const string TRANSACTION_UPDATED_SUCCESS = "TransactionUpdatedSuccessfully";
+        public const string TRANSACTION_DELETED_SUCCESS = "TransactionDeletedSuccessfully";
+        public const string TRANSACTION_FETCHED_SUCCESS = "TransactionFetchedSuccessfully";
+        public const string TRANSACTION_LIST_FETCHED_SUCCESS = "TransactionListFetchedSuccessfully";
+        public const string TRANSACTION_NOT_FOUND = "TransactionNotFound";
+        public const string TRANSACTION_APPROVED_SUCCESS = "TransactionApprovedSuccessfully";
+        public const string TRANSACTION_REJECTED_SUCCESS = "TransactionRejectedSuccessfully";
+        public const string TRANSACTION_ALREADY_APPROVED = "TransactionAlreadyApproved";
+        public const string TRANSACTION_ALREADY_REJECTED = "TransactionAlreadyRejected";
+        public const string TRANSACTION_CANNOT_REJECT_SELF = "UserCannotRejectTheirOwnTransaction";
+        public const string USER_NOT_FOUND = "UserNotFound";
+        public const string INVALID_TRANSACTION_REQUEST = "InvalidTransactionRequest";
+        public const string TRANSACTION_ID_REQUIRED = "TransactionIdRequired";
+        public const string TRANSACTION_AMOUNT_REQUIRED = "TransactionAmountRequired";
+        public const string TRANSACTION_TYPE_INVALID = "TransactionTypeInvalid";
+        public const string TRANSACTION_SUBCATEGORY_REQUIRED = "TransactionSubcategoryRequired";
+        public const string TRANSACTION_DATE_REQUIRED = "TransactionDateRequired";
+        public const string TRANSACTION_CANNOT_UPDATE_APPROVED = "TransactionCannotUpdateApproved";
+
 
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
+        public const string GROUP_GET_ALL_SUCCESS_MESSAGE = "Group get all successfully";
+        public const string GROUP_NOT_FOUND_MESSAGE = "Group not found";
+        public const string GROUP_DISBAND_FAIL_MESSAGE = "Group disband failed";
+        public const string GROUP_DISBAND_SUCCESS_MESSAGE = "Group disbanded successfully";
 
+        public const string GROUP_DISBAND_FORBIDDEN_MESSAGE = "Group disband forbidden";
+        public const string GROUP_REMOVE_MEMBER_FORBIDDEN_MESSAGE = "Group member not found";
+        public const string GROUP_REMOVE_MEMBER_SUCCESS_MESSAGE = "Group member removed successfully";
+        public const string GROUP_SET_ROLE_FORBIDDEN_MESSAGE = "Group set role forbidden";
+        public const string MEMBER_NOT_FOUND_MESSAGE = "Group member not found";
+        public const string MEMBER_ROLE_UPDATE_SUCCESS_MESSAGE = "Group member role updated successfully";
+
+        public const string GROUP_INVITE_SUCCESS_MESSAGE = "Invitation sent successfully.";
+        public const string GROUP_INVITE_FORBIDDEN_MESSAGE = "Only the group leader can invite members.";
+        public const string INVALID_INVITATION_TOKEN_MESSAGE = "Invalid invitation token.";
+        public const string GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE = "Invitation accepted successfully.";
+        public const string USER_NOT_FOUND_MESSAGE = "User not found.";
+
+        //subscription
+        public const string SUBSCRIPTION_CREATE_SUCCESS_MESSAGE = "Subscription created successfully";
+
+        // report
+        public const string REPORT_GENERATE_SUCCESS_MESSAGE = "Báo cáo sức khỏe tài chính đã được tạo thành công.";
     }
 }

@@ -21,7 +21,15 @@ namespace MoneyEz.API.Controllers
         {
             return await ValidateAndExecute(() => _groupFundService.CreateGroupFundsAsync(model));
         }
-
-
+        [HttpGet]
+        public async Task<IActionResult> GetAllGroupFunds()
+        {
+            return await ValidateAndExecute(() => _groupFundService.GetAllGroupFunds());
+        }
+        [HttpDelete("{groupId}")]
+        public async Task<IActionResult> DisbandGroupFund(Guid groupId)
+        {
+            return await ValidateAndExecute(() => _groupFundService.DisbandGroupAsync(groupId));
+        }
     }
 }

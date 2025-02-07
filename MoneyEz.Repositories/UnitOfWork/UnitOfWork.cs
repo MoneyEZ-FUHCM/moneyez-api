@@ -26,9 +26,18 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //category  
         private ICategoriesRepository _categoriesRepository;
-        private IGroupRepository _groupRepository;
+
+        //subcategory
+        private ISubcategoryRepository _subcategoryRepository;
+        //transaction
+        private ITransactionRepository _transactionsRepository;
+        //group
+        private IGroupFundRepository _groupFundRepository;
+        //group fund log
         private IGroupFundLogRepository _groupFundLogRepository;
+        //group member
         private IGroupMemberRepository _groupMemberRepository;
+        private ISubscriptionRepository _subscriptionRepository;
 
         public UnitOfWork(MoneyEzContext context)
         {
@@ -67,11 +76,28 @@ namespace MoneyEz.Repositories.UnitOfWork
                 return _categoriesRepository ??= new CategoriesRepository(_context);
             }
         }
-        public IGroupRepository GroupRepository
+
+        public ISubcategoryRepository SubcategoryRepository
         {
             get
             {
-                return _groupRepository ??= new GroupRepository(_context);
+                return _subcategoryRepository ??= new SubcategoryRepository(_context);
+            }
+        }
+
+        public ITransactionRepository TransactionsRepository
+        {
+            get
+            {
+                return _transactionsRepository ??= new TransactionRepository(_context);
+            }
+        }
+
+        public IGroupFundRepository GroupFundRepository
+        {
+            get
+            {
+                return _groupFundRepository ??= new GroupRepository(_context);
             }
         }
         public IGroupFundLogRepository GroupFundLogRepository
@@ -88,6 +114,13 @@ namespace MoneyEz.Repositories.UnitOfWork
                 return _groupMemberRepository ??= new GroupMemberRepository(_context);
             }
         }
+
+        public ISubscriptionRepository SubscriptionRepository
+        {
+            get { return _subscriptionRepository ??= new SubscriptionRepository(_context); }
+        }
+
+
         public void Commit()
         {
             try

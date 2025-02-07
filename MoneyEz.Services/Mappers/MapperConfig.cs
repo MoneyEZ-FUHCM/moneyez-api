@@ -20,6 +20,10 @@ namespace MoneyEz.Services.Mappers
             SpendingModelMapperConfig();
             //category mapper
             CategoryMapperConfig();
+            //subcategory mapper
+            SubcategoryMapperConfig();
+            //transaction mapper
+            TransactionMapperConfig();
             // group fund mapper
             GroupFundConfig();
 
@@ -29,6 +33,8 @@ namespace MoneyEz.Services.Mappers
         partial void UserMapperConfig();
         partial void SpendingModelMapperConfig();
         partial void CategoryMapperConfig();
+        partial void SubcategoryMapperConfig();
+        partial void TransactionMapperConfig();
         partial void GroupFundConfig();
     }
 
