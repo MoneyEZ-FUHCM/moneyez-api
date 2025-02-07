@@ -1,6 +1,9 @@
 ﻿using AutoMapper;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
+using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.TransactionModels;
+using MoneyEz.Services.Utils;
 
 namespace MoneyEz.Services.Mappers
 {
@@ -8,15 +11,19 @@ namespace MoneyEz.Services.Mappers
     {
         partial void TransactionMapperConfig()
         {
-            // Map Transaction -> TransactionModel
-            CreateMap<Transaction, TransactionModel>()
-                .ForMember(dest => dest.Subcategory, opt => opt.MapFrom(src => src.Subcategory));
+            // Map từ Transaction entity sang TransactionModel
+            CreateMap<Transaction, TransactionModel>();
 
-            // Map CreateTransactionModel -> Transaction
-            CreateMap<CreateTransactionModel, Transaction>();
+            // Map từ CreateTransactionModel sang Transaction entity
+            CreateMap<CreateTransactionModel, Transaction>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => TransactionStatus.APPROVED)); // Mặc định approved
 
-            // Map UpdateTransactionModel -> Transaction
+            // Map từ UpdateTransactionModel sang Transaction entity
             CreateMap<UpdateTransactionModel, Transaction>();
+
+            // Map từ Pagination<Transaction> sang Pagination<TransactionModel>
+            CreateMap<Pagination<Transaction>, Pagination<TransactionModel>>()
+                .ConvertUsing<PaginationConverter<Transaction, TransactionModel>>();
         }
     }
 }

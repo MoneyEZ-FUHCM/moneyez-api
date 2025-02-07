@@ -99,11 +99,10 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_REJECTED_SUCCESS = "TransactionRejectedSuccessfully";
         public const string TRANSACTION_ALREADY_APPROVED = "TransactionAlreadyApproved";
         public const string TRANSACTION_ALREADY_REJECTED = "TransactionAlreadyRejected";
-        public const string TRANSACTION_CANNOT_UPDATE_APPROVED = "ApprovedTransactionCannotBeUpdated";
-        public const string TRANSACTION_CANNOT_DELETE_APPROVED = "ApprovedTransactionCannotBeDeleted";
-        public const string TRANSACTION_CANNOT_APPROVE_SELF = "UserCannotApproveTheirOwnTransaction";
         public const string TRANSACTION_CANNOT_REJECT_SELF = "UserCannotRejectTheirOwnTransaction";
         public const string USER_NOT_IN_GROUP = "UserNotInGroup";
+        public const string INVALID_TRANSACTION_REQUEST = "InvalidTransactionRequest";
+
 
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";

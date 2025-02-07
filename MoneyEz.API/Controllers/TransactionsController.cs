@@ -20,79 +20,34 @@ namespace MoneyEz.API.Controllers
             _transactionService = transactionService;
         }
 
-        // ** User Transactions **
-        [HttpPost("user")]
-        public Task<IActionResult> CreateTransactionForUser([FromBody] CreateTransactionModel model)
+        [HttpGet("user/{userId}")]
+        public Task<IActionResult> GetAllTransactions(Guid userId, [FromQuery] PaginationParameter paginationParameter)
         {
-            return ValidateAndExecute(() => _transactionService.CreateTransactionForUserAsync(model));
+            return ValidateAndExecute(() => _transactionService.GetAllTransactionsForUserAsync(userId, paginationParameter));
         }
 
-        [HttpPut("user")]
-        public Task<IActionResult> UpdateTransactionForUser([FromBody] UpdateTransactionModel model)
+        [HttpGet("{transactionId}")]
+        public Task<IActionResult> GetTransactionById(Guid transactionId)
         {
-            return ValidateAndExecute(() => _transactionService.UpdateTransactionForUserAsync(model));
+            return ValidateAndExecute(() => _transactionService.GetTransactionByIdAsync(transactionId));
         }
 
-        [HttpGet("user")]
-        public Task<IActionResult> GetUserTransactions([FromQuery] PaginationParameter paginationParameter)
+        [HttpPost]
+        public Task<IActionResult> CreateTransaction([FromBody] CreateTransactionModel model)
         {
-            return ValidateAndExecute(() => _transactionService.GetUserTransactionsAsync(paginationParameter));
+            return ValidateAndExecute(() => _transactionService.CreateTransactionAsync(model));
         }
 
-        [HttpGet("user/{id}")]
-        public Task<IActionResult> GetUserTransactionById(Guid id)
+        [HttpPut]
+        public Task<IActionResult> UpdateTransaction([FromBody] UpdateTransactionModel model)
         {
-            return ValidateAndExecute(() => _transactionService.GetUserTransactionByIdAsync(id));
+            return ValidateAndExecute(() => _transactionService.UpdateTransactionAsync(model));
         }
 
-        [HttpDelete("user")]
-        public Task<IActionResult> RemoveUserTransaction([FromBody] DeleteTransactionModel model)
+        [HttpDelete("{transactionId}")]
+        public Task<IActionResult> DeleteTransaction(Guid transactionId)
         {
-            return ValidateAndExecute(() => _transactionService.RemoveUserTransactionAsync(model.Id));
-        }
-
-        // ** Group Transactions **
-        [HttpPost("group")]
-        public Task<IActionResult> CreateTransactionForGroup([FromBody] CreateTransactionModel model)
-        {
-            return ValidateAndExecute(() => _transactionService.CreateTransactionForGroupAsync(model));
-        }
-
-        [HttpPut("group")]
-        public Task<IActionResult> UpdateTransactionForGroup([FromBody] UpdateTransactionModel model)
-        {
-            return ValidateAndExecute(() => _transactionService.UpdateTransactionForGroupAsync(model));
-        }
-
-        [HttpGet("group")]
-        public Task<IActionResult> GetGroupTransactions([FromQuery] PaginationParameter paginationParameter)
-        {
-            return ValidateAndExecute(() => _transactionService.GetGroupTransactionsAsync(paginationParameter));
-        }
-
-        [HttpGet("group/user/{userId}")]
-        public Task<IActionResult> GetGroupTransactionByUserId(Guid userId)
-        {
-            return ValidateAndExecute(() => _transactionService.GetGroupTransactionByUserIdAsync(userId));
-        }
-
-        [HttpDelete("group")]
-        public Task<IActionResult> RemoveGroupTransaction([FromBody] DeleteTransactionModel model)
-        {
-            return ValidateAndExecute(() => _transactionService.RemoveGroupTransactionAsync(model.Id));
-        }
-
-        // ** Approval Handling **
-        [HttpPut("approve")]
-        public Task<IActionResult> ApproveTransaction([FromBody] TransactionApprovalModel model)
-        {
-            return ValidateAndExecute(() => _transactionService.ApproveTransactionAsync(model.Id));
-        }
-
-        [HttpPut("reject")]
-        public Task<IActionResult> RejectTransaction([FromBody] TransactionApprovalModel model)
-        {
-            return ValidateAndExecute(() => _transactionService.RejectTransactionAsync(model.Id));
+            return ValidateAndExecute(() => _transactionService.DeleteTransactionAsync(transactionId));
         }
     }
 }

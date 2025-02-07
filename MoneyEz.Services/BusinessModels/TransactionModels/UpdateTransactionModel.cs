@@ -6,28 +6,23 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
 {
     public class UpdateTransactionModel
     {
-        [Required]
-        public Guid Id { get; set; } // ID giao dịch cần cập nhật
+        [Required(ErrorMessage = "Transaction ID is required.")]
+        public Guid Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Amount is required.")]
         public decimal Amount { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Transaction type is required.")]
         public TransactionType Type { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Subcategory ID is required.")]
+        public Guid SubcategoryId { get; set; }
+
+        [Required(ErrorMessage = "Transaction date is required.")]
         public DateOnly Date { get; set; }
 
-        public string Description { get; set; } = string.Empty;
-
-        public Guid? SubcategoryId { get; set; } // Chỉ dùng cho giao dịch cá nhân
-
-        public bool ApprovalRequired { get; set; } = false; // Cập nhật yêu cầu duyệt nếu cần
-
-        public TransactionStatus Status { get; set; } // Chỉ admin hoặc nhóm trưởng mới có quyền cập nhật trạng thái
-
-        public Guid? UserId { get; set; }
-
-        public Guid? GroupId { get; set; }
+        public string Description { get; set; }
+        public bool? ApprovalRequired { get; set; }
+        public TransactionStatus Status { get; set; }
     }
 }
