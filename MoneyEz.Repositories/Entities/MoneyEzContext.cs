@@ -499,7 +499,6 @@ public partial class MoneyEzContext : DbContext
                 .HasMaxLength(100);
             entity.Property(e => e.NameUnsign).HasMaxLength(50);
             entity.Property(e => e.Password)
-                .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.PhoneNumber).HasMaxLength(15);
             entity.Property(e => e.Address).HasMaxLength(255);

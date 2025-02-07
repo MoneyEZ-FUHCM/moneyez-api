@@ -631,7 +631,7 @@ namespace MoneyEz.Services.Services.Implements
                     AvatarUrl = userGoogle.PhotoUrl,
                     Status = CommonsStatus.ACTIVE,
                     GoogleId = userGoogle.Uid,
-                    Role = RolesEnum.USER
+                    Role = RolesEnum.USER,
                 };
 
                 await _unitOfWork.UsersRepository.AddAsync(newUser);
