@@ -1,5 +1,6 @@
 ﻿#nullable disable
 using System;
+using MoneyEz.Repositories.Enums;
 using System.Collections.Generic;
 
 namespace MoneyEz.Repositories.Entities;
@@ -12,7 +13,7 @@ public partial class Transaction : BaseEntity
 
     public decimal Amount { get; set; }
 
-    public int? Type { get; set; }
+    public TransactionType Type { get; set; }
 
     public Guid? SubcategoryId { get; set; }
 
