@@ -32,9 +32,12 @@ namespace MoneyEz.Repositories.UnitOfWork
         //transaction
         private ITransactionRepository _transactionsRepository;
         //group
-        private IGroupRepository _groupRepository;
+        private IGroupFundRepository _groupFundRepository;
+        //group fund log
         private IGroupFundLogRepository _groupFundLogRepository;
+        //group member
         private IGroupMemberRepository _groupMemberRepository;
+        private ISubscriptionRepository _subscriptionRepository;
 
         public UnitOfWork(MoneyEzContext context)
         {
@@ -90,12 +93,11 @@ namespace MoneyEz.Repositories.UnitOfWork
             }
         }
 
-
-        public IGroupRepository GroupRepository
+        public IGroupFundRepository GroupFundRepository
         {
             get
             {
-                return _groupRepository ??= new GroupRepository(_context);
+                return _groupFundRepository ??= new GroupRepository(_context);
             }
         }
         public IGroupFundLogRepository GroupFundLogRepository
@@ -112,6 +114,13 @@ namespace MoneyEz.Repositories.UnitOfWork
                 return _groupMemberRepository ??= new GroupMemberRepository(_context);
             }
         }
+
+        public ISubscriptionRepository SubscriptionRepository
+        {
+            get { return _subscriptionRepository ??= new SubscriptionRepository(_context); }
+        }
+
+
         public void Commit()
         {
             try

@@ -169,7 +169,7 @@ namespace MoneyEz.API
             services.AddScoped<IOtpService, OtpService>();
 
             // config group service
-            services.AddScoped<IGroupRepository, GroupRepository>();
+            services.AddScoped<IGroupFundRepository, GroupRepository>();
             services.AddScoped<IGroupFundsService, GroupFundsService>();
 
             // config group log service

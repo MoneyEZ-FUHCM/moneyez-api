@@ -112,6 +112,28 @@ namespace MoneyEz.Services.Constants
 
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
+        public const string GROUP_GET_ALL_SUCCESS_MESSAGE = "Group get all successfully";
+        public const string GROUP_NOT_FOUND_MESSAGE = "Group not found";
+        public const string GROUP_DISBAND_FAIL_MESSAGE = "Group disband failed";
+        public const string GROUP_DISBAND_SUCCESS_MESSAGE = "Group disbanded successfully";
 
+        public const string GROUP_DISBAND_FORBIDDEN_MESSAGE = "Group disband forbidden";
+        public const string GROUP_REMOVE_MEMBER_FORBIDDEN_MESSAGE = "Group member not found";
+        public const string GROUP_REMOVE_MEMBER_SUCCESS_MESSAGE = "Group member removed successfully";
+        public const string GROUP_SET_ROLE_FORBIDDEN_MESSAGE = "Group set role forbidden";
+        public const string MEMBER_NOT_FOUND_MESSAGE = "Group member not found";
+        public const string MEMBER_ROLE_UPDATE_SUCCESS_MESSAGE = "Group member role updated successfully";
+
+        public const string GROUP_INVITE_SUCCESS_MESSAGE = "Invitation sent successfully.";
+        public const string GROUP_INVITE_FORBIDDEN_MESSAGE = "Only the group leader can invite members.";
+        public const string INVALID_INVITATION_TOKEN_MESSAGE = "Invalid invitation token.";
+        public const string GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE = "Invitation accepted successfully.";
+        public const string USER_NOT_FOUND_MESSAGE = "User not found.";
+
+        //subscription
+        public const string SUBSCRIPTION_CREATE_SUCCESS_MESSAGE = "Subscription created successfully";
+
+        // report
+        public const string REPORT_GENERATE_SUCCESS_MESSAGE = "Báo cáo sức khỏe tài chính đã được tạo thành công.";
     }
 }

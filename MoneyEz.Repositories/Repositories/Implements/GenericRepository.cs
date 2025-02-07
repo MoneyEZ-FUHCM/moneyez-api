@@ -92,9 +92,9 @@ namespace MoneyEz.Repositories.Repositories.Implements
             _dbSet.Update(entity);
         }
 
-        public async Task<Pagination<TEntity>> ToPaginationIncludeAsync(PaginationParameter paginationParameter, 
-            Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null, 
-            Expression<Func<TEntity, bool>> filter = null, 
+        public async Task<Pagination<TEntity>> ToPaginationIncludeAsync(PaginationParameter paginationParameter,
+            Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null,
+            Expression<Func<TEntity, bool>> filter = null,
             Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null)
         {
             IQueryable<TEntity> query = _dbSet;

@@ -28,10 +28,13 @@ namespace MoneyEz.Repositories.UnitOfWork
         ITransactionRepository TransactionsRepository { get; }
 
         //group
-        IGroupRepository GroupRepository { get; }
+        IGroupFundRepository GroupFundRepository { get; }
         IGroupFundLogRepository GroupFundLogRepository { get; }
         IGroupMemberRepository GroupMemberRepository { get; }
 
+
+        //subscription
+        ISubscriptionRepository SubscriptionRepository { get; }
 
         int Save();
         void Commit();

@@ -46,5 +46,6 @@ namespace MoneyEz.Services.Services.Implements
         {
             return await _cache.GetStringAsync(key) != null;
         }
+
     }
 }
