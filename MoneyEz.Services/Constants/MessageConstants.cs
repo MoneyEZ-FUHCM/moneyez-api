@@ -96,5 +96,11 @@ namespace MoneyEz.Services.Constants
                 public const string GROUP_DISBAND_SUCCESS_MESSAGE = "Group disbanded successfully";
 
                 public const string GROUP_DISBAND_FORBIDDEN_MESSAGE = "Group disband forbidden";
+                public const string GROUP_REMOVE_MEMBER_FORBIDDEN_MESSAGE = "Group member not found";
+                public const string GROUP_REMOVE_MEMBER_SUCCESS_MESSAGE = "Group member removed successfully";
+                public const string GROUP_SET_ROLE_FORBIDDEN_MESSAGE = "Group set role forbidden";
+                public const string MEMBER_NOT_FOUND_MESSAGE = "Group member not found";
+                public const string MEMBER_ROLE_UPDATE_SUCCESS_MESSAGE = "Group member role updated successfully";
+
         }
 }

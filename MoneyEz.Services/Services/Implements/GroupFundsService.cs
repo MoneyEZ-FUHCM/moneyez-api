@@ -147,5 +147,125 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.GROUP_DISBAND_SUCCESS_MESSAGE
             };
         }
+
+        public async Task<BaseResultModel> RemoveMemberAsync(Guid groupId, Guid memberId)
+        {
+            // Retrieve the group fund by its Id
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(groupId);
+            if (groupFund == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = MessageConstants.GROUP_NOT_FOUND_MESSAGE
+                };
+            }
+
+            // Check if the current user is the leader of the group
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
+
+            if (!isLeader)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Message = MessageConstants.GROUP_REMOVE_MEMBER_FORBIDDEN_MESSAGE
+                };
+            }
+
+            // Find the member to be removed
+            var memberToRemove = groupFund.GroupMembers.FirstOrDefault(member => member.UserId == memberId);
+            if (memberToRemove == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = MessageConstants.GROUP_REMOVE_MEMBER_FORBIDDEN_MESSAGE
+                };
+            }
+
+            // Remove the member from the group
+            groupFund.GroupMembers.Remove(memberToRemove);
+
+            // Add a log entry for the remove member action
+            groupFund.GroupFundLogs.Add(new GroupFundLog
+            {
+                ChangeDescription = "Member removed",
+                ChangedAt = CommonUtils.GetCurrentTime(),
+                Action = GroupAction.DELETED,
+            });
+
+            // Save the changes to the repository
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            await _unitOfWork.SaveAsync();
+
+            // Return a success result
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.GROUP_REMOVE_MEMBER_SUCCESS_MESSAGE
+            };
+        }
+
+        public async Task<BaseResultModel> SetMemberRoleAsync(Guid groupId, Guid memberId, RoleGroup newRole)
+        {
+            // Retrieve the group fund by its Id
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(groupId);
+            if (groupFund == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = MessageConstants.GROUP_NOT_FOUND_MESSAGE
+                };
+            }
+
+            // Check if the current user is the leader of the group
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
+
+            if (!isLeader)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Message = MessageConstants.GROUP_SET_ROLE_FORBIDDEN_MESSAGE
+                };
+            }
+
+            // Find the member whose role is to be changed
+            var memberToUpdate = groupFund.GroupMembers.FirstOrDefault(member => member.UserId == memberId);
+            if (memberToUpdate == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = MessageConstants.MEMBER_NOT_FOUND_MESSAGE
+                };
+            }
+
+            // Update the member's role
+            memberToUpdate.Role = newRole;
+
+            // Add a log entry for the role change action
+            groupFund.GroupFundLogs.Add(new GroupFundLog
+            {
+                ChangeDescription = $"Member role changed to {newRole}",
+                ChangedAt = CommonUtils.GetCurrentTime(),
+                Action = GroupAction.UPDATED,
+            });
+
+            // Save the changes to the repository
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            await _unitOfWork.SaveAsync();
+
+            // Return a success result
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.MEMBER_ROLE_UPDATE_SUCCESS_MESSAGE
+            };
+        }
     }
 }
