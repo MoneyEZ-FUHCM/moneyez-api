@@ -182,6 +182,7 @@ namespace MoneyEz.API
             // config chat service
             services.AddScoped<IChatHistoryRepository, ChatHistoryRepository>();
             services.AddScoped<IChatHistoryService, ChatHistoryService>();
+            services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
 
             services.AddSignalR();
 
