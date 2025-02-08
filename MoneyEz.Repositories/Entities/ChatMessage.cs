@@ -1,4 +1,4 @@
-﻿#nullable disable
+﻿using MoneyEz.Repositories.Enums;
 using System;
 using System.Collections.Generic;
 
@@ -8,11 +8,9 @@ public partial class ChatMessage : BaseEntity
 {
     public Guid? ChatHistoryId { get; set; }
 
-    public int? Type { get; set; }
+    public MessageType? Type { get; set; }
 
-    public string Message { get; set; }
+    public string? Message { get; set; }
 
-    public string MessageUnsign { get; set; }
-
-    public virtual ChatHistory ChatHistory { get; set; }
+    public virtual ChatHistory? ChatHistory { get; set; }
 }

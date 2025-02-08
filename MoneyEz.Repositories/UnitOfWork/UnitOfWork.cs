@@ -39,6 +39,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IGroupMemberRepository _groupMemberRepository;
         private ISubscriptionRepository _subscriptionRepository;
 
+        // chat
+        private IChatHistoryRepository _chatHistoryRepository;
+
         public UnitOfWork(MoneyEzContext context)
         {
             _context = context;
@@ -118,6 +121,14 @@ namespace MoneyEz.Repositories.UnitOfWork
         public ISubscriptionRepository SubscriptionRepository
         {
             get { return _subscriptionRepository ??= new SubscriptionRepository(_context); }
+        }
+
+        public IChatHistoryRepository ChatHistoryRepository
+        {
+            get
+            {
+                return _chatHistoryRepository ??= new ChatHistoryRepository(_context);
+            }
         }
 
 

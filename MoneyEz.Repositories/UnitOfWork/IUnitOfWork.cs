@@ -36,6 +36,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         //subscription
         ISubscriptionRepository SubscriptionRepository { get; }
 
+        // chat
+        IChatHistoryRepository ChatHistoryRepository { get; }
+
         int Save();
         void Commit();
         void Rollback();
