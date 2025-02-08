@@ -397,7 +397,7 @@ namespace MoneyEz.Services.Services.Implements
             // Add a log entry for the invite member action
             groupFund.GroupFundLogs.Add(new GroupFundLog
             {
-                ChangeDescription = $"Invitation sent to {email}",
+                ChangeDescription = $"Invitation sent to {currentEmail}",
                 ChangedAt = CommonUtils.GetCurrentTime(),
                 Action = GroupAction.INVITED,
             });
