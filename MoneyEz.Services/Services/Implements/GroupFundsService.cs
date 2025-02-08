@@ -46,7 +46,7 @@ namespace MoneyEz.Services.Services.Implements
                 UserId = _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail).Result.Id,
                 ContributionPercentage = 100,
                 Role = RoleGroup.LEADER,
-                Status = CommonsStatus.ACTIVE,
+                Status = GroupMemberStatus.ACTIVE,
             }
             };
             groupFund.GroupFundLogs = new List<GroupFundLog>
@@ -123,12 +123,12 @@ namespace MoneyEz.Services.Services.Implements
             {
                 // Soft delete: mark the group as inactive
                 groupFund.Status = CommonsStatus.INACTIVE;
-                _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+                _unitOfWork.GroupFundRepository.SoftDeleteAsync(groupFund);
             }
             else
             {
                 // Hard delete: remove the group from the database
-                _unitOfWork.GroupFundRepository.SoftDeleteAsync(groupFund);
+                _unitOfWork.GroupFundRepository.PermanentDeletedAsync(groupFund);
             }
 
             // Add a log entry for the disband group action
@@ -371,6 +371,28 @@ namespace MoneyEz.Services.Services.Implements
                 await smtpClient.SendMailAsync(mailMessage);
             }
 
+            // Add the member to the group with a pending status
+            var pendingMember = new GroupMember
+            {
+                UserId = Guid.NewGuid(), // Temporary Id, will be updated when the user accepts the invitation
+                ContributionPercentage = 0,
+                Role = RoleGroup.MEMBER,
+                Status = GroupMemberStatus.PENDING
+            };
+            groupFund.GroupMembers.Add(pendingMember);
+
+            // Add a log entry for the invite member action
+            groupFund.GroupFundLogs.Add(new GroupFundLog
+            {
+                ChangeDescription = $"Invitation sent to {email}",
+                ChangedAt = CommonUtils.GetCurrentTime(),
+                Action = GroupAction.INVITED,
+            });
+
+            // Save the changes to the repository
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            await _unitOfWork.SaveAsync();
+
             // Return a success result
             return new BaseResultModel
             {
@@ -411,7 +433,7 @@ namespace MoneyEz.Services.Services.Implements
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
-                    Message = MessageConstants.USER_NOT_FOUND_MESSAGE
+                    Message = MessageConstants.ACCOUNT_NOT_EXIST
                 };
             }
 
@@ -421,9 +443,17 @@ namespace MoneyEz.Services.Services.Implements
                 UserId = user.Id,
                 ContributionPercentage = 0,
                 Role = RoleGroup.MEMBER,
-                Status = CommonsStatus.ACTIVE
+                Status = GroupMemberStatus.ACTIVE
             };
             groupFund.GroupMembers.Add(groupMember);
+
+            // Add a log entry for the new member
+            groupFund.GroupFundLogs.Add(new GroupFundLog
+            {
+                ChangeDescription = $"Member {user.Email} accepted invitation",
+                ChangedAt = CommonUtils.GetCurrentTime(),
+                Action = GroupAction.JOINED,
+            });
 
             // Save the changes to the repository
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
