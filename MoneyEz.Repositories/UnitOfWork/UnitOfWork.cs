@@ -41,6 +41,7 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         // chat
         private IChatHistoryRepository _chatHistoryRepository;
+        private IChatMessageRepository _chatMessageRepository;
 
         public UnitOfWork(MoneyEzContext context)
         {
@@ -128,6 +129,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _chatHistoryRepository ??= new ChatHistoryRepository(_context);
+            }
+        }
+
+        public IChatMessageRepository ChatMessageRepository
+        {
+            get
+            {
+                return _chatMessageRepository ??= new ChatMessageRepository(_context);
             }
         }
 

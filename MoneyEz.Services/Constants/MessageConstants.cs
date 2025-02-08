@@ -137,6 +137,6 @@ namespace MoneyEz.Services.Constants
         public const string REPORT_GENERATE_SUCCESS_MESSAGE = "Báo cáo sức khỏe tài chính đã được tạo thành công.";
 
         // chat
-        public const string CHAT_USER_ALREADY_EXIST = "UserHasAlreadyExistChatConversation";
+        public const string CHAT_USER_NOT_EXIST = "UserNotExistChatConversation";
     }
 }

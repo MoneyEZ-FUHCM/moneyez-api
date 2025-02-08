@@ -1,5 +1,7 @@
-﻿using MoneyEz.Repositories.Entities;
+﻿using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Entities;
 using MoneyEz.Services.BusinessModels.ChatHistoryModels;
+using MoneyEz.Services.BusinessModels.ResultModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,5 +15,9 @@ namespace MoneyEz.Services.Services.Interfaces
         public Task<ChatHistoryModel> CreateAndUpdateConversation(CreateChatHistoryModel model);
 
         public Task<ChatHistoryModel> AddMessageToConversation(CreateChatHistoryModel model);
+
+        public Task<BaseResultModel> GetChatHistoriesPaging(PaginationParameter paginationParameter);
+
+        public Task<BaseResultModel> GetChatMessageConversation(PaginationParameter paginationParameter, string email);
     }
 }
