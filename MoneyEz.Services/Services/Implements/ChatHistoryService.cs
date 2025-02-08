@@ -1,10 +1,14 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.ChatHistoryModels;
+using MoneyEz.Services.BusinessModels.ResultModels;
+using MoneyEz.Services.BusinessModels.UserModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
@@ -103,6 +107,87 @@ namespace MoneyEz.Services.Services.Implements
             await _unitOfWork.SaveAsync();
 
             return _mapper.Map<ChatHistoryModel>(newHistory);
+        }
+
+        public async Task<BaseResultModel> GetChatHistoriesPaging(PaginationParameter paginationParameter)
+        {
+            var chatHistoryList = await _unitOfWork.ChatHistoryRepository.ToPagination(paginationParameter);
+            var chatHistoryModels = _mapper.Map<List<ChatHistoryModel>>(chatHistoryList);
+
+            var chatHistories = new Pagination<ChatHistoryModel>(chatHistoryModels,
+                chatHistoryList.TotalCount,
+                chatHistoryList.CurrentPage,
+                chatHistoryList.PageSize);
+
+            var metaData = new
+            {
+                chatHistoryList.TotalCount,
+                chatHistoryList.PageSize,
+                chatHistoryList.CurrentPage,
+                chatHistoryList.TotalPages,
+                chatHistoryList.HasNext,
+                chatHistoryList.HasPrevious
+            };
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new ModelPaging
+                {
+                    Data = chatHistories,
+                    MetaData = metaData
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetChatMessageConversation(PaginationParameter paginationParameter, string email)
+        {
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            var listChatHistory = await _unitOfWork.ChatHistoryRepository.GetAllAsync();
+            var userChat = listChatHistory.FirstOrDefault(x => x.UserId == currentUser.Id);
+            if (userChat != null)
+            {
+                var messages = await _unitOfWork.ChatMessageRepository
+                    .ToPaginationIncludeAsync(paginationParameter, 
+                        filter: q => q.ChatHistoryId == userChat.Id, 
+                        orderBy: d => d.OrderByDescending(x => x.CreatedDate));
+
+                var messageModels = _mapper.Map<List<ChatMessageModel>>(messages);
+
+                var chatMessages = new Pagination<ChatMessageModel>(messageModels,
+                    messages.TotalCount,
+                    messages.CurrentPage,
+                    messages.PageSize);
+
+                var metaData = new
+                {
+                    messages.TotalCount,
+                    messages.PageSize,
+                    messages.CurrentPage,
+                    messages.TotalPages,
+                    messages.HasNext,
+                    messages.HasPrevious
+                };
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = new ModelPaging
+                    {
+                        Data = chatMessages,
+                        MetaData = metaData
+                    }
+                };
+
+            }
+
+            throw new NotExistException("Not found conversation", MessageConstants.CHAT_USER_NOT_EXIST);
+            
         }
     }
 }
