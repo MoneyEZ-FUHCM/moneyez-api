@@ -35,11 +35,13 @@ namespace MoneyEz.Services.Constants
         public const string ACCOUNT_NOT_ENOUGH_AGE = "AccountMust16Age";
         public const string DUPLICATE_PHONE_NUMBER = "DuplicatePhoneNumber";
         public const string ACCOUNT_CURRENT_USER = "AccountIsCurrentUser";
+        public const string ACCOUNT_UPDATE_TOKEN_FAILED = "UpdateDeviceTokenFailed";
 
         public const string ACCOUNT_CREATED_SUCCESS_MESSAGE = "Account created";
         public const string ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Updated user successfully";
         public const string ACCOUNT_DELETE_SUCCESS_MESSAGE = "Deleted user successfully";
         public const string ACCOUNT_BAN_SUCCESS_MESSAGE = "Banned user successfully";
+        public const string ACCOUNT_UPDATE_TOKEN_SUCCESS_MESSAGE = "Update device token successfully";
 
         // Spending model
         public const string SPENDING_MODEL_LIST_FETCHED_SUCCESS = "SpendingModelListFetched"; //Spending model list fetched successfully.
