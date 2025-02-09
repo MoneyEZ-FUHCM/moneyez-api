@@ -379,5 +379,67 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.TRANSACTION_DELETED_SUCCESS
             };
         }
+
+        public async Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter)
+        {
+            string userEmail = _claimsService.GetCurrentUserEmail;
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.TRANSACTION_ACCESS_DENIED,
+                    Message = "Unauthorized: Cannot retrieve user email."
+                };
+            }
+
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            if (user.Role != RolesEnum.ADMIN)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    ErrorCode = MessageConstants.TRANSACTION_ADMIN_ACCESS_DENIED,
+                    Message = "Access denied: Only Admins can view all transactions."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+                paginationParameter,
+                include: query => query.Include(t => t.Subcategory).Include(t => t.User)
+            );
+
+            var result = _mapper.Map<Pagination<TransactionModel>>(transactions);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.TRANSACTION_LIST_FETCHED_SUCCESS,
+                Data = new ModelPaging
+                {
+                    Data = result,
+                    MetaData = new
+                    {
+                        result.TotalCount,
+                        result.PageSize,
+                        result.CurrentPage,
+                        result.TotalPages,
+                        result.HasNext,
+                        result.HasPrevious
+                    }
+                }
+            };
+        }
+
     }
 }

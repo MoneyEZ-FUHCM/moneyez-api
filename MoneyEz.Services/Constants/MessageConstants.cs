@@ -112,6 +112,7 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_TYPE_INVALID = "TransactionTypeInvalid";
         public const string TRANSACTION_SUBCATEGORY_REQUIRED = "TransactionSubcategoryRequired";
         public const string TRANSACTION_DATE_REQUIRED = "TransactionDateRequired";
+        public const string TRANSACTION_ADMIN_ACCESS_DENIED = "TransactionAdminAccessDenied";
 
 
         // group
