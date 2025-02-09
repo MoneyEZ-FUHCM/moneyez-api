@@ -14,7 +14,7 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
         public decimal Amount { get; set; }
         public TransactionType Type { get; set; }
         public Guid? SubcategoryId { get; set; }
-        public DateTime Date { get; set; }
+        public DateTime TransactionDate { get; set; }
         public string Description { get; set; }
         public bool? ApprovalRequired { get; set; }
         public TransactionStatus Status { get; set; }

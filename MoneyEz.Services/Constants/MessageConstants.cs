@@ -95,6 +95,12 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_UPDATED_SUCCESS = "TransactionUpdatedSuccessfully";
         public const string TRANSACTION_DELETED_SUCCESS = "TransactionDeletedSuccessfully";
         public const string TRANSACTION_FETCHED_SUCCESS = "TransactionFetchedSuccessfully";
+
+        public const string TRANSACTION_ACCESS_DENIED = "TransactionAccessDenied";
+        public const string TRANSACTION_CREATE_DENIED = "TransactionCreateDenied";
+        public const string TRANSACTION_UPDATE_DENIED = "TransactionUpdateDenied";
+        public const string TRANSACTION_DELETE_DENIED = "TransactionDeleteDenied";
+
         public const string TRANSACTION_LIST_FETCHED_SUCCESS = "TransactionListFetchedSuccessfully";
         public const string TRANSACTION_NOT_FOUND = "TransactionNotFound";
         public const string TRANSACTION_APPROVED_SUCCESS = "TransactionApprovedSuccessfully";
@@ -102,14 +108,13 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_ALREADY_APPROVED = "TransactionAlreadyApproved";
         public const string TRANSACTION_ALREADY_REJECTED = "TransactionAlreadyRejected";
         public const string TRANSACTION_CANNOT_REJECT_SELF = "UserCannotRejectTheirOwnTransaction";
-        public const string USER_NOT_FOUND = "UserNotFound";
         public const string INVALID_TRANSACTION_REQUEST = "InvalidTransactionRequest";
         public const string TRANSACTION_ID_REQUIRED = "TransactionIdRequired";
         public const string TRANSACTION_AMOUNT_REQUIRED = "TransactionAmountRequired";
         public const string TRANSACTION_TYPE_INVALID = "TransactionTypeInvalid";
         public const string TRANSACTION_SUBCATEGORY_REQUIRED = "TransactionSubcategoryRequired";
         public const string TRANSACTION_DATE_REQUIRED = "TransactionDateRequired";
-        public const string TRANSACTION_CANNOT_UPDATE_APPROVED = "TransactionCannotUpdateApproved";
+        public const string TRANSACTION_ADMIN_ACCESS_DENIED = "TransactionAdminAccessDenied";
 
 
         // group
