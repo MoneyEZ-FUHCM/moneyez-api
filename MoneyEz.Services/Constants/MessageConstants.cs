@@ -106,7 +106,6 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_ALREADY_APPROVED = "TransactionAlreadyApproved";
         public const string TRANSACTION_ALREADY_REJECTED = "TransactionAlreadyRejected";
         public const string TRANSACTION_CANNOT_REJECT_SELF = "UserCannotRejectTheirOwnTransaction";
-        public const string USER_NOT_FOUND = "UserNotFound";
         public const string INVALID_TRANSACTION_REQUEST = "InvalidTransactionRequest";
         public const string TRANSACTION_ID_REQUIRED = "TransactionIdRequired";
         public const string TRANSACTION_AMOUNT_REQUIRED = "TransactionAmountRequired";

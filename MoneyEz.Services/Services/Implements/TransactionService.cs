@@ -55,8 +55,6 @@ namespace MoneyEz.Services.Services.Implements
                     Message = "User not found."
                 };
             }
-
-            // Lấy danh sách giao dịch dựa trên userId
             var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
                 paginationParameter,
                 include: query => query.Include(t => t.Subcategory),
@@ -135,7 +133,6 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
-
             if (string.IsNullOrEmpty(userEmail))
             {
                 return new BaseResultModel
@@ -157,8 +154,59 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            if (model.Amount <= 0)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.TRANSACTION_AMOUNT_REQUIRED,
+                    Message = "Amount must be greater than zero."
+                };
+            }
+
+            if (!Enum.IsDefined(typeof(TransactionType), model.Type))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.TRANSACTION_TYPE_INVALID,
+                    Message = "Transaction type is invalid."
+                };
+            }
+
+            if (model.SubcategoryId == Guid.Empty)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.TRANSACTION_SUBCATEGORY_REQUIRED,
+                    Message = "Subcategory ID is required."
+                };
+            }
+
+            if (model.TransactionDate == default)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.TRANSACTION_DATE_REQUIRED,
+                    Message = "Transaction date is required."
+                };
+            }
+
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId);
+            if (subcategory == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND,
+                    Message = "Subcategory does not exist."
+                };
+            }
+
             var transaction = _mapper.Map<Transaction>(model);
-            transaction.UserId = user.Id; // Đảm bảo user hiện tại là chủ sở hữu giao dịch
+            transaction.UserId = user.Id;
             transaction.Status = TransactionStatus.APPROVED;
 
             await _unitOfWork.TransactionsRepository.AddAsync(transaction);
@@ -173,14 +221,13 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
-
             if (string.IsNullOrEmpty(userEmail))
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
-                    Message = "Unauthorized: Cannot retrieve user email."
+                    ErrorCode = MessageConstants.TRANSACTION_UPDATE_DENIED,
+                    Message = "Unauthorized: You must be logged in to update a transaction."
                 };
             }
 
@@ -195,14 +242,85 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            if (model.Id == Guid.Empty)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.TRANSACTION_ID_REQUIRED,
+                    Message = "Transaction ID is required."
+                };
+            }
+
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.Id);
-            if (transaction == null || transaction.UserId != user.Id)
+
+            if (transaction == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.TRANSACTION_NOT_FOUND,
+                    Message = "Transaction not found."
+                };
+            }
+
+            if (transaction.UserId != user.Id)
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status403Forbidden,
                     ErrorCode = MessageConstants.TRANSACTION_UPDATE_DENIED,
                     Message = "Access denied: You can only update your own transactions."
+                };
+            }
+
+            if (model.Amount <= 0)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.TRANSACTION_AMOUNT_REQUIRED,
+                    Message = "Amount must be greater than zero."
+                };
+            }
+
+            if (!Enum.IsDefined(typeof(TransactionType), model.Type))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.TRANSACTION_TYPE_INVALID,
+                    Message = "Transaction type is invalid."
+                };
+            }
+
+            if (model.SubcategoryId == Guid.Empty)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.TRANSACTION_SUBCATEGORY_REQUIRED,
+                    Message = "Subcategory ID is required."
+                };
+            }
+
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId);
+            if (subcategory == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND,
+                    Message = "Subcategory does not exist."
+                };
+            }
+            if (model.TransactionDate == default)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.TRANSACTION_DATE_REQUIRED,
+                    Message = "Transaction date is required."
                 };
             }
 
@@ -252,7 +370,7 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            _unitOfWork.TransactionsRepository.SoftDeleteAsync(transaction);
+            _unitOfWork.TransactionsRepository.PermanentDeletedAsync(transaction);
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
