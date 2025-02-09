@@ -22,19 +22,45 @@ namespace MoneyEz.Services.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IClaimsService _claimsService;
 
-        public TransactionService(IUnitOfWork unitOfWork, IMapper mapper)
+        public TransactionService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _claimsService = claimsService;
         }
 
-        public async Task<BaseResultModel> GetAllTransactionsForUserAsync(Guid userId, PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetAllTransactionsForUserAsync(PaginationParameter paginationParameter)
         {
+            string userEmail = _claimsService.GetCurrentUserEmail;
+
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
+                    Message = "Unauthorized: Cannot retrieve user email."
+                };
+            }
+
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            // Lấy danh sách giao dịch dựa trên userId
             var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
                 paginationParameter,
                 include: query => query.Include(t => t.Subcategory),
-                filter: t => t.UserId == userId
+                filter: t => t.UserId == user.Id
             );
 
             var result = _mapper.Map<Pagination<TransactionModel>>(transactions);
@@ -58,16 +84,45 @@ namespace MoneyEz.Services.Services.Implements
                 }
             };
         }
+
         public async Task<BaseResultModel> GetTransactionByIdAsync(Guid transactionId)
         {
+            string userEmail = _claimsService.GetCurrentUserEmail;
+
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
+                    Message = "Unauthorized: Cannot retrieve user email."
+                };
+            }
+
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdIncludeAsync(
                 transactionId,
                 include: query => query.Include(t => t.Subcategory)
             );
 
-            if (transaction == null)
+            if (transaction == null || transaction.UserId != user.Id)
             {
-                throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    ErrorCode = MessageConstants.TRANSACTION_ACCESS_DENIED,
+                    Message = "Access denied: You can only view your own transactions."
+                };
             }
 
             return new BaseResultModel
@@ -79,83 +134,32 @@ namespace MoneyEz.Services.Services.Implements
         }
         public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model)
         {
-            if (model.UserId == Guid.Empty)
+            string userEmail = _claimsService.GetCurrentUserEmail;
+
+            if (string.IsNullOrEmpty(userEmail))
             {
                 return new BaseResultModel
                 {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.INVALID_TRANSACTION_REQUEST,
-                    Message = "User ID is required."
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.TRANSACTION_CREATE_DENIED,
+                    Message = "Unauthorized: You must be logged in to create a transaction."
                 };
             }
 
-            if (model.Amount <= 0)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.INVALID_TRANSACTION_REQUEST,
-                    Message = "Amount must be greater than zero."
-                };
-            }
-
-            if (!Enum.IsDefined(typeof(TransactionType), model.Type))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.INVALID_TRANSACTION_REQUEST,
-                    Message = "Transaction type is invalid."
-                };
-            }
-
-            if (model.SubcategoryId == Guid.Empty)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.INVALID_TRANSACTION_REQUEST,
-                    Message = "Subcategory ID is required."
-                };
-            }
-
-            if (model.Date == default)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.INVALID_TRANSACTION_REQUEST,
-                    Message = "Transaction date is required."
-                };
-            }
-
-            // Kiểm tra UserId có tồn tại trong DB không
-            var user = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId);
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
             if (user == null)
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.USER_NOT_FOUND,
-                    Message = "User does not exist."
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
                 };
             }
 
-            // Kiểm tra SubcategoryId có tồn tại trong DB không
-            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId);
-            if (subcategory == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND,
-                    Message = "Subcategory does not exist."
-                };
-            }
-
-            // Tạo giao dịch mới
             var transaction = _mapper.Map<Transaction>(model);
-            transaction.Status = TransactionStatus.APPROVED; 
+            transaction.UserId = user.Id; // Đảm bảo user hiện tại là chủ sở hữu giao dịch
+            transaction.Status = TransactionStatus.APPROVED;
 
             await _unitOfWork.TransactionsRepository.AddAsync(transaction);
             await _unitOfWork.SaveAsync();
@@ -168,72 +172,37 @@ namespace MoneyEz.Services.Services.Implements
         }
         public async Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model)
         {
-            if (model.Id == Guid.Empty)
+            string userEmail = _claimsService.GetCurrentUserEmail;
+
+            if (string.IsNullOrEmpty(userEmail))
             {
                 return new BaseResultModel
                 {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_ID_REQUIRED,
-                    Message = "Transaction ID is required."
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
+                    Message = "Unauthorized: Cannot retrieve user email."
                 };
             }
 
-            if (model.Amount <= 0)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_AMOUNT_REQUIRED,
-                    Message = "Amount must be greater than zero."
-                };
-            }
-
-            if (!Enum.IsDefined(typeof(TransactionType), model.Type))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_TYPE_INVALID,
-                    Message = "Transaction type is invalid."
-                };
-            }
-
-            if (model.SubcategoryId == Guid.Empty)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_SUBCATEGORY_REQUIRED,
-                    Message = "Subcategory ID is required."
-                };
-            }
-
-            if (model.Date == default)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_DATE_REQUIRED,
-                    Message = "Transaction date is required."
-                };
-            }
-
-            // Kiểm tra giao dịch có tồn tại không
-            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.Id);
-            if (transaction == null)
-            {
-                throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
-            }
-
-            // Kiểm tra danh mục con có tồn tại không
-            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId);
-            if (subcategory == null)
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND,
-                    Message = "Subcategory does not exist."
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.Id);
+            if (transaction == null || transaction.UserId != user.Id)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    ErrorCode = MessageConstants.TRANSACTION_UPDATE_DENIED,
+                    Message = "Access denied: You can only update your own transactions."
                 };
             }
 
@@ -249,14 +218,41 @@ namespace MoneyEz.Services.Services.Implements
         }
         public async Task<BaseResultModel> DeleteTransactionAsync(Guid transactionId)
         {
-            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId);
+            string userEmail = _claimsService.GetCurrentUserEmail;
 
-            if (transaction == null)
+            if (string.IsNullOrEmpty(userEmail))
             {
-                throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
+                    Message = "Unauthorized: Cannot retrieve user email."
+                };
             }
 
-            _unitOfWork.TransactionsRepository.PermanentDeletedAsync(transaction);
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId);
+            if (transaction == null || transaction.UserId != user.Id)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    ErrorCode = MessageConstants.TRANSACTION_DELETE_DENIED,
+                    Message = "Access denied: You can only delete your own transactions."
+                };
+            }
+
+            _unitOfWork.TransactionsRepository.SoftDeleteAsync(transaction);
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel

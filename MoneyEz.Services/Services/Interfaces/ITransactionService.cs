@@ -9,7 +9,7 @@ namespace MoneyEz.Services.Services.Interfaces
 {
     public interface ITransactionService
     {
-        Task<BaseResultModel> GetAllTransactionsForUserAsync(Guid userId, PaginationParameter paginationParameter);
+        Task<BaseResultModel> GetAllTransactionsForUserAsync(PaginationParameter paginationParameter);
         Task<BaseResultModel> GetTransactionByIdAsync(Guid transactionId);
         Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model);
         Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model);

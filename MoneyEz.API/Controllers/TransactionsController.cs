@@ -20,10 +20,10 @@ namespace MoneyEz.API.Controllers
             _transactionService = transactionService;
         }
 
-        [HttpGet("user/{userId}")]
-        public Task<IActionResult> GetAllTransactions(Guid userId, [FromQuery] PaginationParameter paginationParameter)
+        [HttpGet("user")]
+        public Task<IActionResult> GetAllTransactions([FromQuery] PaginationParameter paginationParameter)
         {
-            return ValidateAndExecute(() => _transactionService.GetAllTransactionsForUserAsync(userId, paginationParameter));
+            return ValidateAndExecute(() => _transactionService.GetAllTransactionsForUserAsync(paginationParameter));
         }
 
         [HttpGet("{transactionId}")]
