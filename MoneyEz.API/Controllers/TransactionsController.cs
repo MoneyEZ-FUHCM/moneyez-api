@@ -49,5 +49,12 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _transactionService.DeleteTransactionAsync(transactionId));
         }
+
+        [HttpGet("admin")]
+        public Task<IActionResult> GetAllTransactionsForAdmin([FromQuery] PaginationParameter paginationParameter)
+        {
+            return ValidateAndExecute(() => _transactionService.GetAllTransactionsForAdminAsync(paginationParameter));
+        }
+
     }
 }
