@@ -25,6 +25,7 @@ using Microsoft.EntityFrameworkCore;
 using MoneyEz.Repositories.Commons;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MoneyEz.Services.BusinessModels.UserModels;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -94,32 +95,52 @@ namespace MoneyEz.Services.Services.Implements
             // Get all groupFunds from the repository
             var groupFunds = await _unitOfWork.GroupFundRepository.ToPaginationIncludeAsync(paginationParameters, include: query => query.Include(c => c.GroupMembers));
 
-            // Return a success result with the groupFunds
-            var result = _mapper.Map<Pagination<GroupFund>>(groupFunds);
-            var options = new JsonSerializerOptions
+            var groupFundModels = _mapper.Map<List<GroupFundModel>>(groupFunds);
+
+            var groupPagings = new Pagination<GroupFundModel>(groupFundModels,
+                groupFunds.TotalCount,
+                groupFunds.CurrentPage,
+                groupFunds.PageSize);
+
+            var metaData = new
             {
-                ReferenceHandler = ReferenceHandler.Preserve
+                groupFunds.TotalCount,
+                groupFunds.PageSize,
+                groupFunds.CurrentPage,
+                groupFunds.TotalPages,
+                groupFunds.HasNext,
+                groupFunds.HasPrevious
             };
-            var jsonData = JsonSerializer.Serialize(new ModelPaging
-            {
-                Data = result,
-                MetaData = new
-                {
-                    result.TotalCount,
-                    result.PageSize,
-                    result.CurrentPage,
-                    result.TotalPages,
-                    result.HasNext,
-                    result.HasPrevious
-                }
-            }, options);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = JsonSerializer.Deserialize<object>(jsonData, options),
-                Message = MessageConstants.GROUP_GET_ALL_SUCCESS_MESSAGE
+                Data = new ModelPaging
+                {
+                    Data = groupPagings,
+                    MetaData = metaData
+                }
             };
+
+            //// Return a success result with the groupFunds
+            //var result = _mapper.Map<Pagination<GroupFund>>(groupFunds);
+            //var options = new JsonSerializerOptions
+            //{
+            //    ReferenceHandler = ReferenceHandler.Preserve
+            //};
+            //var jsonData = JsonSerializer.Serialize(new ModelPaging
+            //{
+            //    Data = result,
+            //    MetaData = new
+            //    {
+            //        result.TotalCount,
+            //        result.PageSize,
+            //        result.CurrentPage,
+            //        result.TotalPages,
+            //        result.HasNext,
+            //        result.HasPrevious
+            //    }
+            //}, options);
         }
 
         public async Task<BaseResultModel> DisbandGroupAsync(Guid groupId)
