@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.GroupMember;
 using MoneyEz.Services.Services.Interfaces;
 using System.Threading.Tasks;
@@ -22,9 +23,9 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundService.CreateGroupFundsAsync(model));
         }
         [HttpGet]
-        public async Task<IActionResult> GetAllGroupFunds()
+        public async Task<IActionResult> GetAllGroupFunds([FromQuery] PaginationParameter paginationParameters)
         {
-            return await ValidateAndExecute(() => _groupFundService.GetAllGroupFunds());
+            return await ValidateAndExecute(() => _groupFundService.GetAllGroupFunds(paginationParameters));
         }
         [HttpDelete("{groupId}")]
         public async Task<IActionResult> DisbandGroupFund(Guid groupId)

@@ -22,6 +22,9 @@ using MoneyEz.Services.Utils.Email;
 using static System.Net.WebRequestMethods;
 using MoneyEz.Services.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using MoneyEz.Repositories.Commons;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -86,15 +89,35 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetAllGroupFunds()
+        public async Task<BaseResultModel> GetAllGroupFunds(PaginationParameter paginationParameters)
         {
             // Get all groupFunds from the repository
-            var groupFunds = await _unitOfWork.GroupFundLogRepository.GetAllAsync();
+            var groupFunds = await _unitOfWork.GroupFundRepository.ToPaginationIncludeAsync(paginationParameters, include: query => query.Include(c => c.GroupMembers));
+
             // Return a success result with the groupFunds
+            var result = _mapper.Map<Pagination<GroupFund>>(groupFunds);
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+            var jsonData = JsonSerializer.Serialize(new ModelPaging
+            {
+                Data = result,
+                MetaData = new
+                {
+                    result.TotalCount,
+                    result.PageSize,
+                    result.CurrentPage,
+                    result.TotalPages,
+                    result.HasNext,
+                    result.HasPrevious
+                }
+            }, options);
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = groupFunds,
+                Data = JsonSerializer.Deserialize<object>(jsonData, options),
                 Message = MessageConstants.GROUP_GET_ALL_SUCCESS_MESSAGE
             };
         }
@@ -387,7 +410,7 @@ namespace MoneyEz.Services.Services.Implements
             // Add the member to the group with a pending status
             var pendingMember = new GroupMember
             {
-                UserId = Guid.NewGuid(), // Temporary Id, will be updated when the user accepts the invitation
+                UserId = inviteUser.Id,
                 ContributionPercentage = 0,
                 Role = RoleGroup.MEMBER,
                 Status = GroupMemberStatus.PENDING
