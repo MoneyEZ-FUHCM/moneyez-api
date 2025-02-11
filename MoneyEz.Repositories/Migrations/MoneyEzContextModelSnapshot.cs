@@ -1122,9 +1122,6 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
@@ -1134,13 +1131,16 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("Status")
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<Guid?>("SubcategoryId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("Type")
+                    b.Property<DateTime?>("TransactionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.Property<string>("UpdatedBy")
@@ -1238,7 +1238,7 @@ namespace MoneyEz.Repositories.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("Gender")
+                    b.Property<int?>("Gender")
                         .HasColumnType("int");
 
                     b.Property<string>("GoogleId")
@@ -1256,7 +1256,6 @@ namespace MoneyEz.Repositories.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Password")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 

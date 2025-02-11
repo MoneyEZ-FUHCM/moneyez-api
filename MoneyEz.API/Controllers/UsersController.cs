@@ -59,5 +59,13 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _userService.DeleteUserAsync(id, currentEmail));
         }
 
+        [HttpPut("update-fcm-token")]
+        [Authorize]
+        public Task<IActionResult> UpdateDeviceToken([FromBody] string fcmToken)
+        {
+            string currentEmail = _claimsService.GetCurrentUserEmail;
+            return ValidateAndExecute(() => _userService.UpdateFcmTokenAsync(currentEmail, fcmToken));
+        }
+
     }
 }
