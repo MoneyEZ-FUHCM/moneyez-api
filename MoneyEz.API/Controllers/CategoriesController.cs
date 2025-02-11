@@ -29,28 +29,26 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _categoryService.GetCategoryByIdAsync(id));
         }
 
+        /// <summary>
+        /// Add list categories or one category.
+        /// </summary>
+        /// <param name="models">List categories will be added.</param>
         [HttpPost]
-        public Task<IActionResult> AddCategory([FromBody] CreateCategoryModel model)
+        public Task<IActionResult> AddCategories([FromBody] List<CreateCategoryModel> models)
         {
-            return ValidateAndExecute(() => _categoryService.AddCategoryAsync(model));
+            return ValidateAndExecute(() => _categoryService.AddCategoriesAsync(models));
         }
 
-        [HttpPut("{id}")]
-        public Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateCategoryModel model)
+        [HttpPut]
+        public Task<IActionResult> UpdateCategory([FromBody] UpdateCategoryModel model)
         {
-            return ValidateAndExecute(() => _categoryService.UpdateCategoryAsync(id, model));
+            return ValidateAndExecute(() => _categoryService.UpdateCategoryAsync(model));
         }
 
         [HttpDelete("{id}")]
         public Task<IActionResult> DeleteCategory(Guid id)
         {
             return ValidateAndExecute(() => _categoryService.DeleteCategoryAsync(id));
-        }
-
-        [HttpPost("bulk")]
-        public Task<IActionResult> AddListCategories([FromBody] List<CreateCategoryModel> models)
-        {
-            return ValidateAndExecute(() => _categoryService.AddListCategoriesAsync(models));
         }
     }
 }

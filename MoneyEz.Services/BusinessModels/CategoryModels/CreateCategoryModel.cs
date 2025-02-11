@@ -10,12 +10,10 @@ namespace MoneyEz.Services.BusinessModels.CategoryModels
 {
     public class CreateCategoryModel
     {
-        [Required(ErrorMessage = "Tên danh mục là bắt buộc.")] // Ràng buộc không được để trống
-        public string Name { get; set; } // Tên danh mục
+        [Required(ErrorMessage = "Tên danh mục là bắt buộc.")]
+        public required string Name { get; set; }
+        public string Description { get; set; }
 
-        public string Description { get; set; } // Mô tả danh mục
-
-        // `NameUnsign` sẽ được xử lý tự động, không cần client truyền lên
-        public string NameUnsign => StringUtils.ConvertToUnSign(Name); // Chuyển đổi tên không dấu
+        public string NameUnsign => StringUtils.ConvertToUnSign(Name);
     }
 }

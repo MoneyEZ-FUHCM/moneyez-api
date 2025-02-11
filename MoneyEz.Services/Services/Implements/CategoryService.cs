@@ -1,12 +1,19 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
-using MoneyEz.Repositories.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
+using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.Constants;
+using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
-using MoneyEz.Repositories.Commons;
+using MoneyEz.Services.Utils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -23,7 +30,11 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetCategoryPaginationAsync(PaginationParameter paginationParameter)
         {
-            var categories = await _unitOfWork.CategoriesRepository.ToPagination(paginationParameter);
+            var categories = await _unitOfWork.CategoriesRepository.ToPaginationIncludeAsync(
+                paginationParameter,
+                include: query => query.Include(c => c.CategorySubcategories)
+                                       .ThenInclude(cs => cs.Subcategory)
+            );
 
             var result = _mapper.Map<Pagination<CategoryModel>>(categories);
 
@@ -31,50 +42,89 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.CATEGORY_LIST_FETCHED_SUCCESS,
-                Data = result
+                Data = new ModelPaging
+                {
+                    Data = result,
+                    MetaData = new
+                    {
+                        result.TotalCount,
+                        result.PageSize,
+                        result.CurrentPage,
+                        result.TotalPages,
+                        result.HasNext,
+                        result.HasPrevious
+                    }
+                }
             };
         }
 
         public async Task<BaseResultModel> GetCategoryByIdAsync(Guid id)
         {
-            var category = await _unitOfWork.CategoriesRepository.GetByIdAsync(id);
+            var category = await _unitOfWork.CategoriesRepository.GetByIdIncludeAsync(
+                id,
+                include: query => query.Include(c => c.CategorySubcategories)
+                                       .ThenInclude(cs => cs.Subcategory)
+            );
+
             if (category == null || category.IsDeleted)
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.CATEGORY_NOT_FOUND
-                };
+                throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
             }
-
-            var result = _mapper.Map<CategoryModel>(category);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.CATEGORY_FETCHED_SUCCESS,
-                Data = result
+                Data = _mapper.Map<CategoryModel>(category)
             };
         }
 
-        public async Task<BaseResultModel> AddCategoryAsync(CreateCategoryModel model)
+        public async Task<BaseResultModel> AddCategoriesAsync(List<CreateCategoryModel> models)
         {
-            var unsignName = model.NameUnsign;
-
-            // Check duplicate
-            var allCategories = await _unitOfWork.CategoriesRepository.GetAllAsync();
-            if (allCategories.Any(c => c.NameUnsign == unsignName))
+            if (models == null || !models.Any())
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.CATEGORY_ALREADY_EXISTS
+                    ErrorCode = MessageConstants.EMPTY_CATEGORY_LIST,
+                    Message = "The list of categories cannot be empty."
                 };
             }
 
-            var category = _mapper.Map<Category>(model);
+            var existingCategories = await _unitOfWork.CategoriesRepository.GetAllAsync();
+            var existingUnsignNames = existingCategories
+                .Where(c => !c.IsDeleted)
+                .Select(c => c.NameUnsign)
+                .ToHashSet();
 
-            await _unitOfWork.CategoriesRepository.AddAsync(category);
+            var newCategories = new List<Category>();
+            var duplicateNames = new List<string>();
+
+            foreach (var model in models)
+            {
+                var unsignName = StringUtils.ConvertToUnSign(model.Name);
+                if (existingUnsignNames.Contains(unsignName) || newCategories.Any(c => c.NameUnsign == unsignName))
+                {
+                    duplicateNames.Add(model.Name);
+                    continue;
+                }
+
+                var category = _mapper.Map<Category>(model);
+                category.NameUnsign = unsignName;
+                newCategories.Add(category);
+            }
+
+            if (duplicateNames.Any())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.CATEGORY_ALREADY_EXISTS,
+                    Message = $"The following categories already exist: {string.Join(", ", duplicateNames)}"
+                };
+            }
+
+            await _unitOfWork.CategoriesRepository.AddRangeAsync(newCategories);
             _unitOfWork.Save();
 
             return new BaseResultModel
@@ -84,33 +134,28 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> UpdateCategoryAsync(Guid id, UpdateCategoryModel model)
+        public async Task<BaseResultModel> UpdateCategoryAsync(UpdateCategoryModel model)
         {
-            var category = await _unitOfWork.CategoriesRepository.GetByIdAsync(id);
+            var category = await _unitOfWork.CategoriesRepository.GetByIdAsync(model.Id);
             if (category == null || category.IsDeleted)
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.CATEGORY_NOT_FOUND
-                };
+                throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
             }
 
-            var unsignName = model.NameUnsign;
-
-            // Check duplicate
             var allCategories = await _unitOfWork.CategoriesRepository.GetAllAsync();
-            if (allCategories.Any(c => c.NameUnsign == unsignName && c.Id != id))
+            var unsignName = StringUtils.ConvertToUnSign(model.Name);
+            if (allCategories.Any(c => c.NameUnsign == unsignName && c.Id != model.Id))
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.CATEGORY_ALREADY_EXISTS
+                    ErrorCode = MessageConstants.CATEGORY_ALREADY_EXISTS,
+                    Message = $"A category with the name '{model.Name}' already exists."
                 };
             }
 
             _mapper.Map(model, category);
-
+            category.NameUnsign = unsignName;
             _unitOfWork.CategoriesRepository.UpdateAsync(category);
             _unitOfWork.Save();
 
@@ -123,23 +168,24 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> DeleteCategoryAsync(Guid id)
         {
-            var category = await _unitOfWork.CategoriesRepository.GetByIdAsync(id);
+            var category = await _unitOfWork.CategoriesRepository.GetByIdIncludeAsync(
+                id,
+                include: query => query.Include(c => c.CategorySubcategories)
+                                       .ThenInclude(cs => cs.Subcategory)
+            );
+
             if (category == null || category.IsDeleted)
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.CATEGORY_NOT_FOUND
-                };
+                throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
             }
 
-            // check dependencies
-            if (category.Subcategories.Any() || category.SpendingModelCategories.Any())
+            if (category.CategorySubcategories.Any())
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.CATEGORY_HAS_DEPENDENCIES
+                    ErrorCode = MessageConstants.CATEGORY_HAS_DEPENDENCIES,
+                    Message = "The category has dependent subcategories and cannot be deleted."
                 };
             }
 
@@ -152,59 +198,5 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.CATEGORY_DELETED_SUCCESS
             };
         }
-
-        public async Task<BaseResultModel> AddListCategoriesAsync(List<CreateCategoryModel> models)
-        {
-            if (models == null || !models.Any())
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = "EmptyList",
-                    Message = "The category list is empty."
-                };
-            }
-
-            var allCategories = await _unitOfWork.CategoriesRepository.GetAllAsync();
-            var existingNames = allCategories.Where(c => !c.IsDeleted)
-                                              .Select(c => c.NameUnsign)
-                                              .ToHashSet();
-
-            var newCategories = new List<Category>();
-            var duplicateNames = new List<string>();
-
-            foreach (var model in models)
-            {
-                var unsignName = model.NameUnsign;
-                if (existingNames.Contains(unsignName))
-                {
-                    duplicateNames.Add(model.Name);
-                    continue;
-                }
-
-                var category = _mapper.Map<Category>(model);
-                newCategories.Add(category);
-            }
-
-            if (duplicateNames.Any())
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = "DuplicateCategories",
-                    Message = $"The following categories already exist: {string.Join(", ", duplicateNames)}"
-                };
-            }
-
-            await _unitOfWork.CategoriesRepository.AddRangeAsync(newCategories);
-            _unitOfWork.Save();
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status201Created,
-                Message = $"{newCategories.Count} categories were added successfully."
-            };
-        }
-
     }
 }

@@ -21,5 +21,6 @@ namespace MoneyEz.Services.Services.Implements
         }
 
         public string GetCurrentUserEmail { get; }
+
     }
 }

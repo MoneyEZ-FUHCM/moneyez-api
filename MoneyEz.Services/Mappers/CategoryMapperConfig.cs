@@ -1,6 +1,9 @@
 ﻿using AutoMapper;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Services.BusinessModels.CategoryModels;
+using MoneyEz.Services.BusinessModels.SubcategoryModels;
+using MoneyEz.Services.Utils;
 
 namespace MoneyEz.Services.Mappers
 {
@@ -8,16 +11,26 @@ namespace MoneyEz.Services.Mappers
     {
         partial void CategoryMapperConfig()
         {
-            // Map từ CreateCategoryModel -> Category
+            CreateMap<Category, CategoryModel>()
+                .ForMember(dest => dest.Subcategories, opt => opt.MapFrom(src => src.CategorySubcategories.Select(cs => cs.Subcategory).ToList()));
+
+            CreateMap<CategorySubcategory, SubcategoryModel>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Subcategory.Id))
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Subcategory.Name))
+                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => src.Subcategory.NameUnsign))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Subcategory.Description));
+
+            // Map từ CreateCategoryModel sang Category entity
             CreateMap<CreateCategoryModel, Category>()
-                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => src.NameUnsign));
+                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => StringUtils.ConvertToUnSign(src.Name)));
 
-            // Map từ UpdateCategoryModel -> Category
+            // Map từ UpdateCategoryModel sang Category entity
             CreateMap<UpdateCategoryModel, Category>()
-                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => src.NameUnsign));
+                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => StringUtils.ConvertToUnSign(src.Name)));
 
-            // Map từ Category -> CategoryModel
-            CreateMap<Category, CategoryModel>();
+            // Map từ Pagination<Category> sang Pagination<CategoryModel>
+            CreateMap<Pagination<Category>, Pagination<CategoryModel>>()
+                .ConvertUsing<PaginationConverter<Category, CategoryModel>>();
         }
     }
 }

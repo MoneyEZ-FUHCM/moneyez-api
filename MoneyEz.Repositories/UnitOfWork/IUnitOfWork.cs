@@ -22,8 +22,27 @@ namespace MoneyEz.Repositories.UnitOfWork
         //category
         ICategoriesRepository CategoriesRepository { get; }
 
+        //subcategory
+        ISubcategoryRepository SubcategoryRepository { get; }
+        //transaction
+        ITransactionRepository TransactionsRepository { get; }
+
+        //group
+        IGroupFundRepository GroupFundRepository { get; }
+        IGroupFundLogRepository GroupFundLogRepository { get; }
+        IGroupMemberRepository GroupMemberRepository { get; }
+
+
+        //subscription
+        ISubscriptionRepository SubscriptionRepository { get; }
+
+        // chat
+        IChatHistoryRepository ChatHistoryRepository { get; }
+        IChatMessageRepository ChatMessageRepository { get; }
+
         int Save();
         void Commit();
         void Rollback();
+        Task SaveAsync();
     }
 }
