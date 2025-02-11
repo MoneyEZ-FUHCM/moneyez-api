@@ -35,11 +35,13 @@ namespace MoneyEz.Services.Constants
         public const string ACCOUNT_NOT_ENOUGH_AGE = "AccountMust16Age";
         public const string DUPLICATE_PHONE_NUMBER = "DuplicatePhoneNumber";
         public const string ACCOUNT_CURRENT_USER = "AccountIsCurrentUser";
+        public const string ACCOUNT_UPDATE_TOKEN_FAILED = "UpdateDeviceTokenFailed";
 
         public const string ACCOUNT_CREATED_SUCCESS_MESSAGE = "Account created";
         public const string ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Updated user successfully";
         public const string ACCOUNT_DELETE_SUCCESS_MESSAGE = "Deleted user successfully";
         public const string ACCOUNT_BAN_SUCCESS_MESSAGE = "Banned user successfully";
+        public const string ACCOUNT_UPDATE_TOKEN_SUCCESS_MESSAGE = "Update device token successfully";
 
         // Spending model
         public const string SPENDING_MODEL_LIST_FETCHED_SUCCESS = "SpendingModelListFetched"; //Spending model list fetched successfully.
@@ -72,8 +74,74 @@ namespace MoneyEz.Services.Constants
         public const string CATEGORY_DELETED_SUCCESS = "CategoryDeletedSuccessfully";
         public const string CATEGORY_HAS_DEPENDENCIES = "CategoryHasDependencies";
 
+        // subcategory
+        public const string SUBCATEGORY_LIST_FETCHED_SUCCESS = "SubcategoryListFetched";
+        public const string SUBCATEGORY_FETCHED_SUCCESS = "SubcategoryFetched";
+        public const string SUBCATEGORY_CREATED_SUCCESS = "SubcategoryCreatedSuccessfully";
+        public const string SUBCATEGORY_UPDATED_SUCCESS = "SubcategoryUpdatedSuccessfully";
+        public const string SUBCATEGORY_DELETED_SUCCESS = "SubcategoryDeletedSuccessfully";
+        public const string SUBCATEGORY_HAS_DEPENDENCIES = "SubcategoryHasDependencies";
+
+        public const string SUBCATEGORY_NOT_FOUND = "SubcategoryNotFound";
+        public const string SUBCATEGORY_ALREADY_EXISTS = "SubcategoryAlreadyExists";
+        public const string DUPLICATE_SUBCATEGORY_NAMES = "DuplicateSubcategoryNames";
+        public const string EMPTY_SUBCATEGORY_LIST = "EmptySubcategoryList";
+        public const string CATEGORY_ID_REQUIRED = "CategoryIdRequired"; // Each subcategory must have a valid CategoryId.
+
+        // transaction
+        public const string TRANSACTION_CREATED_SUCCESS = "TransactionCreatedSuccessfully";
+        public const string TRANSACTION_UPDATED_SUCCESS = "TransactionUpdatedSuccessfully";
+        public const string TRANSACTION_DELETED_SUCCESS = "TransactionDeletedSuccessfully";
+        public const string TRANSACTION_FETCHED_SUCCESS = "TransactionFetchedSuccessfully";
+
+        public const string TRANSACTION_ACCESS_DENIED = "TransactionAccessDenied";
+        public const string TRANSACTION_CREATE_DENIED = "TransactionCreateDenied";
+        public const string TRANSACTION_UPDATE_DENIED = "TransactionUpdateDenied";
+        public const string TRANSACTION_DELETE_DENIED = "TransactionDeleteDenied";
+
+        public const string TRANSACTION_LIST_FETCHED_SUCCESS = "TransactionListFetchedSuccessfully";
+        public const string TRANSACTION_NOT_FOUND = "TransactionNotFound";
+        public const string TRANSACTION_APPROVED_SUCCESS = "TransactionApprovedSuccessfully";
+        public const string TRANSACTION_REJECTED_SUCCESS = "TransactionRejectedSuccessfully";
+        public const string TRANSACTION_ALREADY_APPROVED = "TransactionAlreadyApproved";
+        public const string TRANSACTION_ALREADY_REJECTED = "TransactionAlreadyRejected";
+        public const string TRANSACTION_CANNOT_REJECT_SELF = "UserCannotRejectTheirOwnTransaction";
+        public const string INVALID_TRANSACTION_REQUEST = "InvalidTransactionRequest";
+        public const string TRANSACTION_ID_REQUIRED = "TransactionIdRequired";
+        public const string TRANSACTION_AMOUNT_REQUIRED = "TransactionAmountRequired";
+        public const string TRANSACTION_TYPE_INVALID = "TransactionTypeInvalid";
+        public const string TRANSACTION_SUBCATEGORY_REQUIRED = "TransactionSubcategoryRequired";
+        public const string TRANSACTION_DATE_REQUIRED = "TransactionDateRequired";
+        public const string TRANSACTION_ADMIN_ACCESS_DENIED = "TransactionAdminAccessDenied";
+
+
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
+        public const string GROUP_GET_ALL_SUCCESS_MESSAGE = "Group get all successfully";
+        public const string GROUP_NOT_FOUND_MESSAGE = "Group not found";
+        public const string GROUP_DISBAND_FAIL_MESSAGE = "Group disband failed";
+        public const string GROUP_DISBAND_SUCCESS_MESSAGE = "Group disbanded successfully";
 
+        public const string GROUP_DISBAND_FORBIDDEN_MESSAGE = "Group disband forbidden";
+        public const string GROUP_REMOVE_MEMBER_FORBIDDEN_MESSAGE = "Group member not found";
+        public const string GROUP_REMOVE_MEMBER_SUCCESS_MESSAGE = "Group member removed successfully";
+        public const string GROUP_SET_ROLE_FORBIDDEN_MESSAGE = "Group set role forbidden";
+        public const string MEMBER_NOT_FOUND_MESSAGE = "Group member not found";
+        public const string MEMBER_ROLE_UPDATE_SUCCESS_MESSAGE = "Group member role updated successfully";
+
+        public const string GROUP_INVITE_SUCCESS_MESSAGE = "Invitation sent successfully.";
+        public const string GROUP_INVITE_FORBIDDEN_MESSAGE = "Only the group leader can invite members.";
+        public const string INVALID_INVITATION_TOKEN_MESSAGE = "Invalid invitation token.";
+        public const string GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE = "Invitation accepted successfully.";
+        public const string USER_NOT_FOUND_MESSAGE = "User not found.";
+
+        //subscription
+        public const string SUBSCRIPTION_CREATE_SUCCESS_MESSAGE = "Subscription created successfully";
+
+        // report
+        public const string REPORT_GENERATE_SUCCESS_MESSAGE = "Báo cáo sức khỏe tài chính đã được tạo thành công.";
+
+        // chat
+        public const string CHAT_USER_NOT_EXIST = "UserNotExistChatConversation";
     }
 }
