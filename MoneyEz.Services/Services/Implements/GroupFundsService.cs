@@ -122,31 +122,13 @@ namespace MoneyEz.Services.Services.Implements
                 }
             };
 
-            //// Return a success result with the groupFunds
-            //var result = _mapper.Map<Pagination<GroupFund>>(groupFunds);
-            //var options = new JsonSerializerOptions
-            //{
-            //    ReferenceHandler = ReferenceHandler.Preserve
-            //};
-            //var jsonData = JsonSerializer.Serialize(new ModelPaging
-            //{
-            //    Data = result,
-            //    MetaData = new
-            //    {
-            //        result.TotalCount,
-            //        result.PageSize,
-            //        result.CurrentPage,
-            //        result.TotalPages,
-            //        result.HasNext,
-            //        result.HasPrevious
-            //    }
-            //}, options);
+
         }
 
         public async Task<BaseResultModel> DisbandGroupAsync(Guid groupId)
         {
             // Retrieve the group fund by its Id
-            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(groupId);
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(groupId, include: query => query.Include(g => g.GroupMembers));
             if (groupFund == null)
             {
                 return new BaseResultModel
@@ -169,17 +151,18 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            var groupFundToDelete = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(groupId);
             // Check if the group has any transactions
             if (groupFund.Transactions.Any())
             {
                 // Soft delete: mark the group as inactive
                 groupFund.Status = CommonsStatus.INACTIVE;
-                _unitOfWork.GroupFundRepository.SoftDeleteAsync(groupFund);
+                _unitOfWork.GroupFundRepository.SoftDeleteAsync(groupFundToDelete);
             }
             else
             {
                 // Hard delete: remove the group from the database
-                _unitOfWork.GroupFundRepository.PermanentDeletedAsync(groupFund);
+                _unitOfWork.GroupFundRepository.SoftDeleteAsync(groupFundToDelete);
             }
 
             // Add a log entry for the disband group action
@@ -214,6 +197,18 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            // Include GroupMembers
+            groupFund = await _unitOfWork.GroupFundRepository
+                .GetByIdIncludeAsync(groupId, include: query => query.Include(g => g.GroupMembers));
+            if (groupFund == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = MessageConstants.GROUP_NOT_FOUND_MESSAGE
+                };
+            }
+
             // Check if the current user is the leader of the group
             var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
             var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
@@ -234,12 +229,23 @@ namespace MoneyEz.Services.Services.Implements
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
-                    Message = MessageConstants.GROUP_REMOVE_MEMBER_FORBIDDEN_MESSAGE
+                    Message = MessageConstants.MEMBER_NOT_FOUND_MESSAGE
                 };
             }
 
-            // Remove the member from the group
-            groupFund.GroupMembers.Remove(memberToRemove);
+            // Check if the member has any transactions
+            var memberTransactions = groupFund.Transactions.Any(t => t.UserId == memberId);
+            if (memberTransactions)
+            {
+                // Soft delete: mark the member as inactive
+                memberToRemove.Status = GroupMemberStatus.INACTIVE;
+                _unitOfWork.GroupMemberRepository.SoftDeleteAsync(memberToRemove);
+            }
+            else
+            {
+                // Hard delete: remove the member from the database
+                _unitOfWork.GroupMemberRepository.PermanentDeletedAsync(memberToRemove);
+            }
 
             // Add a log entry for the remove member action
             groupFund.GroupFundLogs.Add(new GroupFundLog
@@ -264,7 +270,7 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> SetMemberRoleAsync(Guid groupId, Guid memberId, RoleGroup newRole)
         {
             // Retrieve the group fund by its Id
-            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(groupId);
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(groupId, include: query => query.Include(g => g.GroupMembers));
             if (groupFund == null)
             {
                 return new BaseResultModel
@@ -441,7 +447,7 @@ namespace MoneyEz.Services.Services.Implements
             // Add a log entry for the invite member action
             groupFund.GroupFundLogs.Add(new GroupFundLog
             {
-                ChangeDescription = $"Invitation sent to {currentEmail}",
+                ChangeDescription = $"Invitation sent to {currentEmail} Created ",
                 ChangedAt = CommonUtils.GetCurrentTime(),
                 Action = GroupAction.INVITED,
             });
@@ -494,15 +500,20 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            // Add the user to the group
-            var groupMember = new GroupMember
+            // Update the member status to active
+            var pendingMember = groupFund.GroupMembers.FirstOrDefault(member => member.UserId == user.Id && member.Status == GroupMemberStatus.PENDING);
+            if (pendingMember != null)
             {
-                UserId = user.Id,
-                ContributionPercentage = 0,
-                Role = RoleGroup.MEMBER,
-                Status = GroupMemberStatus.ACTIVE
-            };
-            groupFund.GroupMembers.Add(groupMember);
+                pendingMember.Status = GroupMemberStatus.ACTIVE;
+            }
+            else
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = MessageConstants.MEMBER_NOT_FOUND_MESSAGE
+                };
+            }
 
             // Add a log entry for the new member
             groupFund.GroupFundLogs.Add(new GroupFundLog

@@ -1,4 +1,5 @@
-﻿using MoneyEz.Repositories.Enums;
+﻿using MoneyEz.Repositories.Entities;
+using MoneyEz.Repositories.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,16 +10,13 @@ namespace MoneyEz.Services.BusinessModels.GroupFund
 {
     public class GroupFundModel
     {
-        public string? Name { get; set; }
-
-        public string? NameUnsign { get; set; }
-
-        public string? Description { get; set; }
-
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string NameUnsign { get; set; }
+        public string Description { get; set; }
         public decimal? CurrentBalance { get; set; }
-
         public CommonsStatus? Status { get; set; }
-
         public VisibilityEnum? Visibility { get; set; }
+        public List<GroupMemberModel> GroupMembers { get; set; } = new List<GroupMemberModel>();
     }
 }

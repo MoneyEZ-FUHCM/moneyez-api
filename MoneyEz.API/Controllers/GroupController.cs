@@ -58,6 +58,7 @@ namespace MoneyEz.API.Controllers
             return StatusCode(result.Status, result);
         }
 
+
         [HttpGet("{groupId}/accept-invitation")]
         public async Task<IActionResult> AcceptInvitationAsync(Guid groupId, [FromQuery] string token)
         {

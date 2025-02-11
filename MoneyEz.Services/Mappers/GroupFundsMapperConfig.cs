@@ -16,6 +16,7 @@ namespace MoneyEz.Services.Mappers
         {
             CreateMap<CreateGroupModel, GroupFund>();
             CreateMap<GroupFund, GroupFundModel>();
+            CreateMap<GroupMember, GroupMemberModel>();
         }
     }
 }
