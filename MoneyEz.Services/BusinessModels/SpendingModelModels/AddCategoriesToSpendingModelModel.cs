@@ -6,16 +6,14 @@ namespace MoneyEz.Services.BusinessModels.SpendingModelModels
 {
     public class AddCategoriesToSpendingModelModel
     {
-        public Guid SpendingModelId { get; set; }
-
-        [Required(ErrorMessage = "The list of category IDs cannot be empty.")]
-        public List<Guid> CategoryIds { get; set; } // Danh sách các CategoryId cần thêm
-
-        public List<decimal>? PercentageAmounts { get; set; } // Tùy chọn danh sách PercentageAmount (phải khớp số lượng với CategoryIds nếu có)
-
-        public AddCategoriesToSpendingModelModel()
-        {
-            CategoryIds = new List<Guid>();
-        }
+        public Guid SpendingModelId { get; set; } 
+        public required List<CategoryPercentageModel> Categories { get; set; }
     }
+
+}
+
+public class CategoryPercentageModel
+{
+    public Guid CategoryId { get; set; }
+    public decimal PercentageAmount { get; set; }
 }

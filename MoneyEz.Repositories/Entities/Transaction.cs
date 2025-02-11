@@ -19,7 +19,7 @@ public partial class Transaction : BaseEntity
 
     public DateTime? TransactionDate { get; set; }
 
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     public bool? ApprovalRequired { get; set; }
 

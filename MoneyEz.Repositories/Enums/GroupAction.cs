@@ -5,6 +5,8 @@ namespace MoneyEz.Repositories.Enums
         CREATED,
         UPDATED,
         DELETED,
+        INVITED,
+        JOINED
 
     }
     public enum GroupStatus

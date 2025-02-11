@@ -5,18 +5,22 @@ using MoneyEz.Services.BusinessModels.GroupMember;
 using System;
 using System.Threading.Tasks;
 using MoneyEz.Repositories.Enums;
+using MoneyEz.Services.BusinessModels.GroupFund;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MoneyEz.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/groups")]
     [ApiController]
     public class GroupController : ControllerBase
     {
         private readonly IGroupFundsService _groupFundsService;
+        private readonly IClaimsService _claimsService;
 
-        public GroupController(IGroupFundsService groupFundsService)
+        public GroupController(IGroupFundsService groupFundsService, IClaimsService claimsService)
         {
             _groupFundsService = groupFundsService;
+            _claimsService = claimsService;
         }
 
         [HttpDelete("{groupId}/members/{memberId}")]
@@ -41,16 +45,19 @@ namespace MoneyEz.API.Controllers
             return StatusCode(result.Status, result);
         }
 
-        [HttpPost("{groupId}/invite")]
-        public async Task<IActionResult> InviteMemberAsync(Guid groupId, [FromBody] string email)
+        [HttpPost("invite")]
+        [Authorize]
+        public async Task<IActionResult> InviteMemberAsync([FromBody] InviteMemberModel inviteMemberModel)
         {
-            var result = await _groupFundsService.InviteMemberAsync(groupId, email);
+            string currentEmail = _claimsService.GetCurrentUserEmail;
+            var result = await _groupFundsService.InviteMemberAsync(inviteMemberModel, currentEmail);
             if (result.Status == StatusCodes.Status200OK)
             {
                 return Ok(result);
             }
             return StatusCode(result.Status, result);
         }
+
 
         [HttpGet("{groupId}/accept-invitation")]
         public async Task<IActionResult> AcceptInvitationAsync(Guid groupId, [FromQuery] string token)
