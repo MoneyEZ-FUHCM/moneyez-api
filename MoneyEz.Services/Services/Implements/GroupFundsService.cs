@@ -17,6 +17,15 @@ using MoneyEz.Services.BusinessModels.GroupFund;
 using StackExchange.Redis;
 using System.Net.Mail;
 using System.Web;
+using MoneyEz.Services.BusinessModels.EmailModels;
+using MoneyEz.Services.Utils.Email;
+using static System.Net.WebRequestMethods;
+using MoneyEz.Services.Exceptions;
+using Microsoft.EntityFrameworkCore;
+using MoneyEz.Repositories.Commons;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using MoneyEz.Services.BusinessModels.UserModels;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -26,13 +35,15 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IClaimsService _claimsService;
         private readonly IRedisService _redisService;
+        private readonly IMailService _mailService;
 
-        public GroupFundsService(IMapper mapper, IUnitOfWork unitOfWork, IClaimsService claimsService, IRedisService redisService)
+        public GroupFundsService(IMapper mapper, IUnitOfWork unitOfWork, IClaimsService claimsService, IRedisService redisService, IMailService mailService)
         {
             _mapper = mapper;
             _unitOfWork = unitOfWork;
             _claimsService = claimsService;
             _redisService = redisService;
+            _mailService = mailService;
         }
 
         public async Task<BaseResultModel> CreateGroupFundsAsync(CreateGroupModel model)
@@ -46,7 +57,7 @@ namespace MoneyEz.Services.Services.Implements
                 UserId = _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail).Result.Id,
                 ContributionPercentage = 100,
                 Role = RoleGroup.LEADER,
-                Status = CommonsStatus.ACTIVE,
+                Status = GroupMemberStatus.ACTIVE,
             }
             };
             groupFund.GroupFundLogs = new List<GroupFundLog>
@@ -79,23 +90,45 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetAllGroupFunds()
+        public async Task<BaseResultModel> GetAllGroupFunds(PaginationParameter paginationParameters)
         {
             // Get all groupFunds from the repository
-            var groupFunds = await _unitOfWork.GroupFundLogRepository.GetAllAsync();
-            // Return a success result with the groupFunds
+            var groupFunds = await _unitOfWork.GroupFundRepository.ToPaginationIncludeAsync(paginationParameters);
+
+            var groupFundModels = _mapper.Map<List<GroupFundModel>>(groupFunds);
+
+            var groupPagings = new Pagination<GroupFundModel>(groupFundModels,
+                groupFunds.TotalCount,
+                groupFunds.CurrentPage,
+                groupFunds.PageSize);
+
+            var metaData = new
+            {
+                groupFunds.TotalCount,
+                groupFunds.PageSize,
+                groupFunds.CurrentPage,
+                groupFunds.TotalPages,
+                groupFunds.HasNext,
+                groupFunds.HasPrevious
+            };
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = groupFunds,
-                Message = MessageConstants.GROUP_GET_ALL_SUCCESS_MESSAGE
+                Data = new ModelPaging
+                {
+                    Data = groupPagings,
+                    MetaData = metaData
+                }
             };
+
+
         }
 
         public async Task<BaseResultModel> DisbandGroupAsync(Guid groupId)
         {
             // Retrieve the group fund by its Id
-            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(groupId);
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(groupId, include: query => query.Include(g => g.GroupMembers));
             if (groupFund == null)
             {
                 return new BaseResultModel
@@ -118,17 +151,18 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            var groupFundToDelete = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(groupId);
             // Check if the group has any transactions
             if (groupFund.Transactions.Any())
             {
                 // Soft delete: mark the group as inactive
                 groupFund.Status = CommonsStatus.INACTIVE;
-                _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+                _unitOfWork.GroupFundRepository.SoftDeleteAsync(groupFundToDelete);
             }
             else
             {
                 // Hard delete: remove the group from the database
-                _unitOfWork.GroupFundRepository.SoftDeleteAsync(groupFund);
+                _unitOfWork.GroupFundRepository.SoftDeleteAsync(groupFundToDelete);
             }
 
             // Add a log entry for the disband group action
@@ -163,6 +197,18 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            // Include GroupMembers
+            groupFund = await _unitOfWork.GroupFundRepository
+                .GetByIdIncludeAsync(groupId, include: query => query.Include(g => g.GroupMembers));
+            if (groupFund == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = MessageConstants.GROUP_NOT_FOUND_MESSAGE
+                };
+            }
+
             // Check if the current user is the leader of the group
             var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
             var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
@@ -183,12 +229,23 @@ namespace MoneyEz.Services.Services.Implements
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
-                    Message = MessageConstants.GROUP_REMOVE_MEMBER_FORBIDDEN_MESSAGE
+                    Message = MessageConstants.MEMBER_NOT_FOUND_MESSAGE
                 };
             }
 
-            // Remove the member from the group
-            groupFund.GroupMembers.Remove(memberToRemove);
+            // Check if the member has any transactions
+            var memberTransactions = groupFund.Transactions.Any(t => t.UserId == memberId);
+            if (memberTransactions)
+            {
+                // Soft delete: mark the member as inactive
+                memberToRemove.Status = GroupMemberStatus.INACTIVE;
+                _unitOfWork.GroupMemberRepository.SoftDeleteAsync(memberToRemove);
+            }
+            else
+            {
+                // Hard delete: remove the member from the database
+                _unitOfWork.GroupMemberRepository.PermanentDeletedAsync(memberToRemove);
+            }
 
             // Add a log entry for the remove member action
             groupFund.GroupFundLogs.Add(new GroupFundLog
@@ -213,7 +270,7 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> SetMemberRoleAsync(Guid groupId, Guid memberId, RoleGroup newRole)
         {
             // Retrieve the group fund by its Id
-            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(groupId);
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(groupId, include: query => query.Include(g => g.GroupMembers));
             if (groupFund == null)
             {
                 return new BaseResultModel
@@ -322,10 +379,12 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> InviteMemberAsync(Guid groupId, string email)
+        public async Task<BaseResultModel> InviteMemberAsync(InviteMemberModel inviteMemberModel, string currentEmail)
         {
             // Retrieve the group fund by its Id
-            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(groupId);
+            var groupFund = await _unitOfWork.GroupFundRepository
+                .GetByIdIncludeAsync(inviteMemberModel.GroupId, include: query => query.Include(c => c.GroupMembers));
+
             if (groupFund == null)
             {
                 return new BaseResultModel
@@ -336,7 +395,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Check if the current user is the leader of the group
-            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(currentEmail);
             var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
 
             if (!isLeader)
@@ -348,28 +407,54 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            // check invite member
+            var inviteUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(inviteMemberModel.Email);
+            if (inviteUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
             // Generate an invitation link
             var invitationToken = Guid.NewGuid().ToString();
-            var invitationLink = $"https://example.com/api/group/{groupId}/accept-invitation?token={HttpUtility.UrlEncode(invitationToken)}";
+            var invitationLink = $"https://easymoney.anttravel.online/api/groups/{inviteMemberModel.GroupId}/accept-invitation?token={HttpUtility.UrlEncode(invitationToken)}";
+            //var invitationLink = $"https://localhost:7262/api/groups/{inviteMemberModel.GroupId}/accept-invitation?token={HttpUtility.UrlEncode(invitationToken)}";
 
             // Save the invitation token to Redis
             var redisKey = $"group_invitation:{invitationToken}";
-            await _redisService.SetAsync(redisKey, email, TimeSpan.FromDays(1));
+            await _redisService.SetAsync(redisKey, inviteMemberModel.Email, TimeSpan.FromDays(1));
 
-            // Send the invitation email
-            var mailMessage = new MailMessage
+            // send mail
+            MailRequest newEmail = new MailRequest()
             {
-                From = new MailAddress("noreply@example.com"),
-                Subject = "Group Invitation",
-                Body = $"You have been invited to join the group. Click the link to accept the invitation: {invitationLink}",
-                IsBodyHtml = true
+                ToEmail = inviteMemberModel.Email,
+                Subject = $"[MoneyEz] Lời mời tham gia nhóm {groupFund.Name}",
+                Body = $"Bạn đã được {currentUser.FullName} mời vào nhóm {groupFund.Name}. Ấn vào link để tham gia: {invitationLink}"
             };
-            mailMessage.To.Add(email);
 
-            using (var smtpClient = new SmtpClient("smtp.example.com"))
+            // send mail
+            await _mailService.SendEmailAsync(newEmail);
+
+            // Add the member to the group with a pending status
+            var pendingMember = new GroupMember
             {
-                await smtpClient.SendMailAsync(mailMessage);
-            }
+                UserId = inviteUser.Id,
+                ContributionPercentage = 0,
+                Role = RoleGroup.MEMBER,
+                Status = GroupMemberStatus.PENDING
+            };
+            groupFund.GroupMembers.Add(pendingMember);
+
+            // Add a log entry for the invite member action
+            groupFund.GroupFundLogs.Add(new GroupFundLog
+            {
+                ChangeDescription = $"Invitation sent to {currentEmail} Created ",
+                ChangedAt = CommonUtils.GetCurrentTime(),
+                Action = GroupAction.INVITED,
+            });
+
+            // Save the changes to the repository
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            await _unitOfWork.SaveAsync();
 
             // Return a success result
             return new BaseResultModel
@@ -411,19 +496,32 @@ namespace MoneyEz.Services.Services.Implements
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
-                    Message = MessageConstants.USER_NOT_FOUND_MESSAGE
+                    Message = MessageConstants.ACCOUNT_NOT_EXIST
                 };
             }
 
-            // Add the user to the group
-            var groupMember = new GroupMember
+            // Update the member status to active
+            var pendingMember = groupFund.GroupMembers.FirstOrDefault(member => member.UserId == user.Id && member.Status == GroupMemberStatus.PENDING);
+            if (pendingMember != null)
             {
-                UserId = user.Id,
-                ContributionPercentage = 0,
-                Role = RoleGroup.MEMBER,
-                Status = CommonsStatus.ACTIVE
-            };
-            groupFund.GroupMembers.Add(groupMember);
+                pendingMember.Status = GroupMemberStatus.ACTIVE;
+            }
+            else
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = MessageConstants.MEMBER_NOT_FOUND_MESSAGE
+                };
+            }
+
+            // Add a log entry for the new member
+            groupFund.GroupFundLogs.Add(new GroupFundLog
+            {
+                ChangeDescription = $"Member {user.Email} accepted invitation",
+                ChangedAt = CommonUtils.GetCurrentTime(),
+                Action = GroupAction.JOINED,
+            });
 
             // Save the changes to the repository
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
@@ -437,6 +535,21 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE
+            };
+        }
+
+        public async Task<BaseResultModel> GetGroupFundById(Guid groupId)
+        {
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(groupId, include: q => q.Include(c => c.GroupMembers));
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = _mapper.Map<GroupFundModel>(groupFund)
             };
         }
     }
