@@ -10,5 +10,7 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
     public interface IUserRepository : IGenericRepository<User>
     {
         Task<User> GetUserByEmailAsync(string email);
+
+        Task<User> GetUserByPhoneAsync(string phoneNumber);
     }
 }

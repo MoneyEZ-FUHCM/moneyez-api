@@ -576,9 +576,8 @@ namespace MoneyEz.Services.Services.Implements
 
         private async Task<bool> CheckExistPhone(string phoneNumber)
         {
-            var users = await _unitOfWork.UsersRepository.GetAllAsync();
-            var existPhone = users.Find(x => x.PhoneNumber == phoneNumber);
-            return existPhone != null;
+            var users = await _unitOfWork.UsersRepository.GetUserByPhoneAsync(phoneNumber);
+            return users != null;
         }
 
         public async Task<BaseResultModel> LoginWithGoogle(string credental)
