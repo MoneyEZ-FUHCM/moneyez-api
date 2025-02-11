@@ -75,19 +75,19 @@ namespace MoneyEz.API
                     ClockSkew = TimeSpan.Zero
                 };
 
-                options.Events = new JwtBearerEvents
-                {
-                    OnMessageReceived = context =>
-                    {
-                        var accessToken = context.Request.Query["access_token"];
-                        var path = context.HttpContext.Request.Path;
-                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/notificationHub"))
-                        {
-                            context.Token = accessToken;
-                        }
-                        return Task.CompletedTask;
-                    }
-                };
+                //options.Events = new JwtBearerEvents
+                //{
+                //    OnMessageReceived = context =>
+                //    {
+                //        var accessToken = context.Request.Query["access_token"];
+                //        var path = context.HttpContext.Request.Path;
+                //        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chatHub"))
+                //        {
+                //            context.Token = accessToken;
+                //        }
+                //        return Task.CompletedTask;
+                //    }
+                //};
             });
 
             #endregion
@@ -169,7 +169,7 @@ namespace MoneyEz.API
             services.AddScoped<IOtpService, OtpService>();
 
             // config group service
-            services.AddScoped<IGroupRepository, GroupRepository>();
+            services.AddScoped<IGroupFundRepository, GroupRepository>();
             services.AddScoped<IGroupFundsService, GroupFundsService>();
 
             // config group log service
@@ -178,6 +178,11 @@ namespace MoneyEz.API
             //config group member service
             services.AddScoped<IGroupMemberRepository, GroupMemberRepository>();
             services.AddScoped<IGroupMemberService, GroupMemberService>();
+
+            // config chat service
+            services.AddScoped<IChatHistoryRepository, ChatHistoryRepository>();
+            services.AddScoped<IChatHistoryService, ChatHistoryService>();
+            services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
 
             services.AddSignalR();
 

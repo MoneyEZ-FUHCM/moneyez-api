@@ -35,16 +35,17 @@ namespace MoneyEz.Services.Constants
         public const string ACCOUNT_NOT_ENOUGH_AGE = "AccountMust16Age";
         public const string DUPLICATE_PHONE_NUMBER = "DuplicatePhoneNumber";
         public const string ACCOUNT_CURRENT_USER = "AccountIsCurrentUser";
+        public const string ACCOUNT_UPDATE_TOKEN_FAILED = "UpdateDeviceTokenFailed";
 
         public const string ACCOUNT_CREATED_SUCCESS_MESSAGE = "Account created";
         public const string ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Updated user successfully";
         public const string ACCOUNT_DELETE_SUCCESS_MESSAGE = "Deleted user successfully";
         public const string ACCOUNT_BAN_SUCCESS_MESSAGE = "Banned user successfully";
+        public const string ACCOUNT_UPDATE_TOKEN_SUCCESS_MESSAGE = "Update device token successfully";
 
         // Spending model
         public const string SPENDING_MODEL_LIST_FETCHED_SUCCESS = "SpendingModelListFetched"; //Spending model list fetched successfully.
         public const string SPENDING_MODEL_FETCHED_SUCCESS = "SpendingModelFetched"; // Spending model details fetched successfully."
-        public const string SPENDING_MODEL_CREATED_SUCCESS = "Spending model created successfully.";
         public const string SPENDING_MODEL_UPDATED_SUCCESS = "Spending model updated successfully.";
         public const string SPENDING_MODEL_DELETED_SUCCESS = "Spending model deleted successfully.";
 
@@ -53,7 +54,6 @@ namespace MoneyEz.Services.Constants
         public const string SPENDING_MODEL_HAS_DEPENDENCIES = "SpendingModelHasDependencies";//The spending model has dependencies and cannot be deleted.
         public const string DUPLICATE_SPENDING_MODELS = "DuplicateSpendingModels";//Duplicate spending models found in the provided list.
         public const string EMPTY_SPENDING_MODEL_LIST = "EmptySpendingModelList";//The spending model list is empty.
-        public const string DUPLICATE_CATEGORY_IDS_IN_LIST = "DuplicateCategoryIdsInList";//Duplicate category IDs found in the provided list.
         public const string CATEGORIES_ALREADY_ADDED = "CategoriesAlreadyAdded";//All categories in the list are already added to the spending model.
         public const string CATEGORY_NOT_FOUND_IN_SPENDING_MODEL = "CategoryNotFoundInSpendingModel";//The category was not found in the spending model.
         public const string CATEGORIES_NOT_FOUND_IN_SPENDING_MODEL = "CategoriesNotFoundInSpendingModel";//None of the categories were found in the spending model.
@@ -62,7 +62,7 @@ namespace MoneyEz.Services.Constants
         public const string EMPTY_CATEGORY_LIST = "EmptyCategoryList";//The list of category IDs cannot be empty.
         public const string INVALID_TOTAL_PERCENTAGE = "InvalidTotalPercentage";//The total percentage amount of all categories must be greater than 0 and less than or equal to 100.
         public const string PERCENTAGE_REQUIRED = "PercentageRequired";//Percentage amounts must be provided for the categories.
-        public const string PERCENTAGE_MISMATCH = "PercentageMismatch"; //The number of percentage amounts must match the number of category IDs.
+        public const string INVALID_PERCENTAGE_AMOUNT = "Percentage amounts cannot be negative.";
 
         // category
         public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists";
@@ -117,6 +117,31 @@ namespace MoneyEz.Services.Constants
 
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
+        public const string GROUP_GET_ALL_SUCCESS_MESSAGE = "Group get all successfully";
+        public const string GROUP_NOT_FOUND_MESSAGE = "Group not found";
+        public const string GROUP_DISBAND_FAIL_MESSAGE = "Group disband failed";
+        public const string GROUP_DISBAND_SUCCESS_MESSAGE = "Group disbanded successfully";
 
+        public const string GROUP_DISBAND_FORBIDDEN_MESSAGE = "Group disband forbidden";
+        public const string GROUP_REMOVE_MEMBER_FORBIDDEN_MESSAGE = "Group member not found";
+        public const string GROUP_REMOVE_MEMBER_SUCCESS_MESSAGE = "Group member removed successfully";
+        public const string GROUP_SET_ROLE_FORBIDDEN_MESSAGE = "Group set role forbidden";
+        public const string MEMBER_NOT_FOUND_MESSAGE = "Group member not found";
+        public const string MEMBER_ROLE_UPDATE_SUCCESS_MESSAGE = "Group member role updated successfully";
+
+        public const string GROUP_INVITE_SUCCESS_MESSAGE = "Invitation sent successfully.";
+        public const string GROUP_INVITE_FORBIDDEN_MESSAGE = "Only the group leader can invite members.";
+        public const string INVALID_INVITATION_TOKEN_MESSAGE = "Invalid invitation token.";
+        public const string GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE = "Invitation accepted successfully.";
+        public const string USER_NOT_FOUND_MESSAGE = "User not found.";
+
+        //subscription
+        public const string SUBSCRIPTION_CREATE_SUCCESS_MESSAGE = "Subscription created successfully";
+
+        // report
+        public const string REPORT_GENERATE_SUCCESS_MESSAGE = "Báo cáo sức khỏe tài chính đã được tạo thành công.";
+
+        // chat
+        public const string CHAT_USER_NOT_EXIST = "UserNotExistChatConversation";
     }
 }

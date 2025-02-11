@@ -32,9 +32,16 @@ namespace MoneyEz.Repositories.UnitOfWork
         //transaction
         private ITransactionRepository _transactionsRepository;
         //group
-        private IGroupRepository _groupRepository;
+        private IGroupFundRepository _groupFundRepository;
+        //group fund log
         private IGroupFundLogRepository _groupFundLogRepository;
+        //group member
         private IGroupMemberRepository _groupMemberRepository;
+        private ISubscriptionRepository _subscriptionRepository;
+
+        // chat
+        private IChatHistoryRepository _chatHistoryRepository;
+        private IChatMessageRepository _chatMessageRepository;
 
         public UnitOfWork(MoneyEzContext context)
         {
@@ -90,12 +97,11 @@ namespace MoneyEz.Repositories.UnitOfWork
             }
         }
 
-
-        public IGroupRepository GroupRepository
+        public IGroupFundRepository GroupFundRepository
         {
             get
             {
-                return _groupRepository ??= new GroupRepository(_context);
+                return _groupFundRepository ??= new GroupRepository(_context);
             }
         }
         public IGroupFundLogRepository GroupFundLogRepository
@@ -112,6 +118,29 @@ namespace MoneyEz.Repositories.UnitOfWork
                 return _groupMemberRepository ??= new GroupMemberRepository(_context);
             }
         }
+
+        public ISubscriptionRepository SubscriptionRepository
+        {
+            get { return _subscriptionRepository ??= new SubscriptionRepository(_context); }
+        }
+
+        public IChatHistoryRepository ChatHistoryRepository
+        {
+            get
+            {
+                return _chatHistoryRepository ??= new ChatHistoryRepository(_context);
+            }
+        }
+
+        public IChatMessageRepository ChatMessageRepository
+        {
+            get
+            {
+                return _chatMessageRepository ??= new ChatMessageRepository(_context);
+            }
+        }
+
+
         public void Commit()
         {
             try

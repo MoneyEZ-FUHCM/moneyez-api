@@ -1,15 +1,19 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
-using MoneyEz.Repositories.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
+using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.Constants;
-using MoneyEz.Services.Services.Interfaces;
-using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.Exceptions;
-using Microsoft.EntityFrameworkCore;
+using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Utils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -28,7 +32,8 @@ namespace MoneyEz.Services.Services.Implements
         {
             var categories = await _unitOfWork.CategoriesRepository.ToPaginationIncludeAsync(
                 paginationParameter,
-                include: query => query.Include(c => c.Subcategories)
+                include: query => query.Include(c => c.CategorySubcategories)
+                                       .ThenInclude(cs => cs.Subcategory)
             );
 
             var result = _mapper.Map<Pagination<CategoryModel>>(categories);
@@ -57,7 +62,8 @@ namespace MoneyEz.Services.Services.Implements
         {
             var category = await _unitOfWork.CategoriesRepository.GetByIdIncludeAsync(
                 id,
-                include: query => query.Include(c => c.Subcategories)
+                include: query => query.Include(c => c.CategorySubcategories)
+                                       .ThenInclude(cs => cs.Subcategory)
             );
 
             if (category == null || category.IsDeleted)
@@ -127,6 +133,7 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.CATEGORY_CREATED_SUCCESS
             };
         }
+
         public async Task<BaseResultModel> UpdateCategoryAsync(UpdateCategoryModel model)
         {
             var category = await _unitOfWork.CategoriesRepository.GetByIdAsync(model.Id);
@@ -158,11 +165,13 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.CATEGORY_UPDATED_SUCCESS
             };
         }
+
         public async Task<BaseResultModel> DeleteCategoryAsync(Guid id)
         {
             var category = await _unitOfWork.CategoriesRepository.GetByIdIncludeAsync(
                 id,
-                include: query => query.Include(c => c.Subcategories)
+                include: query => query.Include(c => c.CategorySubcategories)
+                                       .ThenInclude(cs => cs.Subcategory)
             );
 
             if (category == null || category.IsDeleted)
@@ -170,7 +179,7 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
             }
 
-            if (category.Subcategories.Any())
+            if (category.CategorySubcategories.Any())
             {
                 return new BaseResultModel
                 {

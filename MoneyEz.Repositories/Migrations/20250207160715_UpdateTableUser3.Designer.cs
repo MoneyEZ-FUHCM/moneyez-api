@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MoneyEz.Repositories.Entities;
 
@@ -11,9 +12,11 @@ using MoneyEz.Repositories.Entities;
 namespace MoneyEz.Repositories.Migrations
 {
     [DbContext(typeof(MoneyEzContext))]
-    partial class MoneyEzContextModelSnapshot : ModelSnapshot
+    [Migration("20250207160715_UpdateTableUser3")]
+    partial class UpdateTableUser3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,7 +50,6 @@ namespace MoneyEz.Repositories.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -120,39 +122,6 @@ namespace MoneyEz.Repositories.Migrations
                     b.ToTable("Category", (string)null);
                 });
 
-            modelBuilder.Entity("MoneyEz.Repositories.Entities.CategorySubcategory", b =>
-                {
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("SubcategoryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("CategoryId", "SubcategoryId");
-
-                    b.HasIndex("SubcategoryId");
-
-                    b.ToTable("CategorySubcategory");
-                });
-
             modelBuilder.Entity("MoneyEz.Repositories.Entities.ChatHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -215,6 +184,9 @@ namespace MoneyEz.Repositories.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Message")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MessageUnsign")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("Type")
@@ -1039,6 +1011,8 @@ namespace MoneyEz.Repositories.Migrations
                     b.HasKey("Id")
                         .HasName("PK__Subcateg__3214EC0789F0B717");
 
+                    b.HasIndex("CategoryId");
+
                     b.ToTable("Subcategory", (string)null);
                 });
 
@@ -1461,25 +1435,6 @@ namespace MoneyEz.Repositories.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MoneyEz.Repositories.Entities.CategorySubcategory", b =>
-                {
-                    b.HasOne("MoneyEz.Repositories.Entities.Category", "Category")
-                        .WithMany("CategorySubcategories")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MoneyEz.Repositories.Entities.Subcategory", "Subcategory")
-                        .WithMany("CategorySubcategories")
-                        .HasForeignKey("SubcategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Subcategory");
-                });
-
             modelBuilder.Entity("MoneyEz.Repositories.Entities.ChatHistory", b =>
                 {
                     b.HasOne("MoneyEz.Repositories.Entities.User", "User")
@@ -1663,6 +1618,17 @@ namespace MoneyEz.Repositories.Migrations
                     b.Navigation("SpendingModel");
                 });
 
+            modelBuilder.Entity("MoneyEz.Repositories.Entities.Subcategory", b =>
+                {
+                    b.HasOne("MoneyEz.Repositories.Entities.Category", "Category")
+                        .WithMany("Subcategories")
+                        .HasForeignKey("CategoryId")
+                        .IsRequired()
+                        .HasConstraintName("FK__Subcatego__Categ__7F2BE32F");
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Subscription", b =>
                 {
                     b.HasOne("MoneyEz.Repositories.Entities.SubscriptionPlan", "SubscriptionPlan")
@@ -1762,9 +1728,9 @@ namespace MoneyEz.Repositories.Migrations
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Category", b =>
                 {
-                    b.Navigation("CategorySubcategories");
-
                     b.Navigation("SpendingModelCategories");
+
+                    b.Navigation("Subcategories");
                 });
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.ChatHistory", b =>
@@ -1811,8 +1777,6 @@ namespace MoneyEz.Repositories.Migrations
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Subcategory", b =>
                 {
-                    b.Navigation("CategorySubcategories");
-
                     b.Navigation("RecurringTransactions");
 
                     b.Navigation("Transactions");

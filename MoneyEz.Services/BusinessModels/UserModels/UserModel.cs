@@ -29,5 +29,7 @@ namespace MoneyEz.Services.BusinessModels.UserModels
         public Gender? Gender { get; set; }
 
         public string? Role { get; set; }
+
+        public string? Status { get; set; }
     }
 }

@@ -7,4 +7,9 @@ namespace MoneyEz.Repositories.Enums
         DELETED,
 
     }
+    public enum GroupStatus
+    {
+        ACTIVE,
+        DISBANDED
+    }
 }
