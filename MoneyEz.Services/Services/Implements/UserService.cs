@@ -654,6 +654,28 @@ namespace MoneyEz.Services.Services.Implements
 
             }
         }
+
+        public async Task<BaseResultModel> UpdateFcmTokenAsync(string email, string fcmToken)
+        {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email);
+            if (user != null && !fcmToken.IsNullOrEmpty())
+            {
+                if (user.DeviceToken != fcmToken)
+                {
+                    user.DeviceToken = fcmToken;
+
+                    _unitOfWork.UsersRepository.UpdateAsync(user);
+                    _unitOfWork.Save();
+
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status200OK,
+                        Message = MessageConstants.ACCOUNT_UPDATE_TOKEN_SUCCESS_MESSAGE
+                    };
+                }
+            }
+            throw new DefaultException("", MessageConstants.ACCOUNT_UPDATE_TOKEN_FAILED);
+        }
     }
 }
 

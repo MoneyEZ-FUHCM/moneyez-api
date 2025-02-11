@@ -6,9 +6,6 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
 {
     public class CreateTransactionModel
     {
-        [Required(ErrorMessage = "User ID is required.")]
-        public Guid UserId { get; set; }
-
         [Required(ErrorMessage = "Amount is required.")]
         public decimal Amount { get; set; }
 
@@ -19,9 +16,9 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
         public Guid SubcategoryId { get; set; }
 
         [Required(ErrorMessage = "Transaction date is required.")]
-        public DateTime Date { get; set; }
+        public DateTime TransactionDate { get; set; }
 
         public string Description { get; set; }
-        public bool? ApprovalRequired { get; set; } 
+        public bool? ApprovalRequired { get; set; }
     }
 }
