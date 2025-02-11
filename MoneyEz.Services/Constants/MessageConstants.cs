@@ -44,7 +44,6 @@ namespace MoneyEz.Services.Constants
         // Spending model
         public const string SPENDING_MODEL_LIST_FETCHED_SUCCESS = "SpendingModelListFetched"; //Spending model list fetched successfully.
         public const string SPENDING_MODEL_FETCHED_SUCCESS = "SpendingModelFetched"; // Spending model details fetched successfully."
-        public const string SPENDING_MODEL_CREATED_SUCCESS = "Spending model created successfully.";
         public const string SPENDING_MODEL_UPDATED_SUCCESS = "Spending model updated successfully.";
         public const string SPENDING_MODEL_DELETED_SUCCESS = "Spending model deleted successfully.";
 
@@ -53,7 +52,6 @@ namespace MoneyEz.Services.Constants
         public const string SPENDING_MODEL_HAS_DEPENDENCIES = "SpendingModelHasDependencies";//The spending model has dependencies and cannot be deleted.
         public const string DUPLICATE_SPENDING_MODELS = "DuplicateSpendingModels";//Duplicate spending models found in the provided list.
         public const string EMPTY_SPENDING_MODEL_LIST = "EmptySpendingModelList";//The spending model list is empty.
-        public const string DUPLICATE_CATEGORY_IDS_IN_LIST = "DuplicateCategoryIdsInList";//Duplicate category IDs found in the provided list.
         public const string CATEGORIES_ALREADY_ADDED = "CategoriesAlreadyAdded";//All categories in the list are already added to the spending model.
         public const string CATEGORY_NOT_FOUND_IN_SPENDING_MODEL = "CategoryNotFoundInSpendingModel";//The category was not found in the spending model.
         public const string CATEGORIES_NOT_FOUND_IN_SPENDING_MODEL = "CategoriesNotFoundInSpendingModel";//None of the categories were found in the spending model.
@@ -62,7 +60,7 @@ namespace MoneyEz.Services.Constants
         public const string EMPTY_CATEGORY_LIST = "EmptyCategoryList";//The list of category IDs cannot be empty.
         public const string INVALID_TOTAL_PERCENTAGE = "InvalidTotalPercentage";//The total percentage amount of all categories must be greater than 0 and less than or equal to 100.
         public const string PERCENTAGE_REQUIRED = "PercentageRequired";//Percentage amounts must be provided for the categories.
-        public const string PERCENTAGE_MISMATCH = "PercentageMismatch"; //The number of percentage amounts must match the number of category IDs.
+        public const string INVALID_PERCENTAGE_AMOUNT = "Percentage amounts cannot be negative.";
 
         // category
         public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists";
