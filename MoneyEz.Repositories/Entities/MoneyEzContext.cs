@@ -406,11 +406,6 @@ public partial class MoneyEzContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.NameUnsign).HasMaxLength(50);
-
-            entity.HasOne(d => d.Category).WithMany(p => p.Subcategories)
-                .HasForeignKey(d => d.CategoryId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Subcatego__Categ__7F2BE32F");
         });
 
         modelBuilder.Entity<Subscription>(entity =>
@@ -561,6 +556,19 @@ public partial class MoneyEzContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK_Image");
             entity.ToTable("Image");
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
+        });
+
+        modelBuilder.Entity<CategorySubcategory>(entity =>
+        {
+            entity.HasKey(cs => new { cs.CategoryId, cs.SubcategoryId });
+
+            entity.HasOne(cs => cs.Category)
+                .WithMany(c => c.CategorySubcategories)
+                .HasForeignKey(cs => cs.CategoryId);
+
+            entity.HasOne(cs => cs.Subcategory)
+                .WithMany(s => s.CategorySubcategories)
+                .HasForeignKey(cs => cs.SubcategoryId);
         });
 
         OnModelCreatingPartial(modelBuilder);
