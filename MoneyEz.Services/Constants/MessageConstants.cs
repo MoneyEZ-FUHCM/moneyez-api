@@ -134,6 +134,7 @@ namespace MoneyEz.Services.Constants
         public const string INVALID_INVITATION_TOKEN_MESSAGE = "Invalid invitation token.";
         public const string GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE = "Invitation accepted successfully.";
         public const string USER_NOT_FOUND_MESSAGE = "User not found.";
+        public const string GROUP_NOT_EXIST = "GroupNotFound";
 
         //subscription
         public const string SUBSCRIPTION_CREATE_SUCCESS_MESSAGE = "Subscription created successfully";

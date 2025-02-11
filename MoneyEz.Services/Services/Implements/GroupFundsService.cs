@@ -93,7 +93,7 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> GetAllGroupFunds(PaginationParameter paginationParameters)
         {
             // Get all groupFunds from the repository
-            var groupFunds = await _unitOfWork.GroupFundRepository.ToPaginationIncludeAsync(paginationParameters, include: query => query.Include(c => c.GroupMembers));
+            var groupFunds = await _unitOfWork.GroupFundRepository.ToPaginationIncludeAsync(paginationParameters);
 
             var groupFundModels = _mapper.Map<List<GroupFundModel>>(groupFunds);
 
@@ -535,6 +535,21 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE
+            };
+        }
+
+        public async Task<BaseResultModel> GetGroupFundById(Guid groupId)
+        {
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(groupId, include: q => q.Include(c => c.GroupMembers));
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = _mapper.Map<GroupFundModel>(groupFund)
             };
         }
     }

@@ -21,6 +21,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GenerateFinancialHealthReportAsync(Guid groupId);
         Task<BaseResultModel> InviteMemberAsync(InviteMemberModel inviteMemberModel, string currentEmail);
         Task<BaseResultModel> AcceptInvitationAsync(Guid groupId, string token);
+        Task<BaseResultModel> GetGroupFundById(Guid groupId);
 
     }
 }
