@@ -82,7 +82,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Amount).HasColumnType("decimal(15, 2)");
-            entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
             entity.Property(e => e.NameUnsign).HasMaxLength(200);
             entity.HasOne(d => d.User).WithMany(p => p.AssetAndLiabilities)
                 .HasForeignKey(d => d.UserId)
