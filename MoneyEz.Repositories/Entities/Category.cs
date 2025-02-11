@@ -14,5 +14,5 @@ public partial class Category : BaseEntity
 
     public virtual ICollection<SpendingModelCategory> SpendingModelCategories { get; set; } = new List<SpendingModelCategory>();
 
-    public virtual ICollection<Subcategory> Subcategories { get; set; } = new List<Subcategory>();
+    public virtual ICollection<CategorySubcategory> CategorySubcategories { get; set; } = new List<CategorySubcategory>();
 }
