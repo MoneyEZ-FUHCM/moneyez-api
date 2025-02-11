@@ -183,7 +183,6 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> DeleteSpendingModelAsync(Guid id)
         {
-            // Lấy SpendingModel từ database
             var spendingModel = await _unitOfWork.SpendingModelRepository.GetByIdIncludeAsync(
                 id,
                 include: query => query.Include(sm => sm.SpendingModelCategories)
@@ -210,31 +209,50 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            // Xóa mềm SpendingModel
             _unitOfWork.SpendingModelRepository.SoftDeleteAsync(spendingModel);
             _unitOfWork.Save();
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = "The spending model was successfully deleted."
+                Message = MessageConstants.SPENDING_MODEL_DELETED_SUCCESS
             };
         }
 
         public async Task<BaseResultModel> AddCategoriesToSpendingModelAsync(AddCategoriesToSpendingModelModel model)
         {
-            if (model == null || model.CategoryIds == null || !model.CategoryIds.Any())
+            if (model == null || model.SpendingModelId == Guid.Empty || model.Categories == null || !model.Categories.Any())
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.EMPTY_CATEGORY_LIST,
-                    Message = "The list of category IDs cannot be empty."
+                    Message = "The list of categories cannot be empty, and a valid SpendingModelId is required."
                 };
             }
 
-            var duplicateCategoryIdsInRequest = model.CategoryIds
-                .GroupBy(id => id)
+            if (model.Categories.Any(c => c.CategoryId == Guid.Empty))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.INVALID_CATEGORY_IDS,
+                    Message = "One or more CategoryIds are invalid (empty GUIDs)."
+                };
+            }
+
+            if (model.Categories.Any(c => c.PercentageAmount < 0))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.INVALID_PERCENTAGE_AMOUNT,
+                    Message = "Percentage amounts cannot be negative."
+                };
+            }
+
+            var duplicateCategoryIdsInRequest = model.Categories
+                .GroupBy(c => c.CategoryId)
                 .Where(g => g.Count() > 1)
                 .Select(g => g.Key)
                 .ToList();
@@ -267,7 +285,7 @@ namespace MoneyEz.Services.Services.Implements
             var existingCategories = await _unitOfWork.CategoriesRepository.GetAllAsync();
             var validCategoryIds = existingCategories.Select(c => c.Id).ToHashSet();
 
-            var invalidCategoryIds = model.CategoryIds.Except(validCategoryIds).ToList();
+            var invalidCategoryIds = model.Categories.Select(c => c.CategoryId).Except(validCategoryIds).ToList();
             if (invalidCategoryIds.Any())
             {
                 return new BaseResultModel
@@ -279,9 +297,9 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var existingCategoryIdsInModel = spendingModel.SpendingModelCategories.Select(smc => smc.CategoryId).ToHashSet();
-            var newCategoryIds = model.CategoryIds.Where(id => !existingCategoryIdsInModel.Contains(id)).ToList();
+            var newCategoriesData = model.Categories.Where(c => !existingCategoryIdsInModel.Contains(c.CategoryId)).ToList();
 
-            if (!newCategoryIds.Any())
+            if (!newCategoriesData.Any())
             {
                 return new BaseResultModel
                 {
@@ -291,49 +309,42 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var newCategories = new List<SpendingModelCategory>();
             if (!spendingModel.SpendingModelCategories.Any())
             {
-                if (model.PercentageAmounts == null || model.PercentageAmounts.Count != newCategoryIds.Count)
+                // Nếu đây là lần đầu thêm danh mục, `PercentageAmount` là bắt buộc
+                if (newCategoriesData.Any(c => c.PercentageAmount == 0))
                 {
                     return new BaseResultModel
                     {
                         Status = StatusCodes.Status400BadRequest,
-                        ErrorCode = MessageConstants.PERCENTAGE_MISMATCH,
-                        Message = "The number of percentage amounts must match the number of category IDs."
+                        ErrorCode = MessageConstants.PERCENTAGE_REQUIRED,
+                        Message = "Percentage amounts must be provided when adding categories for the first time."
                     };
                 }
 
-                var totalPercentage = model.PercentageAmounts.Sum();
+                var totalPercentage = newCategoriesData.Sum(c => c.PercentageAmount);
                 if (totalPercentage != 100)
                 {
                     return new BaseResultModel
                     {
                         Status = StatusCodes.Status400BadRequest,
                         ErrorCode = MessageConstants.INVALID_TOTAL_PERCENTAGE,
-                        Message = "The total percentage amount must equal 100%."
+                        Message = "The total percentage amount must equal 100% when adding categories for the first time."
                     };
-                }
-
-                for (int i = 0; i < newCategoryIds.Count; i++)
-                {
-                    newCategories.Add(new SpendingModelCategory
-                    {
-                        SpendingModelId = model.SpendingModelId,
-                        CategoryId = newCategoryIds[i],
-                        PercentageAmount = model.PercentageAmounts[i]
-                    });
                 }
             }
             else
             {
-                newCategories = newCategoryIds.Select(id => new SpendingModelCategory
-                {
-                    SpendingModelId = model.SpendingModelId,
-                    CategoryId = id,
-                    PercentageAmount = 0
-                }).ToList();
+                // Nếu đã có danh mục, các danh mục mới mặc định sẽ có tỷ lệ phần trăm là 0
+                newCategoriesData.ForEach(c => c.PercentageAmount = 0);
             }
+
+            var newCategories = newCategoriesData.Select(c => new SpendingModelCategory
+            {
+                SpendingModelId = model.SpendingModelId,
+                CategoryId = c.CategoryId,
+                PercentageAmount = c.PercentageAmount
+            }).ToList();
 
             await _unitOfWork.SpendingModelCategoryRepository.AddRangeAsync(newCategories);
             _unitOfWork.Save();
