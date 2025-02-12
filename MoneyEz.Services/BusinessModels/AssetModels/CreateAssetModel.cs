@@ -10,9 +10,6 @@ namespace MoneyEz.Services.BusinessModels.AssetModels
 {
     public class CreateAssetModel
     {
-        [Required(ErrorMessage = "UserId is required.")]
-        public Guid UserId { get; set; }
-
         [Required(ErrorMessage = "Name is required.")]
         [StringLength(200, ErrorMessage = "Name cannot be longer than 200 characters.")]
         public string Name { get; set; }

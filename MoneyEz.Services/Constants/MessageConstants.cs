@@ -145,7 +145,10 @@ namespace MoneyEz.Services.Constants
         // chat
         public const string CHAT_USER_NOT_EXIST = "UserNotExistChatConversation";
         // asset and liability
-        public const string ASSET_LIST_GET_SUCCESS_MESSAGE = "Asset created successfully";
-        public const string ASSET_CREATED_SUCCESS = "Asset created successfully";
+        public const string ASSET_LIST_GET_SUCCESS_MESSAGE = "Assets list get successfully";
+        public const string ASSET_CREATED_SUCCESS = "AssetCreateSuccess";
+        public const string ASSET_UPDATED_SUCCESS = "AssetUpdateSuccess";
+        public const string ASSET_DELETED_SUCCESS = "AssetDeleteSuccess";
+        public const string ASSET_NOT_FOUND = "AssetNotFound";
     }
 }

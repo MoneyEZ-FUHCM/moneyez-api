@@ -4,6 +4,7 @@ using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Repositories.Interfaces;
 using MoneyEz.Repositories.UnitOfWork;
+using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.AssetModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.UserModels;
@@ -46,7 +47,7 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
-                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+                throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
             }
         }
 
@@ -76,6 +77,12 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetAssetsByUserAsync(Guid userId, PaginationParameter paginationParameter)
         {
+            // check exist user id
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
+            if (user == null) {
+                throw new NotExistException(MessageConstants.USER_NOT_FOUND_MESSAGE);
+            }
+
             var assets = await _unitOfWork.AssetRepository.GetAssetsByUserIdAsync(userId, paginationParameter);
             var result = _mapper.Map<Pagination<AssetModel>>(assets);
 
@@ -101,10 +108,26 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> CreateAssetAsync(CreateAssetModel model)
         {
+            // get current user id
+            var userId = _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail).Result.Id;
+
+            // check exist user id
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new NotExistException(MessageConstants.USER_NOT_FOUND_MESSAGE);
+            }
+
+            // check exist subcategory
+            var subcate = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId);
+            if (subcate == null)
+            {
+                throw new NotExistException(MessageConstants.SUBCATEGORY_NOT_FOUND);
+            }
+
             var asset = _mapper.Map<Asset>(model);
             asset.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
-            // get current user id
-            //asset.UserId = _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail).Result.Id;
+            asset.UserId = userId;
 
             await _unitOfWork.AssetRepository.AddAsync(asset);
             await _unitOfWork.SaveAsync();
@@ -117,25 +140,39 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task UpdateAssetAsync(UpdateAssetModel model)
+        public async Task<BaseResultModel> UpdateAssetAsync(UpdateAssetModel model)
         {
-            var asset = await _unitOfWork.AssetRepository.GetByIdAsync(model.Id);
-            if (asset == null) return;
+            // check exist asset id
+            if (await _unitOfWork.AssetRepository.GetByIdAsync(model.Id) == null) throw new NotExistException(MessageConstants.ASSET_NOT_FOUND);
 
-            _mapper.Map(model, asset);
-            asset.UpdatedDate = DateTime.UtcNow;
+            // check exist subcategory
+            if (await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId) == null) throw new NotExistException(MessageConstants.SUBCATEGORY_NOT_FOUND);
+
+            var asset = _mapper.Map<Asset>(model);
+            asset.UpdatedDate = CommonUtils.GetCurrentTime();
 
             _unitOfWork.AssetRepository.UpdateAsync(asset);
             await _unitOfWork.SaveAsync();
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.ASSET_UPDATED_SUCCESS,
+                Data = _mapper.Map<AssetModel>(asset)
+            };
         }
 
-        public async Task DeleteAssetAsync(Guid id)
+        public async Task<BaseResultModel> DeleteAssetAsync(Guid id)
         {
             var asset = await _unitOfWork.AssetRepository.GetByIdAsync(id);
-            if (asset == null) return;
+            if (asset == null) throw new NotExistException(MessageConstants.ASSET_NOT_FOUND);
 
             _unitOfWork.AssetRepository.SoftDeleteAsync(asset);
             await _unitOfWork.SaveAsync();
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.ASSET_DELETED_SUCCESS,
+            };
         }
         
     }
