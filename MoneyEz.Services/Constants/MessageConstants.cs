@@ -147,5 +147,18 @@ namespace MoneyEz.Services.Constants
 
         // chat
         public const string CHAT_USER_NOT_EXIST = "UserNotExistChatConversation";
+
+        // asset and liability
+        public const string ASSET_LIST_GET_SUCCESS_MESSAGE = "Assets list get successfully";
+        public const string ASSET_CREATED_SUCCESS = "AssetCreateSuccess";
+        public const string ASSET_UPDATED_SUCCESS = "AssetUpdateSuccess";
+        public const string ASSET_DELETED_SUCCESS = "AssetDeleteSuccess";
+        public const string ASSET_NOT_FOUND = "AssetNotFound";
+
+        public const string LIABILITY_LIST_GET_SUCCESS_MESSAGE = "Liabilities list get successfully";
+        public const string LIABILITY_CREATED_SUCCESS = "LiabilityCreateSuccess";
+        public const string LIABILITY_UPDATED_SUCCESS = "LiabilityUpdateSuccess";
+        public const string LIABILITY_DELETED_SUCCESS = "LiabilityDeleteSuccess";
+        public const string LIABILITY_NOT_FOUND = "LiabilityNotFound";
     }
 }

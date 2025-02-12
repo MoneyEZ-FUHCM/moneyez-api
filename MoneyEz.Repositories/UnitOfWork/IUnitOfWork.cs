@@ -36,6 +36,10 @@ namespace MoneyEz.Repositories.UnitOfWork
         IGroupFundLogRepository GroupFundLogRepository { get; }
         IGroupMemberRepository GroupMemberRepository { get; }
 
+        //asset and liability
+        IAssetRepository AssetRepository { get; }
+        ILiabilityRepository LiabilityRepository { get; }
+
 
         //subscription
         ISubscriptionRepository SubscriptionRepository { get; }

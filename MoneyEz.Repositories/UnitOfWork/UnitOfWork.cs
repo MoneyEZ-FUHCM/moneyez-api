@@ -47,6 +47,10 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IChatHistoryRepository _chatHistoryRepository;
         private IChatMessageRepository _chatMessageRepository;
 
+        //asset and liability
+        private IAssetRepository _assetRepository;
+        private ILiabilityRepository _liabilityRepository;
+
         public UnitOfWork(MoneyEzContext context)
         {
             _context = context;
@@ -149,6 +153,22 @@ namespace MoneyEz.Repositories.UnitOfWork
             }
         }
 
+
+        public IAssetRepository AssetRepository
+        {
+            get
+            {
+                return _assetRepository ??= new AssetRepository(_context);
+            }
+        } 
+        
+        public ILiabilityRepository LiabilityRepository
+        {
+            get
+            {
+                return _liabilityRepository ??= new LiabilityRepository(_context);
+            }
+        } 
 
         public void Commit()
         {

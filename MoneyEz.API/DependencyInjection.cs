@@ -187,6 +187,12 @@ namespace MoneyEz.API
             services.AddScoped<IChatHistoryService, ChatHistoryService>();
             services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
 
+            //config asset and liability service
+            services.AddScoped<IAssetRepository, AssetRepository>();
+            services.AddScoped<IAssetService, AssetService>();
+            services.AddScoped<ILiabilityRepository, LiabilityRepository>();
+            services.AddScoped<ILiabilityService, LiabilityService>();
+
             services.AddSignalR();
 
             #endregion
