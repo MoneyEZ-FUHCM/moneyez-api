@@ -13,7 +13,7 @@ namespace MoneyEz.Services.Services.Interfaces
     {
         Task<BaseResultModel> GetAssetByIdAsync(Guid id);
         Task<BaseResultModel> GetAllAssetsPaginationAsync(PaginationParameter paginationParameter);
-        Task<BaseResultModel> GetAssetsByUserAsync(Guid userId, PaginationParameter paginationParameter);
+        Task<BaseResultModel> GetAssetsByUserAsync(PaginationParameter paginationParameter);
         Task<BaseResultModel> CreateAssetAsync(CreateAssetModel model);
         Task<BaseResultModel> UpdateAssetAsync(UpdateAssetModel model);
         Task<BaseResultModel> DeleteAssetAsync(Guid id);
