@@ -73,8 +73,11 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetLiabilitiesByUserAsync(Guid userId, PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetLiabilitiesByUserAsync(PaginationParameter paginationParameter)
         {
+            // get current user id
+            var userId = _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail).Result.Id;
+
             // check exist user id
             var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
             if (user == null)

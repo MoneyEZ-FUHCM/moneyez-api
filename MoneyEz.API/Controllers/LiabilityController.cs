@@ -33,11 +33,11 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpGet]
-        [Route("user/{userId}")]
+        [Route("user")]
         [Authorize]
-        public Task<IActionResult> GetLiabilitysByUser([FromRoute] Guid userId, [FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetLiabilitysByUser([FromQuery] PaginationParameter paginationParameter)
         {
-            return ValidateAndExecute(() => _liabilityService.GetLiabilitiesByUserAsync(userId, paginationParameter));
+            return ValidateAndExecute(() => _liabilityService.GetLiabilitiesByUserAsync(paginationParameter));
         }
 
         [HttpPost]

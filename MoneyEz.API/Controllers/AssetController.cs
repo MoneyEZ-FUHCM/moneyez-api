@@ -33,11 +33,11 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpGet]
-        [Route("user/{userId}")]
+        [Route("user")]
         [Authorize]
-        public Task<IActionResult> GetAssetsByUser([FromRoute] Guid userId, [FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetAssetsByUser([FromQuery] PaginationParameter paginationParameter)
         {
-            return ValidateAndExecute(() => _assetService.GetAssetsByUserAsync(userId, paginationParameter));
+            return ValidateAndExecute(() => _assetService.GetAssetsByUserAsync(paginationParameter));
         }
 
         [HttpPost]
