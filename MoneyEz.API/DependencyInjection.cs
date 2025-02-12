@@ -193,6 +193,10 @@ namespace MoneyEz.API
             services.AddScoped<ILiabilityRepository, LiabilityRepository>();
             services.AddScoped<ILiabilityService, LiabilityService>();
 
+            // config notification service
+            services.AddScoped<INotificationRepository, NotificationRepository>();
+            services.AddScoped<INotificationService, NotificationService>();
+
             services.AddSignalR();
 
             #endregion

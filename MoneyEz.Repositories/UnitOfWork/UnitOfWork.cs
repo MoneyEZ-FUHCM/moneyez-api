@@ -51,6 +51,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IAssetRepository _assetRepository;
         private ILiabilityRepository _liabilityRepository;
 
+        // notification
+        private INotificationRepository _notificationRepository;
+
         public UnitOfWork(MoneyEzContext context)
         {
             _context = context;
@@ -168,7 +171,15 @@ namespace MoneyEz.Repositories.UnitOfWork
             {
                 return _liabilityRepository ??= new LiabilityRepository(_context);
             }
-        } 
+        }
+
+        public INotificationRepository NotificationRepository
+        {
+            get
+            {
+                return _notificationRepository ??= new NotificationRepository(_context);
+            }
+        }
 
         public void Commit()
         {

@@ -48,6 +48,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         IChatHistoryRepository ChatHistoryRepository { get; }
         IChatMessageRepository ChatMessageRepository { get; }
 
+        // notification
+        INotificationRepository NotificationRepository { get; }
+
         int Save();
         void Commit();
         void Rollback();
