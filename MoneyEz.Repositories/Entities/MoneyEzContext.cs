@@ -80,7 +80,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Amount).HasColumnType("decimal(15, 2)");
-            entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
             entity.Property(e => e.NameUnsign).HasMaxLength(200);
             entity.HasOne(d => d.User).WithMany(p => p.Assets)
                 .HasForeignKey(d => d.UserId)
@@ -420,11 +420,6 @@ public partial class MoneyEzContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.NameUnsign).HasMaxLength(50);
-
-            entity.HasOne(d => d.Category).WithMany(p => p.Subcategories)
-                .HasForeignKey(d => d.CategoryId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Subcatego__Categ__7F2BE32F");
         });
 
         modelBuilder.Entity<Subscription>(entity =>
@@ -513,7 +508,6 @@ public partial class MoneyEzContext : DbContext
                 .HasMaxLength(100);
             entity.Property(e => e.NameUnsign).HasMaxLength(50);
             entity.Property(e => e.Password)
-                .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.PhoneNumber).HasMaxLength(15);
             entity.Property(e => e.Address).HasMaxLength(255);
@@ -576,6 +570,19 @@ public partial class MoneyEzContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK_Image");
             entity.ToTable("Image");
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
+        });
+
+        modelBuilder.Entity<CategorySubcategory>(entity =>
+        {
+            entity.HasKey(cs => new { cs.CategoryId, cs.SubcategoryId });
+
+            entity.HasOne(cs => cs.Category)
+                .WithMany(c => c.CategorySubcategories)
+                .HasForeignKey(cs => cs.CategoryId);
+
+            entity.HasOne(cs => cs.Subcategory)
+                .WithMany(s => s.CategorySubcategories)
+                .HasForeignKey(cs => cs.SubcategoryId);
         });
 
         OnModelCreatingPartial(modelBuilder);

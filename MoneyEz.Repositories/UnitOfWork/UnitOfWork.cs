@@ -29,11 +29,19 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //subcategory
         private ISubcategoryRepository _subcategoryRepository;
-
+        //transaction
+        private ITransactionRepository _transactionsRepository;
         //group
-        private IGroupRepository _groupRepository;
+        private IGroupFundRepository _groupFundRepository;
+        //group fund log
         private IGroupFundLogRepository _groupFundLogRepository;
+        //group member
         private IGroupMemberRepository _groupMemberRepository;
+        private ISubscriptionRepository _subscriptionRepository;
+
+        // chat
+        private IChatHistoryRepository _chatHistoryRepository;
+        private IChatMessageRepository _chatMessageRepository;
 
         //asset and liability
         private IAssetRepository _assetRepository;
@@ -85,11 +93,19 @@ namespace MoneyEz.Repositories.UnitOfWork
             }
         }
 
-        public IGroupRepository GroupRepository
+        public ITransactionRepository TransactionsRepository
         {
             get
             {
-                return _groupRepository ??= new GroupRepository(_context);
+                return _transactionsRepository ??= new TransactionRepository(_context);
+            }
+        }
+
+        public IGroupFundRepository GroupFundRepository
+        {
+            get
+            {
+                return _groupFundRepository ??= new GroupRepository(_context);
             }
         }
         public IGroupFundLogRepository GroupFundLogRepository
@@ -106,6 +122,29 @@ namespace MoneyEz.Repositories.UnitOfWork
                 return _groupMemberRepository ??= new GroupMemberRepository(_context);
             }
         }
+
+        public ISubscriptionRepository SubscriptionRepository
+        {
+            get { return _subscriptionRepository ??= new SubscriptionRepository(_context); }
+        }
+
+        public IChatHistoryRepository ChatHistoryRepository
+        {
+            get
+            {
+                return _chatHistoryRepository ??= new ChatHistoryRepository(_context);
+            }
+        }
+
+        public IChatMessageRepository ChatMessageRepository
+        {
+            get
+            {
+                return _chatMessageRepository ??= new ChatMessageRepository(_context);
+            }
+        }
+
+
         public IAssetRepository AssetRepository
         {
             get

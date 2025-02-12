@@ -18,6 +18,11 @@ namespace MoneyEz.Repositories.Repositories.Implements
             _context = context;
         }
 
+        public async Task<User> GetUserByPhoneAsync(string phoneNumber)
+        {
+            return await _context.Users.FirstOrDefaultAsync(e => e.PhoneNumber == phoneNumber);
+        }
+
         public async Task<User> GetUserByEmailAsync(string email)
         {
             return await _context.Users.FirstOrDefaultAsync(e => e.Email == email);

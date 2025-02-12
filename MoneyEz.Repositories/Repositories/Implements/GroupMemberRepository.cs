@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Repositories.Interfaces;
 using System.Threading.Tasks;
+using MoneyEz.Repositories.Enums;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace MoneyEz.Repositories.Repositories.Implements
@@ -21,6 +23,16 @@ namespace MoneyEz.Repositories.Repositories.Implements
         public async Task AddAsync(GroupMember entity)
         {
             await _context.GroupMembers.AddAsync(entity);
+        }
+
+        public async Task<RoleGroup> GetUserRoleInGroup(Guid userId, Guid groupId)
+        {
+            var member = await _context.Set<GroupMember>()
+                .Where(gm => gm.UserId == userId && gm.GroupId == groupId)
+                .Select(gm => gm.Role)
+                .FirstOrDefaultAsync();
+
+            return member ?? RoleGroup.MEMBER;
         }
     }
 }

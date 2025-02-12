@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace MoneyEz.Repositories.Repositories.Implements
 {
-    public class GroupRepository : GenericRepository<GroupFund>, IGroupRepository
+    public class GroupRepository : GenericRepository<GroupFund>, IGroupFundRepository
     {
         private readonly MoneyEzContext _context;
 
