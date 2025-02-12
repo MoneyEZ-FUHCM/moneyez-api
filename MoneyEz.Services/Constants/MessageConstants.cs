@@ -160,5 +160,11 @@ namespace MoneyEz.Services.Constants
         public const string LIABILITY_UPDATED_SUCCESS = "LiabilityUpdateSuccess";
         public const string LIABILITY_DELETED_SUCCESS = "LiabilityDeleteSuccess";
         public const string LIABILITY_NOT_FOUND = "LiabilityNotFound";
+
+        // notification
+        public const string NOTI_NOT_EXIST = "NotificationNotExist";
+        public const string NOTI_PUSH_FAILED = "CannotPushNotification";
+        public const string NOTI_UNREAD_EMPTY = "NotificationUnreadEmpty";
+        public const string NOTI_CANNOT_MARK_READ = "CannotMarkReadNotification";
     }
 }

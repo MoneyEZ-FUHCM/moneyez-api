@@ -274,8 +274,9 @@ public partial class MoneyEzContext : DbContext
             entity.ToTable("Notification");
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Title).HasMaxLength(255);
+            entity.Property(e => e.Title).HasMaxLength(255).IsRequired();
             entity.Property(e => e.TitleUnsign).HasMaxLength(255);
+            entity.Property(e => e.Message).IsRequired();
 
             entity.HasOne(d => d.User).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.UserId)
