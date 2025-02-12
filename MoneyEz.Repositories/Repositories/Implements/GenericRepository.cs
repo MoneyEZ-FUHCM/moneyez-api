@@ -147,5 +147,14 @@ namespace MoneyEz.Repositories.Repositories.Implements
             }
             return await query.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id);
         }
+
+        public void UpdateRangeAsync(List<TEntity> entities)
+        {
+            foreach (var entity in entities)
+            {
+                entity.UpdatedDate = CommonUtils.GetCurrentTime();
+            }
+            _dbSet.UpdateRange(entities);
+        }
     }
 }

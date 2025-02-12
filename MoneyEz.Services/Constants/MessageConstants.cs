@@ -81,12 +81,15 @@ namespace MoneyEz.Services.Constants
         public const string SUBCATEGORY_UPDATED_SUCCESS = "SubcategoryUpdatedSuccessfully";
         public const string SUBCATEGORY_DELETED_SUCCESS = "SubcategoryDeletedSuccessfully";
         public const string SUBCATEGORY_HAS_DEPENDENCIES = "SubcategoryHasDependencies";
-
+        public const string INVALID_SUBCATEGORY_IDS = "InvalidSubcategoryIds";
         public const string SUBCATEGORY_NOT_FOUND = "SubcategoryNotFound";
         public const string SUBCATEGORY_ALREADY_EXISTS = "SubcategoryAlreadyExists";
         public const string DUPLICATE_SUBCATEGORY_NAMES = "DuplicateSubcategoryNames";
         public const string EMPTY_SUBCATEGORY_LIST = "EmptySubcategoryList";
-        public const string CATEGORY_ID_REQUIRED = "CategoryIdRequired"; // Each subcategory must have a valid CategoryId.
+        public const string CATEGORY_ID_REQUIRED = "CategoryIdRequired";
+        public const string SUBCATEGORY_NOT_FOUND_IN_CATEGORY = "SubcategoryNotFoundInCategory";
+        public const string DUPLICATE_SUBCATEGORY_NAME_GLOBAL = "DuplicateSubcategoryNameGlobal";
+        public const string DUPLICATE_SUBCATEGORY_NAME_IN_CATEGORY = "DuplicateSubcategoryNameInCategory";
 
         // transaction
         public const string TRANSACTION_CREATED_SUCCESS = "TransactionCreatedSuccessfully";
@@ -144,5 +147,24 @@ namespace MoneyEz.Services.Constants
 
         // chat
         public const string CHAT_USER_NOT_EXIST = "UserNotExistChatConversation";
+
+        // asset and liability
+        public const string ASSET_LIST_GET_SUCCESS_MESSAGE = "Assets list get successfully";
+        public const string ASSET_CREATED_SUCCESS = "AssetCreateSuccess";
+        public const string ASSET_UPDATED_SUCCESS = "AssetUpdateSuccess";
+        public const string ASSET_DELETED_SUCCESS = "AssetDeleteSuccess";
+        public const string ASSET_NOT_FOUND = "AssetNotFound";
+
+        public const string LIABILITY_LIST_GET_SUCCESS_MESSAGE = "Liabilities list get successfully";
+        public const string LIABILITY_CREATED_SUCCESS = "LiabilityCreateSuccess";
+        public const string LIABILITY_UPDATED_SUCCESS = "LiabilityUpdateSuccess";
+        public const string LIABILITY_DELETED_SUCCESS = "LiabilityDeleteSuccess";
+        public const string LIABILITY_NOT_FOUND = "LiabilityNotFound";
+
+        // notification
+        public const string NOTI_NOT_EXIST = "NotificationNotExist";
+        public const string NOTI_PUSH_FAILED = "CannotPushNotification";
+        public const string NOTI_UNREAD_EMPTY = "NotificationUnreadEmpty";
+        public const string NOTI_CANNOT_MARK_READ = "CannotMarkReadNotification";
     }
 }

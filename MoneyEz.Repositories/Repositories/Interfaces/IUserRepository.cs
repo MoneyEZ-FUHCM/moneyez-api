@@ -12,5 +12,8 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
         Task<User> GetUserByEmailAsync(string email);
 
         Task<User> GetUserByPhoneAsync(string phoneNumber);
+
+        Task<List<User>> GetUsersByUserIdsAsync(List<Guid> userIds);
+
     }
 }

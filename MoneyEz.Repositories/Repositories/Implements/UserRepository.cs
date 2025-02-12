@@ -27,5 +27,10 @@ namespace MoneyEz.Repositories.Repositories.Implements
         {
             return await _context.Users.FirstOrDefaultAsync(e => e.Email == email);
         }
+
+        public async Task<List<User>> GetUsersByUserIdsAsync(List<Guid> userIds)
+        {
+            return await _context.Users.Where(x => userIds.Contains(x.Id)).ToListAsync();
+        }
     }
 }

@@ -29,6 +29,10 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //subcategory
         private ISubcategoryRepository _subcategoryRepository;
+
+        //subcategorycategory
+        private ICategorySubcategoryRepository _categorySubcategoryRepository;
+
         //transaction
         private ITransactionRepository _transactionsRepository;
         //group
@@ -42,6 +46,13 @@ namespace MoneyEz.Repositories.UnitOfWork
         // chat
         private IChatHistoryRepository _chatHistoryRepository;
         private IChatMessageRepository _chatMessageRepository;
+
+        //asset and liability
+        private IAssetRepository _assetRepository;
+        private ILiabilityRepository _liabilityRepository;
+
+        // notification
+        private INotificationRepository _notificationRepository;
 
         public UnitOfWork(MoneyEzContext context)
         {
@@ -87,6 +98,11 @@ namespace MoneyEz.Repositories.UnitOfWork
             {
                 return _subcategoryRepository ??= new SubcategoryRepository(_context);
             }
+        }
+
+        public ICategorySubcategoryRepository CategorySubcategoryRepository
+        {
+            get { return _categorySubcategoryRepository ??= new CategorySubcategoryRepository(_context); }
         }
 
         public ITransactionRepository TransactionsRepository
@@ -140,6 +156,30 @@ namespace MoneyEz.Repositories.UnitOfWork
             }
         }
 
+
+        public IAssetRepository AssetRepository
+        {
+            get
+            {
+                return _assetRepository ??= new AssetRepository(_context);
+            }
+        } 
+        
+        public ILiabilityRepository LiabilityRepository
+        {
+            get
+            {
+                return _liabilityRepository ??= new LiabilityRepository(_context);
+            }
+        }
+
+        public INotificationRepository NotificationRepository
+        {
+            get
+            {
+                return _notificationRepository ??= new NotificationRepository(_context);
+            }
+        }
 
         public void Commit()
         {
