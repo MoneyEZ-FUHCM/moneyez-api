@@ -35,6 +35,10 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IGroupFundLogRepository _groupFundLogRepository;
         private IGroupMemberRepository _groupMemberRepository;
 
+        //asset and liability
+        private IAssetRepository _assetRepository;
+        private ILiabilityRepository _liabilityRepository;
+
         public UnitOfWork(MoneyEzContext context)
         {
             _context = context;
@@ -102,6 +106,22 @@ namespace MoneyEz.Repositories.UnitOfWork
                 return _groupMemberRepository ??= new GroupMemberRepository(_context);
             }
         }
+        public IAssetRepository AssetRepository
+        {
+            get
+            {
+                return _assetRepository ??= new AssetRepository(_context);
+            }
+        } 
+        
+        public ILiabilityRepository LiabilityRepository
+        {
+            get
+            {
+                return _liabilityRepository ??= new LiabilityRepository(_context);
+            }
+        } 
+
         public void Commit()
         {
             try

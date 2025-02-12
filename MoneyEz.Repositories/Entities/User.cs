@@ -35,7 +35,9 @@ public partial class User : BaseEntity
 
     public CommonsStatus? Status { get; set; }
 
-    public virtual ICollection<AssetAndLiability> AssetAndLiabilities { get; set; } = new List<AssetAndLiability>();
+    public virtual ICollection<Asset> Assets { get; set; } = new List<Asset>();
+
+    public virtual ICollection<Liability> Liabilities { get; set; } = new List<Liability>();
 
     public virtual ICollection<ChatHistory> ChatHistories { get; set; } = new List<ChatHistory>();
 

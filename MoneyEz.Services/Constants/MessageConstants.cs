@@ -91,5 +91,8 @@ namespace MoneyEz.Services.Constants
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
 
+        // asset and liability
+        public const string ASSET_LIST_GET_SUCCESS_MESSAGE = "Asset created successfully";
+        public const string ASSET_CREATED_SUCCESS = "Asset created successfully";
     }
 }

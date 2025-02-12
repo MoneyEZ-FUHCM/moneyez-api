@@ -26,6 +26,9 @@ namespace MoneyEz.Services.Mappers
             GroupFundConfig();
 
             // transaction mapper
+
+            // asset mapper
+            AssetMapperConfig();
         }
 
         partial void UserMapperConfig();
@@ -33,6 +36,7 @@ namespace MoneyEz.Services.Mappers
         partial void CategoryMapperConfig();
         partial void SubcategoryMapperConfig();
         partial void GroupFundConfig();
+        partial void AssetMapperConfig();
     }
 
     public class PaginationConverter<TSource, TDestination> : ITypeConverter<Pagination<TSource>, Pagination<TDestination>>

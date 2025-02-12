@@ -176,6 +176,12 @@ namespace MoneyEz.API
             services.AddScoped<IGroupMemberRepository, GroupMemberRepository>();
             services.AddScoped<IGroupMemberService, GroupMemberService>();
 
+            //config asset and liability service
+            services.AddScoped<IAssetRepository, AssetRepository>();
+            services.AddScoped<IAssetService, AssetService>();
+            services.AddScoped<ILiabilityRepository, LiabilityRepository>();
+            services.AddScoped<ILiabilityService, LiabilityService>();
+
             services.AddSignalR();
 
             #endregion
