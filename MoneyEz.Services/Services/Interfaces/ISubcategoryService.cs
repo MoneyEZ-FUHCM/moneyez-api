@@ -11,8 +11,10 @@ namespace MoneyEz.Services.Services.Interfaces
     {
         Task<BaseResultModel> GetSubcategoriesPaginationAsync(PaginationParameter paginationParameter);
         Task<BaseResultModel> GetSubcategoryByIdAsync(Guid id);
-        Task<BaseResultModel> AddSubcategoriesAsync(List<CreateSubcategoryModel> models);
-        Task<BaseResultModel> UpdateSubcategoryAsync(UpdateSubcategoryModel model);
+        Task<BaseResultModel> CreateSubcategoriesAsync(List<CreateSubcategoryModel> models);
+        Task<BaseResultModel> UpdateSubcategoryByIdAsync(UpdateSubcategoryModel model);
+        Task<BaseResultModel> AddSubcategoriesToCategoriesAsync(AssignSubcategoryModel model);
         Task<BaseResultModel> DeleteSubcategoryAsync(Guid id);
+        Task<BaseResultModel> RemoveSubcategoriesFromCategoriesAsync(RemoveSubcategoryFromCategoryModel model);
     }
 }

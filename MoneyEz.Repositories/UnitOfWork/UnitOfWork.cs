@@ -29,6 +29,10 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //subcategory
         private ISubcategoryRepository _subcategoryRepository;
+
+        //subcategorycategory
+        private ICategorySubcategoryRepository _categorySubcategoryRepository;
+
         //transaction
         private ITransactionRepository _transactionsRepository;
         //group
@@ -87,6 +91,11 @@ namespace MoneyEz.Repositories.UnitOfWork
             {
                 return _subcategoryRepository ??= new SubcategoryRepository(_context);
             }
+        }
+
+        public ICategorySubcategoryRepository CategorySubcategoryRepository
+        {
+            get { return _categorySubcategoryRepository ??= new CategorySubcategoryRepository(_context); }
         }
 
         public ITransactionRepository TransactionsRepository
