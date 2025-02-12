@@ -14,8 +14,4 @@
     <ProjectReference Include="..\MoneyEz.Repositories\MoneyEz.Repositories.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="BusinessModels\LiabilityModels\" />
-  </ItemGroup>
-
 </Project>

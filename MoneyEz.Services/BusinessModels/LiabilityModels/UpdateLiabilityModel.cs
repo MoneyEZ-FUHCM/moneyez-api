@@ -1,16 +1,16 @@
 ﻿using MoneyEz.Repositories.Enums;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace MoneyEz.Services.BusinessModels.AssetModels
+
+namespace MoneyEz.Services.BusinessModels.LiabilityModels
 {
-    public class UpdateAssetModel
+    public class UpdateLiabilityModel
     {
+        [Required(ErrorMessage = "Id is required.")]
         public Guid Id { get; set; }
+
+        [Required(ErrorMessage = "UserId is required.")]
+        public Guid UserId { get; set; }
 
         [Required(ErrorMessage = "Name is required.")]
         [StringLength(200, ErrorMessage = "Name cannot be longer than 200 characters.")]
@@ -24,18 +24,14 @@ namespace MoneyEz.Services.BusinessModels.AssetModels
         [Range(0, double.MaxValue, ErrorMessage = "Amount must be a positive value.")]
         public decimal Amount { get; set; }
 
-        public DateTime? AcquisitionDate { get; set; }
+        public DateTime? RecognitionDate { get; set; } // Ngày xuất hiện ghi nợ
 
-        public DateTime? DepreciationDate { get; set; }
+        public DateTime? DueDate { get; set; } // Hạn thanh toán
 
-        public DateTime? RevaluationDate { get; set; }
+        public DateTime? InterestPaymentDate { get; set; } // Hạn thanh toán
 
-        public DateTime? DisposalDate { get; set; }
-
-        public DateTime? MaturityDate { get; set; }
-
-        [Range(0, 100, ErrorMessage = "Rate must be between 0 and 100.")]
-        public double? Rate { get; set; }
+        [Range(0, 100, ErrorMessage = "InterestRate must be between 0 and 100.")]
+        public double? InterestRate { get; set; }
 
         public string? Description { get; set; }
 

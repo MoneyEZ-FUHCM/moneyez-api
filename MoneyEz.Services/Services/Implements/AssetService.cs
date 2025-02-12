@@ -80,7 +80,7 @@ namespace MoneyEz.Services.Services.Implements
             // check exist user id
             var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
             if (user == null) {
-                throw new NotExistException(MessageConstants.USER_NOT_FOUND_MESSAGE);
+                throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
             }
 
             var assets = await _unitOfWork.AssetRepository.GetAssetsByUserIdAsync(userId, paginationParameter);
@@ -115,7 +115,7 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                throw new NotExistException(MessageConstants.USER_NOT_FOUND_MESSAGE);
+                throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
             }
 
             // check exist subcategory
