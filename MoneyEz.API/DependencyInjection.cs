@@ -196,6 +196,8 @@ namespace MoneyEz.API
             {
                 //options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
                 options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
+                options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
+                //options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
             });
 
             #endregion
