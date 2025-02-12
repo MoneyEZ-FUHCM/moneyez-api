@@ -146,13 +146,15 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> UpdateAssetAsync(UpdateAssetModel model)
         {
             // check exist asset id
-            if (await _unitOfWork.AssetRepository.GetByIdAsync(model.Id) == null) throw new NotExistException(MessageConstants.ASSET_NOT_FOUND);
+            var asset = await _unitOfWork.AssetRepository.GetByIdAsync(model.Id);
+            if (asset == null) throw new NotExistException(MessageConstants.ASSET_NOT_FOUND);
 
             // check exist subcategory
-            if (await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId) == null) throw new NotExistException(MessageConstants.SUBCATEGORY_NOT_FOUND);
+            if (await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId) == null) 
+                throw new NotExistException(MessageConstants.SUBCATEGORY_NOT_FOUND);
 
-            var asset = _mapper.Map<Asset>(model);
-            asset.UpdatedDate = CommonUtils.GetCurrentTime();
+            _mapper.Map(model, asset);
+            asset.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
 
             _unitOfWork.AssetRepository.UpdateAsync(asset);
             await _unitOfWork.SaveAsync();

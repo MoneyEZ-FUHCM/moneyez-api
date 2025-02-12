@@ -145,13 +145,15 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> UpdateLiabilityAsync(UpdateLiabilityModel model)
         {
             // check exist liability id
-            if (await _unitOfWork.LiabilityRepository.GetByIdAsync(model.Id) == null) throw new NotExistException(MessageConstants.LIABILITY_NOT_FOUND);
+            var liability = await _unitOfWork.LiabilityRepository.GetByIdAsync(model.Id);
+            if (liability == null) throw new NotExistException(MessageConstants.LIABILITY_NOT_FOUND);
 
             // check exist subcategory
-            if (await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId) == null) throw new NotExistException(MessageConstants.SUBCATEGORY_NOT_FOUND);
+            if (await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId) == null) 
+                throw new NotExistException(MessageConstants.SUBCATEGORY_NOT_FOUND);
 
-            var liability = _mapper.Map<Liability>(model);
-            liability.UpdatedDate = CommonUtils.GetCurrentTime();
+            _mapper.Map(model, liability);
+            liability.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
 
             _unitOfWork.LiabilityRepository.UpdateAsync(liability);
             await _unitOfWork.SaveAsync();
