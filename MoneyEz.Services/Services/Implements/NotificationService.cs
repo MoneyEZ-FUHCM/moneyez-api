@@ -126,31 +126,14 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var notiList = await _unitOfWork.NotificationRepository.ToPagination(paginationParameter);
-            var notiListModels = _mapper.Map<List<UserModel>>(notiList);
+            var notiListModels = _mapper.Map<List<NotificationModel>>(notiList);
 
-            var notifications = new Pagination<UserModel>(notiListModels,
-                notiList.TotalCount,
-                notiList.CurrentPage,
-                notiList.PageSize);
-
-            var metaData = new
-            {
-                notiList.TotalCount,
-                notiList.PageSize,
-                notiList.CurrentPage,
-                notiList.TotalPages,
-                notiList.HasNext,
-                notiList.HasPrevious
-            };
+            var notificationPagingResult = PaginationHelper.GetPaginationResult(notiList, notiListModels);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = new ModelPaging
-                {
-                    Data = notifications,
-                    MetaData = metaData
-                }
+                Data = notificationPagingResult
             };
         }
 
