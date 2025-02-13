@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using FirebaseAdmin.Auth;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -218,29 +219,27 @@ namespace MoneyEz.Services.Services.Implements
             var userList = await _unitOfWork.UsersRepository.ToPagination(paginationParameter);
             var userModels = _mapper.Map<List<UserModel>>(userList);
 
-            var users = new Pagination<UserModel>(userModels,
-                userList.TotalCount,
-                userList.CurrentPage,
-                userList.PageSize);
+            //var users = new Pagination<UserModel>(userModels,
+            //    userList.TotalCount,
+            //    userList.CurrentPage,
+            //    userList.PageSize);
 
-            var metaData = new
-            {
-                userList.TotalCount,
-                userList.PageSize,
-                userList.CurrentPage,
-                userList.TotalPages,
-                userList.HasNext,
-                userList.HasPrevious
-            };
+            //var metaData = new
+            //{
+            //    userList.TotalCount,
+            //    userList.PageSize,
+            //    userList.CurrentPage,
+            //    userList.TotalPages,
+            //    userList.HasNext,
+            //    userList.HasPrevious
+            //};
+
+            var paginatedResult = PaginationHelper.GetPaginationResult(userList, userModels);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = new ModelPaging
-                {
-                    Data = users,
-                    MetaData = metaData
-                }
+                Data = paginatedResult
             };
         }
 
@@ -580,7 +579,7 @@ namespace MoneyEz.Services.Services.Implements
             return users != null;
         }
 
-        public async Task<BaseResultModel> LoginWithGoogle(string credental)
+        public async Task<BaseResultModel> LoginWithGoogleFireBase(string credental)
         {
             FirebaseToken decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(credental);
 
@@ -674,6 +673,87 @@ namespace MoneyEz.Services.Services.Implements
                 }
             }
             throw new DefaultException("", MessageConstants.ACCOUNT_UPDATE_TOKEN_FAILED);
+        }
+
+        public async Task<BaseResultModel> LoginWithGoogleOAuth(string credental)
+        {
+            string cliendId = _configuration["GoogleCredential:ClientId"];
+
+            if (string.IsNullOrEmpty(cliendId))
+            {
+                throw new DefaultException("", MessageConstants.TOKEN_NOT_VALID);
+            }
+
+            var settings = new GoogleJsonWebSignature.ValidationSettings()
+            {
+                Audience = new List<string> { cliendId }
+            };
+
+            var payload = await GoogleJsonWebSignature.ValidateAsync(credental, settings);
+            if (payload == null)
+            {
+                throw new DefaultException("", MessageConstants.TOKEN_NOT_VALID);
+            }
+
+            var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(payload.Email);
+
+            if (existUser != null)
+            {
+
+                if (existUser.Status == CommonsStatus.BLOCKED)
+                {
+                    throw new DefaultException("", MessageConstants.ACCOUNT_BLOCKED);
+                }
+                else
+                {
+                    var accessToken = AuthenTokenUtils.GenerateAccessToken(existUser.Email, existUser, _configuration);
+                    var refreshToken = AuthenTokenUtils.GenerateRefreshToken(existUser.Email, _configuration);
+
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status200OK,
+                        Data = new AuthenModel
+                        {
+                            AccessToken = accessToken,
+                            RefreshToken = refreshToken
+                        },
+                        Message = MessageConstants.LOGIN_SUCCESS_MESSAGE
+                    };
+                }
+            }
+            else
+            {
+                var newUser = new User
+                {
+                    Email = payload.Email,
+                    IsVerified = payload.EmailVerified,
+                    FullName = payload.Name,
+                    NameUnsign = StringUtils.ConvertToUnSign(payload.Name),
+                    AvatarUrl = payload.Picture,
+                    Status = CommonsStatus.ACTIVE,
+                    GoogleId = payload.JwtId,
+                    Role = RolesEnum.USER,
+                };
+
+                await _unitOfWork.UsersRepository.AddAsync(newUser);
+                _unitOfWork.Save();
+
+                // create accesstoken
+                var accessToken = AuthenTokenUtils.GenerateAccessToken(newUser.Email, newUser, _configuration);
+                var refreshToken = AuthenTokenUtils.GenerateRefreshToken(newUser.Email, _configuration);
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = new AuthenModel
+                    {
+                        AccessToken = accessToken,
+                        RefreshToken = refreshToken
+                    },
+                    Message = MessageConstants.LOGIN_GOOGLE_SUCCESS_MESSAGE
+                };
+
+            }
         }
     }
 }
