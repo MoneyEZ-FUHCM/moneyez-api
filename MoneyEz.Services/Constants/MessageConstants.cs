@@ -121,22 +121,20 @@ namespace MoneyEz.Services.Constants
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
         public const string GROUP_GET_ALL_SUCCESS_MESSAGE = "Group get all successfully";
-        public const string GROUP_NOT_FOUND_MESSAGE = "Group not found";
-        public const string GROUP_DISBAND_FAIL_MESSAGE = "Group disband failed";
-        public const string GROUP_DISBAND_SUCCESS_MESSAGE = "Group disbanded successfully";
+        public const string GROUP_CLOSE_FAIL = "GroupCloseFailed";
+        public const string GROUP_CLOSE_SUCCESS_MESSAGE = "Group disbanded successfully";
 
-        public const string GROUP_DISBAND_FORBIDDEN_MESSAGE = "Group disband forbidden";
-        public const string GROUP_REMOVE_MEMBER_FORBIDDEN_MESSAGE = "Group member not found";
+        public const string GROUP_CLOSE_FORBIDDEN = "GroupCloseForbidden";
+        public const string GROUP_REMOVE_MEMBER_FORBIDDEN = "GroupMemberNotFound";
         public const string GROUP_REMOVE_MEMBER_SUCCESS_MESSAGE = "Group member removed successfully";
-        public const string GROUP_SET_ROLE_FORBIDDEN_MESSAGE = "Group set role forbidden";
-        public const string MEMBER_NOT_FOUND_MESSAGE = "Group member not found";
+        public const string GROUP_SET_ROLE_FORBIDDEN = "GroupSetRoleForbidden";
+        public const string GROUP_MEMBER_NOT_FOUND = "GroupMemberNotFound";
         public const string MEMBER_ROLE_UPDATE_SUCCESS_MESSAGE = "Group member role updated successfully";
 
         public const string GROUP_INVITE_SUCCESS_MESSAGE = "Invitation sent successfully.";
         public const string GROUP_INVITE_FORBIDDEN_MESSAGE = "Only the group leader can invite members.";
         public const string INVALID_INVITATION_TOKEN_MESSAGE = "Invalid invitation token.";
         public const string GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE = "Invitation accepted successfully.";
-        public const string USER_NOT_FOUND_MESSAGE = "User not found.";
         public const string GROUP_NOT_EXIST = "GroupNotFound";
 
         //subscription

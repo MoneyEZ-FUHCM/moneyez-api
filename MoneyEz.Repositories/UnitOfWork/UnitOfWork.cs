@@ -41,6 +41,7 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IGroupFundLogRepository _groupFundLogRepository;
         //group member
         private IGroupMemberRepository _groupMemberRepository;
+        private IGroupMemberLogRepository _groupMemberLogRepository;
         private ISubscriptionRepository _subscriptionRepository;
 
         // chat
@@ -132,6 +133,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _groupMemberRepository ??= new GroupMemberRepository(_context);
+            }
+        }
+
+        public IGroupMemberLogRepository GroupMemberLogRepository
+        {
+            get
+            {
+                return _groupMemberLogRepository ??= new GroupMemberLogRepository(_context);
             }
         }
 
