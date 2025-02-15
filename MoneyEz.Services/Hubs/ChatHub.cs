@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
+using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.ChatHistoryModels;
 using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
@@ -44,7 +45,7 @@ namespace MoneyEz.Services.Hubs
 
             await _chatHistoryService.CreateAndUpdateConversation(botMessage);
 
-            await Clients.Caller.SendAsync("ReceiveMessage", "MoneyEzAssistant", botResponse);
+            await Clients.Caller.SendAsync("ReceiveMessage", "MoneyEzAssistant", botResponse, CommonUtils.GetCurrentTime());
         }
 
         private string ProcessMessage(string message)
