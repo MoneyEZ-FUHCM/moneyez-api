@@ -220,13 +220,10 @@ public partial class MoneyEzContext : DbContext
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.ChangeDescription).IsRequired();
-            entity.Property(e => e.ChangedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
 
             entity.HasOne(d => d.Group).WithMany(p => p.GroupFundLogs)
                 .HasForeignKey(d => d.GroupId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__GroupFund__Group__75A278F5");
         });
 
@@ -257,13 +254,12 @@ public partial class MoneyEzContext : DbContext
             entity.ToTable("GroupMemberLog");
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.ChangedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+
+            entity.Property(e => e.ChangeDiscription).HasMaxLength(250);
 
             entity.HasOne(d => d.GroupMember).WithMany(p => p.GroupMemberLogs)
                 .HasForeignKey(d => d.GroupMemberId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__GroupMemb__Group__787EE5A0");
         });
 
@@ -276,7 +272,8 @@ public partial class MoneyEzContext : DbContext
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Title).HasMaxLength(255).IsRequired();
             entity.Property(e => e.TitleUnsign).HasMaxLength(255);
-            entity.Property(e => e.Message).IsRequired();
+            entity.Property(e => e.Message).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Href).HasMaxLength(500);
 
             entity.HasOne(d => d.User).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.UserId)
