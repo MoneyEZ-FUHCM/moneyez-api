@@ -19,8 +19,10 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> RemoveMemberAsync(Guid groupId, Guid memberId);
         Task<BaseResultModel> SetMemberRoleAsync(Guid groupId, Guid memberId, RoleGroup role);
         Task<BaseResultModel> GenerateFinancialHealthReportAsync(Guid groupId);
-        Task<BaseResultModel> InviteMemberAsync(InviteMemberModel inviteMemberModel, string currentEmail);
-        Task<BaseResultModel> AcceptInvitationAsync(string token);
+        Task<BaseResultModel> InviteMemberEmailAsync(InviteMemberModel inviteMemberModel);
+        Task<BaseResultModel> InviteMemberQRCodeAsync(InviteMemberModel inviteMemberModel);
+        Task<BaseResultModel> AcceptInvitationEmailAsync(string token);
+        Task<BaseResultModel> AcceptInvitationQRCodeAsync(string token);
         Task<BaseResultModel> GetGroupFundById(Guid groupId);
 
     }
