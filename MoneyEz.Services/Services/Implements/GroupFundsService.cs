@@ -401,7 +401,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> InviteMemberAsync(InviteMemberModel inviteMemberModel, string currentEmail)
+        public async Task<BaseResultModel> InviteMemberEmailAsync(InviteMemberModel inviteMemberModel)
         {
             // Retrieve the group fund by its Id
             var groupFund = await _unitOfWork.GroupFundRepository
@@ -417,7 +417,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Check if the current user is the leader of the group
-            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(currentEmail);
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
             var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
 
             if (!isLeader)
@@ -442,7 +442,7 @@ namespace MoneyEz.Services.Services.Implements
             // Hash the token using BCrypt
             var hashedToken = StringUtils.HashToken(rawToken);
 
-            var invitationLink = $"https://easymoney.anttravel.online/api/groups/accept-invitation?token={HttpUtility.UrlEncode(hashedToken)}";
+            var invitationLink = $"https://easymoney.anttravel.online/api/v1/groups/invite-member/email/accept?token={HttpUtility.UrlEncode(hashedToken)}";
             //var invitationLink = $"https://localhost:7262/api/groups/{inviteMemberModel.GroupId}/accept-invitation?token={HttpUtility.UrlEncode(invitationToken)}";
 
             // Save the invitation token to Redis
@@ -497,11 +497,11 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> AcceptInvitationAsync(string token)
+        public async Task<BaseResultModel> AcceptInvitationEmailAsync(string token)
         {
-            // Retrieve the invitation email from Redis
+            // Retrieve the invitation token from Redis
             var groupInviteRedisModel = await _redisService.GetAsync<GroupInviteRedisModel>(token);
-            if (groupInviteRedisModel == null)
+            if (groupInviteRedisModel == null || groupInviteRedisModel.UserId == Guid.Empty)
             {
                 return new BaseResultModel
                 {
@@ -585,6 +585,140 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Status = StatusCodes.Status200OK,
                 Data = _mapper.Map<GroupFundModel>(groupFund)
+            };
+        }
+
+        public async Task<BaseResultModel> InviteMemberQRCodeAsync(InviteMemberModel inviteMemberModel)
+        {
+            // Retrieve the group fund by its Id
+            var groupFund = await _unitOfWork.GroupFundRepository
+                .GetByIdIncludeAsync(inviteMemberModel.GroupId, include: query => query.Include(c => c.GroupMembers));
+
+            if (groupFund == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = MessageConstants.GROUP_NOT_EXIST
+                };
+            }
+
+            // Check if the current user is the leader of the group
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
+
+            if (!isLeader)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Message = MessageConstants.GROUP_INVITE_FORBIDDEN_MESSAGE
+                };
+            }
+
+            // Generate a raw invitation token
+            var rawToken = Guid.NewGuid().ToString();
+
+            // Hash the token using BCrypt
+            var hashedToken = StringUtils.HashToken(rawToken);
+
+            // Save the invitation token to Redis
+            var redisKey = hashedToken;
+            var groupInviteRedisModel = new GroupInviteRedisModel
+            {
+                InviteToken = hashedToken,
+                GroupId = inviteMemberModel.GroupId
+            };
+            await _redisService.SetAsync(redisKey, groupInviteRedisModel, TimeSpan.FromMinutes(10));
+
+            // Add a log entry for the invite member action
+            groupFund.GroupFundLogs.Add(new GroupFundLog
+            {
+                ChangeDescription = $"{currentUser.FullName} đã tạo liên kết mời vào nhóm",
+                Action = GroupAction.INVITED,
+                CreatedDate = CommonUtils.GetCurrentTime()
+            });
+
+            // Save the changes to the repository
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new QRCodeInviteModel
+                {
+                    QRCode = hashedToken,
+                    ExpiredTime = DateTime.Now.AddMinutes(10)
+                },
+                Message = "Đã tạo mã QRCode mời vào nhóm. Mã có hiệu lực trong 10 phút"
+            };
+        }
+
+        public async Task<BaseResultModel> AcceptInvitationQRCodeAsync(string token)
+        {
+            // Retrieve the invitation token from Redis
+            var groupInviteRedisModel = await _redisService.GetAsync<GroupInviteRedisModel>(token);
+            if (groupInviteRedisModel == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Message = MessageConstants.INVALID_INVITATION_TOKEN_MESSAGE
+                };
+            }
+
+            // Retrieve the group fund by its Id
+            var groupFund = await _unitOfWork.GroupFundRepository
+                .GetByIdIncludeAsync(groupInviteRedisModel.GroupId, include: query => query.Include(c => c.GroupMembers));
+            if (groupFund == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = MessageConstants.GROUP_NOT_EXIST
+                };
+            }
+
+            // get current user
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+
+            // check member is exist
+            var isExist = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id);
+            if (isExist)
+            {
+                throw new DefaultException("", MessageConstants.GROUP_MEMBER_EXIST);
+            }
+
+            // Add the member to the group
+            var newMember = new GroupMember
+            {
+                UserId = currentUser.Id,
+                ContributionPercentage = 0,
+                Role = RoleGroup.MEMBER,
+                Status = GroupMemberStatus.ACTIVE,
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                GroupMemberLogs = new List<GroupMemberLog>
+                {
+                    new GroupMemberLog
+                    {
+                        ChangeDiscription = $"{currentUser.FullName} đã tham gia nhóm",
+                        ChangeType = GroupAction.JOINED,
+                        CreatedDate = CommonUtils.GetCurrentTime()
+                    }
+                }
+            };
+
+            groupFund.GroupMembers.Add(newMember);
+
+            // Save the changes to the repository
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = $"Tham gia nhóm {groupFund.Name} thành công"
             };
         }
     }

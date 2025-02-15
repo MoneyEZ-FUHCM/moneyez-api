@@ -11,7 +11,7 @@ using MoneyEz.Repositories.Commons;
 
 namespace MoneyEz.API.Controllers
 {
-    [Route("api/groups")]
+    [Route("api/v1/groups")]
     [ApiController]
     public class GroupController : BaseController
     {
@@ -46,12 +46,11 @@ namespace MoneyEz.API.Controllers
             return StatusCode(result.Status, result);
         }
 
-        [HttpPost("invite")]
+        [HttpPost("invite-member/email")]
         [Authorize]
-        public async Task<IActionResult> InviteMemberAsync([FromBody] InviteMemberModel inviteMemberModel)
+        public async Task<IActionResult> InviteMemberEmailAsync([FromBody] InviteMemberModel inviteMemberModel)
         {
-            string currentEmail = _claimsService.GetCurrentUserEmail;
-            var result = await _groupFundsService.InviteMemberAsync(inviteMemberModel, currentEmail);
+            var result = await _groupFundsService.InviteMemberEmailAsync(inviteMemberModel);
             if (result.Status == StatusCodes.Status200OK)
             {
                 return Ok(result);
@@ -59,16 +58,24 @@ namespace MoneyEz.API.Controllers
             return StatusCode(result.Status, result);
         }
 
-
-        [HttpGet("accept-invitation")]
-        public async Task<IActionResult> AcceptInvitationAsync([FromQuery] string token)
+        [HttpPost("invite-member/qrcode")]
+        [Authorize]
+        public async Task<IActionResult> InviteMemberQRCodeAsync([FromBody] InviteMemberModel inviteMemberModel)
         {
-            var result = await _groupFundsService.AcceptInvitationAsync(token);
-            if (result.Status == StatusCodes.Status200OK)
-            {
-                return Ok(result);
-            }
-            return StatusCode(result.Status, result);
+            return await ValidateAndExecute(() => _groupFundsService.InviteMemberQRCodeAsync(inviteMemberModel));
+        }
+
+
+        [HttpGet("invite-member/email/accept")]
+        public async Task<IActionResult> AcceptInvitationEmailAsync([FromQuery] string token)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.AcceptInvitationEmailAsync(token));
+        }
+
+        [HttpGet("invite-member/qrcode/accept")]
+        public async Task<IActionResult> AcceptInvitationQRCodeAsync([FromQuery] string token)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.AcceptInvitationQRCodeAsync(token));
         }
 
         [HttpPost]
