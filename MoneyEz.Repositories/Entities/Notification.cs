@@ -14,11 +14,13 @@ public partial class Notification : BaseEntity
 
     public string? Message { get; set; }
 
+    public string? Href { get; set; }
+
     public Guid? EntityId { get; set; }
 
     public Guid? UserId { get; set; }
 
     public NotificationType? Type { get; set; }
 
-    public virtual User User { get; set; }
+    public virtual User? User { get; set; }
 }

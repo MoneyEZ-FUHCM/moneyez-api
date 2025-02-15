@@ -7,12 +7,13 @@ using System.Threading.Tasks;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.GroupFund;
 using Microsoft.AspNetCore.Authorization;
+using MoneyEz.Repositories.Commons;
 
 namespace MoneyEz.API.Controllers
 {
     [Route("api/groups")]
     [ApiController]
-    public class GroupController : ControllerBase
+    public class GroupController : BaseController
     {
         private readonly IGroupFundsService _groupFundsService;
         private readonly IClaimsService _claimsService;
@@ -59,15 +60,39 @@ namespace MoneyEz.API.Controllers
         }
 
 
-        [HttpGet("{groupId}/accept-invitation")]
-        public async Task<IActionResult> AcceptInvitationAsync(Guid groupId, [FromQuery] string token)
+        [HttpGet("accept-invitation")]
+        public async Task<IActionResult> AcceptInvitationAsync([FromQuery] string token)
         {
-            var result = await _groupFundsService.AcceptInvitationAsync(groupId, token);
+            var result = await _groupFundsService.AcceptInvitationAsync(token);
             if (result.Status == StatusCodes.Status200OK)
             {
                 return Ok(result);
             }
             return StatusCode(result.Status, result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateGroupFund([FromBody] CreateGroupModel model)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.CreateGroupFundsAsync(model));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllGroupFunds([FromQuery] PaginationParameter paginationParameters)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.GetAllGroupFunds(paginationParameters));
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetGroupFundById(Guid id)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.GetGroupFundById(id));
+        }
+
+        [HttpDelete("{groupId}")]
+        public async Task<IActionResult> DisbandGroupFund(Guid groupId)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.CloseGroupFundAsync(groupId));
         }
     }
 }

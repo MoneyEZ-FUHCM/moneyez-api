@@ -15,12 +15,12 @@ namespace MoneyEz.Services.Services.Interfaces
     {
         Task<BaseResultModel> CreateGroupFundsAsync(CreateGroupModel model);
         Task<BaseResultModel> GetAllGroupFunds(PaginationParameter paginationParameters);
-        Task<BaseResultModel> DisbandGroupAsync(Guid groupId);
+        Task<BaseResultModel> CloseGroupFundAsync(Guid groupId);
         Task<BaseResultModel> RemoveMemberAsync(Guid groupId, Guid memberId);
         Task<BaseResultModel> SetMemberRoleAsync(Guid groupId, Guid memberId, RoleGroup role);
         Task<BaseResultModel> GenerateFinancialHealthReportAsync(Guid groupId);
         Task<BaseResultModel> InviteMemberAsync(InviteMemberModel inviteMemberModel, string currentEmail);
-        Task<BaseResultModel> AcceptInvitationAsync(Guid groupId, string token);
+        Task<BaseResultModel> AcceptInvitationAsync(string token);
         Task<BaseResultModel> GetGroupFundById(Guid groupId);
 
     }
