@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace MoneyEz.API.Controllers
 {
-    [Route("api/notifications")]
+    [Route("api/v1/notifications")]
     [ApiController]
     public class NotificationsController : BaseController
     {
