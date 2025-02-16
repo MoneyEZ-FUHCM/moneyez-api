@@ -755,6 +755,23 @@ namespace MoneyEz.Services.Services.Implements
 
             }
         }
+
+        public async Task<BaseResultModel> GetCurrentUser(string email)
+        {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email);
+            if (user != null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = _mapper.Map<UserModel>(user)
+                };
+            }
+            else
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+        }
     }
 }
 

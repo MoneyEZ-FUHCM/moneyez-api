@@ -73,5 +73,13 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _userService.UpdateFcmTokenAsync(currentEmail, fcmToken));
         }
 
+        [HttpGet("current")]
+        [Authorize]
+        public Task<IActionResult> GetCurrentUser()
+        {
+            string currentEmail = _claimsService.GetCurrentUserEmail;
+            return ValidateAndExecute(() => _userService.GetCurrentUser(currentEmail));
+        }
+
     }
 }
