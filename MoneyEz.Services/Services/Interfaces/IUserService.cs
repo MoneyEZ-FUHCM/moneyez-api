@@ -56,5 +56,7 @@ namespace MoneyEz.Services.Services.Interfaces
         public Task<BaseResultModel> BanUserAsync(Guid id, string currentEmail);
 
         public Task<BaseResultModel> UpdateFcmTokenAsync(string email, string fcmToken);
+
+        public Task<BaseResultModel> GetCurrentUser(string email);
     }
 }
