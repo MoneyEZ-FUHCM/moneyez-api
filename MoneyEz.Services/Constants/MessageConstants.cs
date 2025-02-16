@@ -122,7 +122,7 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
         public const string GROUP_GET_ALL_SUCCESS_MESSAGE = "Group get all successfully";
         public const string GROUP_CLOSE_FAIL = "GroupCloseFailed";
-        public const string GROUP_CLOSE_SUCCESS_MESSAGE = "Group disbanded successfully";
+        public const string GROUP_CLOSE_SUCCESS_MESSAGE = "Group closed successfully";
 
         public const string GROUP_CLOSE_FORBIDDEN = "GroupCloseForbidden";
         public const string GROUP_REMOVE_MEMBER_FORBIDDEN = "GroupMemberNotFound";
@@ -137,6 +137,15 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE = "Invitation accepted successfully.";
         public const string GROUP_NOT_EXIST = "GroupNotFound";
         public const string GROUP_MEMBER_EXIST = "GroupMemberAlreadyExist";
+        public const string GROUP_CAN_NOT_REMOVE_LEADER = "YouAreTheLeader";
+        public const string GROUP_LEAVE_SUCCESS_MESSAGE = "You have left the group successfully.";
+        public const string GROUP_MEMBER_ALREADY_ROLE = "MemberAlreadyRole";
+
+        // Group contribution
+        public const string GROUP_SET_CONTRIBUTION_FORBIDDEN = "GroupSetContributionForbidden";
+        public const string GROUP_INVALID_TOTAL_CONTRIBUTION = "GroupInvalidTotalContribution"; 
+        public const string GROUP_MEMBER_CONTRIBUTION_NOT_FOUND = "GroupMemberContributionNotFound";
+        public const string GROUP_SET_CONTRIBUTION_SUCCESS_MESSAGE = "Group contributions updated successfully";
 
         //subscription
         public const string SUBSCRIPTION_CREATE_SUCCESS_MESSAGE = "Subscription created successfully";
