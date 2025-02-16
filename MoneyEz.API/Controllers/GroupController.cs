@@ -8,6 +8,7 @@ using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.GroupFund;
 using Microsoft.AspNetCore.Authorization;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Services.BusinessModels.GroupFund.GroupInvite;
 
 namespace MoneyEz.API.Controllers
 {
@@ -27,35 +28,26 @@ namespace MoneyEz.API.Controllers
         [HttpDelete("{groupId}/members/{memberId}")]
         public async Task<IActionResult> RemoveMemberAsync(Guid groupId, Guid memberId)
         {
-            var result = await _groupFundsService.RemoveMemberAsync(groupId, memberId);
-            if (result.Status == StatusCodes.Status200OK)
-            {
-                return Ok(result);
-            }
-            return StatusCode(result.Status, result);
+            return await ValidateAndExecute(() => _groupFundsService.RemoveMemberByLeaderAsync(groupId, memberId));
         }
 
-        [HttpPut("{groupId}/members/{memberId}/role")]
-        public async Task<IActionResult> SetMemberRoleAsync(Guid groupId, Guid memberId, [FromBody] RoleGroup newRole)
+        [HttpGet("members/leave")]
+        public async Task<IActionResult> LeaveGroupAsync([FromQuery] Guid groupId)
         {
-            var result = await _groupFundsService.SetMemberRoleAsync(groupId, memberId, newRole);
-            if (result.Status == StatusCodes.Status200OK)
-            {
-                return Ok(result);
-            }
-            return StatusCode(result.Status, result);
+            return await ValidateAndExecute(() => _groupFundsService.LeaveGroupAsync(groupId));
+        }
+
+        [HttpPut("members/role")]
+        public async Task<IActionResult> SetMemberRoleAsync(SetRoleGroupModel setRoleGroupModel)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.SetMemberRoleAsync(setRoleGroupModel));
         }
 
         [HttpPost("invite-member/email")]
         [Authorize]
         public async Task<IActionResult> InviteMemberEmailAsync([FromBody] InviteMemberModel inviteMemberModel)
         {
-            var result = await _groupFundsService.InviteMemberEmailAsync(inviteMemberModel);
-            if (result.Status == StatusCodes.Status200OK)
-            {
-                return Ok(result);
-            }
-            return StatusCode(result.Status, result);
+            return await ValidateAndExecute(() => _groupFundsService.InviteMemberEmailAsync(inviteMemberModel));
         }
 
         [HttpPost("invite-member/qrcode")]
@@ -100,6 +92,12 @@ namespace MoneyEz.API.Controllers
         public async Task<IActionResult> DisbandGroupFund(Guid groupId)
         {
             return await ValidateAndExecute(() => _groupFundsService.CloseGroupFundAsync(groupId));
+        }
+
+        [HttpPut("contribution")]
+        public async Task<IActionResult> SetGroupContribution([FromBody] SetGroupContributionModel setGroupContributionModel)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.SetGroupContribution(setGroupContributionModel));
         }
     }
 }
