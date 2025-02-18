@@ -114,29 +114,12 @@ namespace MoneyEz.Services.Services.Implements
             var chatHistoryList = await _unitOfWork.ChatHistoryRepository.ToPagination(paginationParameter);
             var chatHistoryModels = _mapper.Map<List<ChatHistoryModel>>(chatHistoryList);
 
-            var chatHistories = new Pagination<ChatHistoryModel>(chatHistoryModels,
-                chatHistoryList.TotalCount,
-                chatHistoryList.CurrentPage,
-                chatHistoryList.PageSize);
-
-            var metaData = new
-            {
-                chatHistoryList.TotalCount,
-                chatHistoryList.PageSize,
-                chatHistoryList.CurrentPage,
-                chatHistoryList.TotalPages,
-                chatHistoryList.HasNext,
-                chatHistoryList.HasPrevious
-            };
+            var chatHistoryPaging = PaginationHelper.GetPaginationResult(chatHistoryList, chatHistoryModels);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = new ModelPaging
-                {
-                    Data = chatHistories,
-                    MetaData = metaData
-                }
+                Data = chatHistoryPaging
             };
         }
 
@@ -159,29 +142,12 @@ namespace MoneyEz.Services.Services.Implements
 
                 var messageModels = _mapper.Map<List<ChatMessageModel>>(messages);
 
-                var chatMessages = new Pagination<ChatMessageModel>(messageModels,
-                    messages.TotalCount,
-                    messages.CurrentPage,
-                    messages.PageSize);
-
-                var metaData = new
-                {
-                    messages.TotalCount,
-                    messages.PageSize,
-                    messages.CurrentPage,
-                    messages.TotalPages,
-                    messages.HasNext,
-                    messages.HasPrevious
-                };
+                var chatMessagePaging = PaginationHelper.GetPaginationResult(messages, messageModels);
 
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status200OK,
-                    Data = new ModelPaging
-                    {
-                        Data = chatMessages,
-                        MetaData = metaData
-                    }
+                    Data = chatMessagePaging
                 };
 
             }
