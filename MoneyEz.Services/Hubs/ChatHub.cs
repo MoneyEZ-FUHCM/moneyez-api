@@ -23,12 +23,12 @@ namespace MoneyEz.Services.Hubs
             _chatHistoryService = chatHistoryService;
             _unitOfWork = unitOfWork;
         }
-        public async Task SendMessage(string user, string message)
+        public async Task SendMessage(Guid user, string message)
         {
             // save message user
             var userMessage = new CreateChatHistoryModel
             {
-                Email = user,
+                UserId = user,
                 Message = message,
                 MessageType = MessageType.USER
             };
@@ -38,7 +38,7 @@ namespace MoneyEz.Services.Hubs
 
             var botMessage = new CreateChatHistoryModel
             {
-                Email = user,
+                UserId = user,
                 Message = botResponse,
                 MessageType = MessageType.BOT
             };
