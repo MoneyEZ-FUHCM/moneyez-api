@@ -34,7 +34,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<ChatHistoryModel> AddMessageToConversation(CreateChatHistoryModel model)
         {
-            var sender = await _unitOfWork.UsersRepository.GetUserByEmailAsync(model.Email);
+            var sender = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId);
             if (sender == null)
             {
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
@@ -72,7 +72,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<ChatHistoryModel> CreateAndUpdateConversation(CreateChatHistoryModel model)
         {
-            var sender = await _unitOfWork.UsersRepository.GetUserByEmailAsync(model.Email);
+            var sender = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId);
             if (sender == null)
             {
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
