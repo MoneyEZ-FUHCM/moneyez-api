@@ -22,30 +22,35 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
         public Task<IActionResult> GetUsers([FromQuery] PaginationParameter paginationParameter)
         {
             return ValidateAndExecute(() => _userService.GetUserPaginationAsync(paginationParameter));
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public Task<IActionResult> GetUserById(Guid id)
         {
             return ValidateAndExecute(() => _userService.GetUserByIdAsync(id));
         }
 
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public Task<IActionResult> CreateUser(CreateUserModel model)
         {
             return ValidateAndExecute(() => _userService.CreateUserAsync(model));
         }
 
         [HttpPut]
+        [Authorize]
         public Task<IActionResult> UpdateUser(UpdateUserModel model)
         {
             return ValidateAndExecute(() => _userService.UpdateUserAsync(model));
         }
 
         [HttpPut("ban/{id}")]
+        [Authorize(Roles = "ADMIN")]
         public Task<IActionResult> BanUser(Guid id)
         {
             string currentEmail = _claimsService.GetCurrentUserEmail;
@@ -53,10 +58,27 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public Task<IActionResult> DeleteUser(Guid id)
         {
             string currentEmail = _claimsService.GetCurrentUserEmail;
             return ValidateAndExecute(() => _userService.DeleteUserAsync(id, currentEmail));
+        }
+
+        [HttpPut("update-fcm-token")]
+        [Authorize]
+        public Task<IActionResult> UpdateDeviceToken([FromBody] string fcmToken)
+        {
+            string currentEmail = _claimsService.GetCurrentUserEmail;
+            return ValidateAndExecute(() => _userService.UpdateFcmTokenAsync(currentEmail, fcmToken));
+        }
+
+        [HttpGet("current")]
+        [Authorize]
+        public Task<IActionResult> GetCurrentUser()
+        {
+            string currentEmail = _claimsService.GetCurrentUserEmail;
+            return ValidateAndExecute(() => _userService.GetCurrentUser(currentEmail));
         }
 
     }

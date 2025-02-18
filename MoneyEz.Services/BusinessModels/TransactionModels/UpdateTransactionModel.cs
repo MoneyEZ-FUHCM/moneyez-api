@@ -19,10 +19,9 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
         public Guid SubcategoryId { get; set; }
 
         [Required(ErrorMessage = "Transaction date is required.")]
-        public DateTime Date { get; set; }
+        public DateTime TransactionDate { get; set; }
 
         public string Description { get; set; }
         public bool? ApprovalRequired { get; set; }
-        public TransactionStatus Status { get; set; }
     }
 }

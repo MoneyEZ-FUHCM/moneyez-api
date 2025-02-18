@@ -24,6 +24,10 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //subcategory
         ISubcategoryRepository SubcategoryRepository { get; }
+
+        //categorysubcategory
+        ICategorySubcategoryRepository CategorySubcategoryRepository { get; }
+
         //transaction
         ITransactionRepository TransactionsRepository { get; }
 
@@ -31,6 +35,11 @@ namespace MoneyEz.Repositories.UnitOfWork
         IGroupFundRepository GroupFundRepository { get; }
         IGroupFundLogRepository GroupFundLogRepository { get; }
         IGroupMemberRepository GroupMemberRepository { get; }
+        IGroupMemberLogRepository GroupMemberLogRepository { get; }
+
+        //asset and liability
+        IAssetRepository AssetRepository { get; }
+        ILiabilityRepository LiabilityRepository { get; }
 
 
         //subscription
@@ -39,6 +48,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         // chat
         IChatHistoryRepository ChatHistoryRepository { get; }
         IChatMessageRepository ChatMessageRepository { get; }
+
+        // notification
+        INotificationRepository NotificationRepository { get; }
 
         int Save();
         void Commit();

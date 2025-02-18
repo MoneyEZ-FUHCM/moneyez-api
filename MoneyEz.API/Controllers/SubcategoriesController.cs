@@ -32,16 +32,29 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _subcategoryService.GetSubcategoryByIdAsync(id));
         }
 
-        [HttpPost]
-        public Task<IActionResult> AddSubcategories([FromBody] List<CreateSubcategoryModel> models)
+        [HttpPost("create")]
+        public Task<IActionResult> CreateSubcategories([FromBody] List<CreateSubcategoryModel> models)
         {
-            return ValidateAndExecute(() => _subcategoryService.AddSubcategoriesAsync(models));
+            return ValidateAndExecute(() => _subcategoryService.CreateSubcategoriesAsync(models));
         }
 
-        [HttpPut]
-        public Task<IActionResult> UpdateSubcategory([FromBody] UpdateSubcategoryModel model)
+        [HttpPut("update")]
+        public Task<IActionResult> UpdateSubcategoryById([FromBody] UpdateSubcategoryModel model)
         {
-            return ValidateAndExecute(() => _subcategoryService.UpdateSubcategoryAsync(model));
+            return ValidateAndExecute(() => _subcategoryService.UpdateSubcategoryByIdAsync(model));
+        }
+
+
+        [HttpPost("assign")]
+        public Task<IActionResult> AddSubcategoriesToCategories([FromBody] AssignSubcategoryModel model)
+        {
+            return ValidateAndExecute(() => _subcategoryService.AddSubcategoriesToCategoriesAsync(model));
+        }
+
+        [HttpDelete("remove")]
+        public Task<IActionResult> RemoveSubcategoriesFromCategories([FromBody] RemoveSubcategoryFromCategoryModel model)
+        {
+            return ValidateAndExecute(() => _subcategoryService.RemoveSubcategoriesFromCategoriesAsync(model));
         }
 
         [HttpDelete("{id}")]

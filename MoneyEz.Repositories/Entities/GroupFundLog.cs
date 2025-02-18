@@ -11,11 +11,7 @@ public partial class GroupFundLog : BaseEntity
 
     public string ChangeDescription { get; set; }
 
-    public DateTime? ChangedAt { get; set; }
-
     public GroupAction? Action { get; set; }
 
     public virtual GroupFund Group { get; set; }
-
-
 }
