@@ -34,19 +34,19 @@ namespace MoneyEz.API
                     Scheme = "Bearer"
                 });
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
                     {
-                        new OpenApiSecurityScheme
                         {
-                            Reference = new OpenApiReference
+                            new OpenApiSecurityScheme
                             {
-                                Type=ReferenceType.SecurityScheme,
-                                Id="Bearer"
-                            }
-                        },
-                        new string[]{}
-                    }
-                });
+                                Reference = new OpenApiReference
+                                {
+                                    Type=ReferenceType.SecurityScheme,
+                                    Id="Bearer"
+                                }
+                            },
+                            new string[]{}
+                        }
+                    });
             });
 
             #endregion
@@ -68,26 +68,12 @@ namespace MoneyEz.API
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
-                    ValidAudience = builder.Configuration["JWT:ValidAudience"],
-                    ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"])),
+                    ValidAudience = Environment.GetEnvironmentVariable("JWT__ValidAudience"),
+                    ValidIssuer = Environment.GetEnvironmentVariable("JWT__ValidIssuer"),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWT__SecretKey"))),
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 };
-
-                //options.Events = new JwtBearerEvents
-                //{
-                //    OnMessageReceived = context =>
-                //    {
-                //        var accessToken = context.Request.Query["access_token"];
-                //        var path = context.HttpContext.Request.Path;
-                //        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chatHub"))
-                //        {
-                //            context.Token = accessToken;
-                //        }
-                //        return Task.CompletedTask;
-                //    }
-                //};
             });
 
             #endregion
@@ -118,7 +104,23 @@ namespace MoneyEz.API
             });
 
             // config mail setting
-            services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+            services.Configure<MailSettings>(options =>
+            {
+                options.Mail = Environment.GetEnvironmentVariable("MailSettings__Mail");
+                options.DisplayName = Environment.GetEnvironmentVariable("MailSettings__DisplayName");
+                options.Password = Environment.GetEnvironmentVariable("MailSettings__Password");
+                options.Host = Environment.GetEnvironmentVariable("MailSettings__Host");
+                options.Port = int.Parse(Environment.GetEnvironmentVariable("MailSettings__Port"));
+            });
+
+            // config redis setting
+            services.Configure<RedisSettings>(options =>
+            {
+                options.ConnectionString = Environment.GetEnvironmentVariable("RedisSettings__RedisConnectionString");
+                options.InstanceName = Environment.GetEnvironmentVariable("RedisSettings__InstanceName");
+                options.DefaultExpiryMinutes = int.Parse(Environment.GetEnvironmentVariable("RedisSettings__DefaultExpiryMinutes"));
+            });
+
 
             return services;
         }
@@ -136,7 +138,6 @@ namespace MoneyEz.API
             services.AddScoped<IClaimsService, ClaimsService>();
 
             // config redis service
-            services.Configure<RedisSettings>(config.GetSection("RedisSettings"));
             services.AddScoped<IRedisService, RedisService>();
 
             // config user service
@@ -208,8 +209,8 @@ namespace MoneyEz.API
 
             services.AddDbContext<MoneyEzContext>(options =>
             {
-                //options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
-                options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
+                //options.UseSqlServer(Environment.GetEnvironmentVariable("ConnectionStrings__MoneyEzLocal"));
+                options.UseSqlServer(Environment.GetEnvironmentVariable("ConnectionStrings__MoneyEzDbVps"));
             });
 
             #endregion
@@ -218,8 +219,8 @@ namespace MoneyEz.API
 
             services.AddStackExchangeRedisCache(options =>
             {
-                options.Configuration = config.GetSection("RedisSettings:RedisConnectionString").Value;
-                options.InstanceName = config.GetSection("RedisSettings:InstanceName").Value;
+                options.Configuration = Environment.GetEnvironmentVariable("RedisSettings__RedisConnectionString");
+                options.InstanceName = Environment.GetEnvironmentVariable("RedisSettings__InstanceName");
                 options.ConfigurationOptions = new StackExchange.Redis.ConfigurationOptions()
                 {
                     AbortOnConnectFail = true,

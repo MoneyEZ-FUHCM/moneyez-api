@@ -1,3 +1,4 @@
+using DotNetEnv;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Builder.Extensions;
@@ -6,8 +7,11 @@ using MoneyEz.API;
 using MoneyEz.API.Middlewares;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.Hubs;
+using System.Collections;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Env.Load(Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).FullName, ".env"));
 
 // Add services to the container.
 
