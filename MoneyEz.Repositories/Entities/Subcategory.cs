@@ -5,8 +5,6 @@ namespace MoneyEz.Repositories.Entities;
 
 public partial class Subcategory : BaseEntity
 {
-    public Guid CategoryId { get; set; }
-
     public string? Name { get; set; }
 
     public string? NameUnsign { get; set; }
