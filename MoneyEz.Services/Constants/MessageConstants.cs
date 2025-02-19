@@ -81,12 +81,15 @@ namespace MoneyEz.Services.Constants
         public const string SUBCATEGORY_UPDATED_SUCCESS = "SubcategoryUpdatedSuccessfully";
         public const string SUBCATEGORY_DELETED_SUCCESS = "SubcategoryDeletedSuccessfully";
         public const string SUBCATEGORY_HAS_DEPENDENCIES = "SubcategoryHasDependencies";
-
+        public const string INVALID_SUBCATEGORY_IDS = "InvalidSubcategoryIds";
         public const string SUBCATEGORY_NOT_FOUND = "SubcategoryNotFound";
         public const string SUBCATEGORY_ALREADY_EXISTS = "SubcategoryAlreadyExists";
         public const string DUPLICATE_SUBCATEGORY_NAMES = "DuplicateSubcategoryNames";
         public const string EMPTY_SUBCATEGORY_LIST = "EmptySubcategoryList";
-        public const string CATEGORY_ID_REQUIRED = "CategoryIdRequired"; // Each subcategory must have a valid CategoryId.
+        public const string CATEGORY_ID_REQUIRED = "CategoryIdRequired";
+        public const string SUBCATEGORY_NOT_FOUND_IN_CATEGORY = "SubcategoryNotFoundInCategory";
+        public const string DUPLICATE_SUBCATEGORY_NAME_GLOBAL = "DuplicateSubcategoryNameGlobal";
+        public const string DUPLICATE_SUBCATEGORY_NAME_IN_CATEGORY = "DuplicateSubcategoryNameInCategory";
 
         // transaction
         public const string TRANSACTION_CREATED_SUCCESS = "TransactionCreatedSuccessfully";
@@ -118,22 +121,31 @@ namespace MoneyEz.Services.Constants
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";
         public const string GROUP_GET_ALL_SUCCESS_MESSAGE = "Group get all successfully";
-        public const string GROUP_NOT_FOUND_MESSAGE = "Group not found";
-        public const string GROUP_DISBAND_FAIL_MESSAGE = "Group disband failed";
-        public const string GROUP_DISBAND_SUCCESS_MESSAGE = "Group disbanded successfully";
+        public const string GROUP_CLOSE_FAIL = "GroupCloseFailed";
+        public const string GROUP_CLOSE_SUCCESS_MESSAGE = "Group closed successfully";
 
-        public const string GROUP_DISBAND_FORBIDDEN_MESSAGE = "Group disband forbidden";
-        public const string GROUP_REMOVE_MEMBER_FORBIDDEN_MESSAGE = "Group member not found";
+        public const string GROUP_CLOSE_FORBIDDEN = "GroupCloseForbidden";
+        public const string GROUP_REMOVE_MEMBER_FORBIDDEN = "GroupMemberNotFound";
         public const string GROUP_REMOVE_MEMBER_SUCCESS_MESSAGE = "Group member removed successfully";
-        public const string GROUP_SET_ROLE_FORBIDDEN_MESSAGE = "Group set role forbidden";
-        public const string MEMBER_NOT_FOUND_MESSAGE = "Group member not found";
+        public const string GROUP_SET_ROLE_FORBIDDEN = "GroupSetRoleForbidden";
+        public const string GROUP_MEMBER_NOT_FOUND = "GroupMemberNotFound";
         public const string MEMBER_ROLE_UPDATE_SUCCESS_MESSAGE = "Group member role updated successfully";
 
         public const string GROUP_INVITE_SUCCESS_MESSAGE = "Invitation sent successfully.";
         public const string GROUP_INVITE_FORBIDDEN_MESSAGE = "Only the group leader can invite members.";
         public const string INVALID_INVITATION_TOKEN_MESSAGE = "Invalid invitation token.";
         public const string GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE = "Invitation accepted successfully.";
-        public const string USER_NOT_FOUND_MESSAGE = "User not found.";
+        public const string GROUP_NOT_EXIST = "GroupNotFound";
+        public const string GROUP_MEMBER_EXIST = "GroupMemberAlreadyExist";
+        public const string GROUP_CAN_NOT_REMOVE_LEADER = "YouAreTheLeader";
+        public const string GROUP_LEAVE_SUCCESS_MESSAGE = "You have left the group successfully.";
+        public const string GROUP_MEMBER_ALREADY_ROLE = "MemberAlreadyRole";
+
+        // Group contribution
+        public const string GROUP_SET_CONTRIBUTION_FORBIDDEN = "GroupSetContributionForbidden";
+        public const string GROUP_INVALID_TOTAL_CONTRIBUTION = "GroupInvalidTotalContribution"; 
+        public const string GROUP_MEMBER_CONTRIBUTION_NOT_FOUND = "GroupMemberContributionNotFound";
+        public const string GROUP_SET_CONTRIBUTION_SUCCESS_MESSAGE = "Group contributions updated successfully";
 
         //subscription
         public const string SUBSCRIPTION_CREATE_SUCCESS_MESSAGE = "Subscription created successfully";
@@ -143,5 +155,24 @@ namespace MoneyEz.Services.Constants
 
         // chat
         public const string CHAT_USER_NOT_EXIST = "UserNotExistChatConversation";
+
+        // asset and liability
+        public const string ASSET_LIST_GET_SUCCESS_MESSAGE = "Assets list get successfully";
+        public const string ASSET_CREATED_SUCCESS = "AssetCreateSuccess";
+        public const string ASSET_UPDATED_SUCCESS = "AssetUpdateSuccess";
+        public const string ASSET_DELETED_SUCCESS = "AssetDeleteSuccess";
+        public const string ASSET_NOT_FOUND = "AssetNotFound";
+
+        public const string LIABILITY_LIST_GET_SUCCESS_MESSAGE = "Liabilities list get successfully";
+        public const string LIABILITY_CREATED_SUCCESS = "LiabilityCreateSuccess";
+        public const string LIABILITY_UPDATED_SUCCESS = "LiabilityUpdateSuccess";
+        public const string LIABILITY_DELETED_SUCCESS = "LiabilityDeleteSuccess";
+        public const string LIABILITY_NOT_FOUND = "LiabilityNotFound";
+
+        // notification
+        public const string NOTI_NOT_EXIST = "NotificationNotExist";
+        public const string NOTI_PUSH_FAILED = "CannotPushNotification";
+        public const string NOTI_UNREAD_EMPTY = "NotificationUnreadEmpty";
+        public const string NOTI_CANNOT_MARK_READ = "CannotMarkReadNotification";
     }
 }

@@ -1,4 +1,4 @@
-﻿#nullable disable
+﻿using MoneyEz.Repositories.Enums;
 using System;
 using System.Collections.Generic;
 
@@ -8,9 +8,9 @@ public partial class GroupMemberLog : BaseEntity
 {
     public Guid GroupMemberId { get; set; }
 
-    public int? ChangeType { get; set; }
+    public GroupAction? ChangeType { get; set; }
 
-    public DateTime? ChangedAt { get; set; }
+    public string? ChangeDiscription { get; set; }
 
-    public virtual GroupMember GroupMember { get; set; }
+    public virtual GroupMember? GroupMember { get; set; }
 }

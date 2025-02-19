@@ -22,11 +22,14 @@ namespace MoneyEz.Repositories.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("MoneyEz.Repositories.Entities.AssetAndLiability", b =>
+            modelBuilder.Entity("MoneyEz.Repositories.Entities.Asset", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("AcquisitionDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(15, 2)");
@@ -37,14 +40,20 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("Date")
+                    b.Property<DateTime?>("DepreciationDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("DisposalDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<DateTime?>("MaturityDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -58,11 +67,14 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<int?>("OwnershipType")
                         .HasColumnType("int");
 
+                    b.Property<double?>("Rate")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime?>("RevaluationDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("SubcategoryId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("Type")
-                        .HasColumnType("int");
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("nvarchar(max)");
@@ -74,11 +86,11 @@ namespace MoneyEz.Repositories.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id")
-                        .HasName("PK__AssetAnd__3214EC0799645AEF");
+                        .HasName("PK__Asset__3214EC07");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AssetAndLiability", (string)null);
+                    b.ToTable("Asset", (string)null);
                 });
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Category", b =>
@@ -150,7 +162,7 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.HasIndex("SubcategoryId");
 
-                    b.ToTable("CategorySubcategory");
+                    b.ToTable("CategorySubcategory", (string)null);
                 });
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.ChatHistory", b =>
@@ -418,11 +430,6 @@ namespace MoneyEz.Repositories.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ChangedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("(getdate())");
-
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
 
@@ -501,13 +508,12 @@ namespace MoneyEz.Repositories.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("ChangeDiscription")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
                     b.Property<int?>("ChangeType")
                         .HasColumnType("int");
-
-                    b.Property<DateTime?>("ChangedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("(getdate())");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
@@ -573,6 +579,72 @@ namespace MoneyEz.Repositories.Migrations
                     b.ToTable("Image", (string)null);
                 });
 
+            modelBuilder.Entity("MoneyEz.Repositories.Entities.Liability", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(15, 2)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("InterestPaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double?>("InterestRate")
+                        .HasColumnType("float");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NameUnsign")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("OwnershipType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RecognitionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SubcategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id")
+                        .HasName("PK__Liability__3214EC07");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Liability", (string)null);
+                });
+
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -588,16 +660,23 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<Guid?>("EntityId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Href")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<bool?>("IsRead")
+                    b.Property<bool>("IsRead")
                         .HasColumnType("bit");
 
                     b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Title")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
@@ -1450,13 +1529,13 @@ namespace MoneyEz.Repositories.Migrations
                     b.ToTable("UserSpendingModel", (string)null);
                 });
 
-            modelBuilder.Entity("MoneyEz.Repositories.Entities.AssetAndLiability", b =>
+            modelBuilder.Entity("MoneyEz.Repositories.Entities.Asset", b =>
                 {
                     b.HasOne("MoneyEz.Repositories.Entities.User", "User")
-                        .WithMany("AssetAndLiabilities")
+                        .WithMany("Assets")
                         .HasForeignKey("UserId")
                         .IsRequired()
-                        .HasConstraintName("FK__AssetAndL__UserI__123EB7A3");
+                        .HasConstraintName("FK__Asset__UserId");
 
                     b.Navigation("User");
                 });
@@ -1575,6 +1654,17 @@ namespace MoneyEz.Repositories.Migrations
                         .HasConstraintName("FK__GroupMemb__Group__787EE5A0");
 
                     b.Navigation("GroupMember");
+                });
+
+            modelBuilder.Entity("MoneyEz.Repositories.Entities.Liability", b =>
+                {
+                    b.HasOne("MoneyEz.Repositories.Entities.User", "User")
+                        .WithMany("Liabilities")
+                        .HasForeignKey("UserId")
+                        .IsRequired()
+                        .HasConstraintName("FK__Liability__UserId");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Notification", b =>
@@ -1837,7 +1927,7 @@ namespace MoneyEz.Repositories.Migrations
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.User", b =>
                 {
-                    b.Navigation("AssetAndLiabilities");
+                    b.Navigation("Assets");
 
                     b.Navigation("ChatHistories");
 
@@ -1846,6 +1936,8 @@ namespace MoneyEz.Repositories.Migrations
                     b.Navigation("FinancialReports");
 
                     b.Navigation("GroupMembers");
+
+                    b.Navigation("Liabilities");
 
                     b.Navigation("Notifications");
 
