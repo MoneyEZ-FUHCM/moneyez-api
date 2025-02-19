@@ -597,7 +597,7 @@ namespace MoneyEz.Services.Services.Implements
             if (existUser != null)
             {
 
-                if (existUser.Status == CommonsStatus.BLOCKED)
+                if (existUser.Status == CommonsStatus.BLOCKED || existUser.IsDeleted == true)
                 {
                     throw new DefaultException("", MessageConstants.ACCOUNT_BLOCKED);
                 }
@@ -700,7 +700,7 @@ namespace MoneyEz.Services.Services.Implements
             if (existUser != null)
             {
 
-                if (existUser.Status == CommonsStatus.BLOCKED)
+                if (existUser.Status == CommonsStatus.BLOCKED || existUser.IsDeleted == true)
                 {
                     throw new DefaultException("", MessageConstants.ACCOUNT_BLOCKED);
                 }
