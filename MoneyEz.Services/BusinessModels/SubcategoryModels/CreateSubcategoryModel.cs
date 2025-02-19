@@ -12,8 +12,6 @@ namespace MoneyEz.Services.BusinessModels.SubcategoryModels
 
         [MaxLength(255, ErrorMessage = "Mô tả không được vượt quá 255 ký tự.")]
         public string Description { get; set; }
-        public List<Guid> CategoryIds { get; set; } = new List<Guid>();
-
         public string NameUnsign => StringUtils.ConvertToUnSign(Name);
     }
 }
