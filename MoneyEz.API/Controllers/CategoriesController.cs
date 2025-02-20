@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Services.Services.Interfaces;
 
@@ -8,6 +10,7 @@ namespace MoneyEz.API.Controllers
 {
     [Route("api/v1/categories")]
     [ApiController]
+    [Authorize(Roles = nameof(RolesEnum.ADMIN))]
     public class CategoriesController : BaseController
     {
         private readonly ICategoryService _categoryService;

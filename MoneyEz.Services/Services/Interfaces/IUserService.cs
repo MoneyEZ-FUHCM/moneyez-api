@@ -35,7 +35,9 @@ namespace MoneyEz.Services.Services.Interfaces
 
         //public Task<UserModel> GetLoginUserInformationAsync(string email);
 
-        public Task<BaseResultModel> LoginWithGoogle(string credental);
+        public Task<BaseResultModel> LoginWithGoogleFireBase(string credental);
+
+        public Task<BaseResultModel> LoginWithGoogleOAuth(string credental);
 
         //public Task<bool> CancelEmailConfrimAsync(string email);
 
@@ -54,5 +56,7 @@ namespace MoneyEz.Services.Services.Interfaces
         public Task<BaseResultModel> BanUserAsync(Guid id, string currentEmail);
 
         public Task<BaseResultModel> UpdateFcmTokenAsync(string email, string fcmToken);
+
+        public Task<BaseResultModel> GetCurrentUser(string email);
     }
 }

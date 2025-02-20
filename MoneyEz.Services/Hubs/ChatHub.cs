@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
+using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.ChatHistoryModels;
 using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
@@ -22,12 +23,12 @@ namespace MoneyEz.Services.Hubs
             _chatHistoryService = chatHistoryService;
             _unitOfWork = unitOfWork;
         }
-        public async Task SendMessage(string user, string message)
+        public async Task SendMessage(Guid user, string message)
         {
             // save message user
             var userMessage = new CreateChatHistoryModel
             {
-                Email = user,
+                UserId = user,
                 Message = message,
                 MessageType = MessageType.USER
             };
@@ -37,14 +38,14 @@ namespace MoneyEz.Services.Hubs
 
             var botMessage = new CreateChatHistoryModel
             {
-                Email = user,
+                UserId = user,
                 Message = botResponse,
                 MessageType = MessageType.BOT
             };
 
             await _chatHistoryService.CreateAndUpdateConversation(botMessage);
 
-            await Clients.Caller.SendAsync("ReceiveMessage", "MoneyEzAssistant", botResponse);
+            await Clients.Caller.SendAsync("ReceiveMessage", "MoneyEzAssistant", botResponse, CommonUtils.GetCurrentTime());
         }
 
         private string ProcessMessage(string message)

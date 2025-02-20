@@ -13,5 +13,9 @@ namespace MoneyEz.Services.Services.Interfaces
         public Task<OtpModel> CreateOtpAsync(string email, string type, string fullName);
 
         public Task<bool> ValidateOtpAsync(string email, string otpCode);
+
+        public Task<bool> RemoveOtpAsync(string email);
+
+        public Task<OtpModel> CheckEmailRequestOtp(string email);
     }
 }

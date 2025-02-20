@@ -31,7 +31,13 @@ namespace MoneyEz.API.Controllers
         [HttpPost("login/google")]
         public Task<IActionResult> LoginWithGoogle([FromBody] string credential)
         {
-            return ValidateAndExecute(() => _userService.LoginWithGoogle(credential));
+            return ValidateAndExecute(() => _userService.LoginWithGoogleFireBase(credential));
+        }
+
+        [HttpPost("login/google/oauth")]
+        public Task<IActionResult> LoginWithGoogleOAuth([FromBody] string credential)
+        {
+            return ValidateAndExecute(() => _userService.LoginWithGoogleOAuth(credential));
         }
 
         [HttpPost("register")]

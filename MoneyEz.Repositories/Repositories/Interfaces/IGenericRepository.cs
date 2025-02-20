@@ -20,6 +20,8 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
 
         void UpdateAsync(TEntity entity);
 
+        void UpdateRangeAsync(List<TEntity> entities);
+
         void SoftDeleteAsync(TEntity entity);
 
         Task AddRangeAsync(List<TEntity> entities);

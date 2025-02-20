@@ -11,7 +11,7 @@ namespace MoneyEz.Services.BusinessModels.ChatHistoryModels
     public class CreateChatHistoryModel
     {
         [Required]
-        public string Email { get; set; } = "";
+        public Guid UserId { get; set; }
 
         [Required]
         public string Message { get; set; } = "";
