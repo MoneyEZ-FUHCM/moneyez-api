@@ -478,6 +478,23 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(resetPasswordModel.Email);
             if (user != null)
             {
+                // check request otp
+                var key = "Otp_" + resetPasswordModel.Email;
+                var otpExist = await _otpService.CheckEmailRequestOtp(resetPasswordModel.Email);
+                if (otpExist == null)
+                {
+                    throw new DefaultException("Email not request otp code", MessageConstants.EMAIL_NOT_REQUEST_OTP);
+                }
+
+                // validate otp
+                if (otpExist.OtpCode != resetPasswordModel.OtpCode)
+                {
+                    throw new DefaultException("", MessageConstants.OTP_INVALID);
+                }
+
+                await _otpService.RemoveOtpAsync(resetPasswordModel.Email);
+
+                // change password
                 user.Password = PasswordUtils.HashPassword(resetPasswordModel.Password);
                 _unitOfWork.UsersRepository.UpdateAsync(user);
                 _unitOfWork.Save();
@@ -509,33 +526,38 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var existUser = await _unitOfWork.UsersRepository.GetByIdAsync(model.Id);
-            if (existUser != null)
-            {
-                existUser.FullName = model.FullName;
-                existUser.NameUnsign = StringUtils.ConvertToUnSign(model.FullName);
-                existUser.PhoneNumber = model.PhoneNumber;
-                existUser.Address = model.Address;
-                existUser.Dob = model.Dob;
-                existUser.Gender = model.Gender;
-                if (model.Avatar != null)
-                {
-                    existUser.AvatarUrl = model.Avatar;
-                }
 
-                _unitOfWork.UsersRepository.UpdateAsync(existUser);
-                _unitOfWork.Save();
-
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status200OK,
-                    Message = MessageConstants.ACCOUNT_UPDATE_SUCCESS_MESSAGE,
-                    Data = _mapper.Map<UserModel>(existUser)
-                };
-            }
-            else
+            if (existUser == null)
             {
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
+
+            // check duplicate phone number
+            if (model.PhoneNumber != existUser.PhoneNumber && CheckExistPhone(model.PhoneNumber).Result)
+            {
+                throw new DefaultException("", MessageConstants.DUPLICATE_PHONE_NUMBER);
+            }
+
+            existUser.FullName = model.FullName;
+            existUser.NameUnsign = StringUtils.ConvertToUnSign(model.FullName);
+            existUser.PhoneNumber = model.PhoneNumber;
+            existUser.Address = model.Address;
+            existUser.Dob = model.Dob;
+            existUser.Gender = model.Gender;
+            if (model.Avatar != null)
+            {
+                existUser.AvatarUrl = model.Avatar;
+            }
+
+            _unitOfWork.UsersRepository.UpdateAsync(existUser);
+            _unitOfWork.Save();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.ACCOUNT_UPDATE_SUCCESS_MESSAGE,
+                Data = _mapper.Map<UserModel>(existUser)
+            };
         }
 
         public async Task<BaseResultModel> BanUserAsync(Guid id, string currentEmail)
