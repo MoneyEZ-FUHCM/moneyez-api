@@ -502,15 +502,21 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException(MessageConstants.ACCOUNT_NOT_ENOUGH_AGE);
             }
 
+            // check duplicate phone number
+            if (CheckExistPhone(model.PhoneNumber).Result)
+            {
+                throw new DefaultException("", MessageConstants.DUPLICATE_PHONE_NUMBER);
+            }
+
             var existUser = await _unitOfWork.UsersRepository.GetByIdAsync(model.Id);
             if (existUser != null)
             {
                 existUser.FullName = model.FullName;
                 existUser.NameUnsign = StringUtils.ConvertToUnSign(model.FullName);
                 existUser.PhoneNumber = model.PhoneNumber;
-                //existUser.Address = model.Address;
+                existUser.Address = model.Address;
                 existUser.Dob = model.Dob;
-                //existUser.Gender = model.Gender;
+                existUser.Gender = model.Gender;
                 if (model.Avatar != null)
                 {
                     existUser.AvatarUrl = model.Avatar;
