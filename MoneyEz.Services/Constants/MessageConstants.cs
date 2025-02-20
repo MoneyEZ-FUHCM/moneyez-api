@@ -19,6 +19,8 @@ namespace MoneyEz.Services.Constants
         public const string OLD_PASSWORD_INVALID = "OldPasswordInvalid";
         public const string RESET_PASSWORD_FAILED = "CanNotResetPassword";
         public const string ACCOUNT_VERIFIED = "AccountVerified";
+        public const string OTP_HAS_SENT = "OtpHasSent";
+        public const string EMAIL_NOT_REQUEST_OTP = "EmailNotRequestOtpCode";
 
         public const string LOGIN_SUCCESS_MESSAGE = "Login successfully";
         public const string LOGIN_GOOGLE_SUCCESS_MESSAGE = "Login with google successfully";
