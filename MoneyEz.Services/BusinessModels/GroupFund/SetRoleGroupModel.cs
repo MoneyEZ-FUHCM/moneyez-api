@@ -6,16 +6,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MoneyEz.Services.BusinessModels.ChatHistoryModels
+namespace MoneyEz.Services.BusinessModels.GroupFund
 {
-    public class CreateChatHistoryModel
+    public class SetRoleGroupModel
     {
         [Required]
-        public Guid UserId { get; set; }
+        public Guid GroupId { get; set; }
 
         [Required]
-        public string Message { get; set; } = "";
+        public Guid MemberId { get; set; }
 
-        public MessageType MessageType { get; set; }
+        [Required]
+        public RoleGroup RoleGroup { get; set; }
     }
 }

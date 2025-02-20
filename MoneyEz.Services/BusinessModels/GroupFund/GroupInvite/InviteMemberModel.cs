@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MoneyEz.Services.BusinessModels.GroupFund
+namespace MoneyEz.Services.BusinessModels.GroupFund.GroupInvite
 {
     public class InviteMemberModel
     {

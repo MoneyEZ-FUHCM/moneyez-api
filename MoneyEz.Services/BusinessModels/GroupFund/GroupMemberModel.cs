@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
+using MoneyEz.Services.BusinessModels.UserModels;
 
 namespace MoneyEz.Services.BusinessModels.GroupFund
 {
@@ -15,10 +16,10 @@ namespace MoneyEz.Services.BusinessModels.GroupFund
 
         public decimal? ContributionPercentage { get; set; }
 
-        public RoleGroup? Role { get; set; }
+        public string? Role { get; set; }
 
-        public GroupMemberStatus? Status { get; set; }
+        public string? Status { get; set; }
 
-
+        public UserModel? UserInfo { get; set; }
     }
 }

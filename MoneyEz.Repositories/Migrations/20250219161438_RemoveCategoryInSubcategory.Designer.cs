@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MoneyEz.Repositories.Entities;
 
@@ -11,9 +12,11 @@ using MoneyEz.Repositories.Entities;
 namespace MoneyEz.Repositories.Migrations
 {
     [DbContext(typeof(MoneyEzContext))]
-    partial class MoneyEzContextModelSnapshot : ModelSnapshot
+    [Migration("20250219161438_RemoveCategoryInSubcategory")]
+    partial class RemoveCategoryInSubcategory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -162,7 +165,7 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.HasIndex("SubcategoryId");
 
-                    b.ToTable("CategorySubcategory", (string)null);
+                    b.ToTable("CategorySubcategory");
                 });
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.ChatHistory", b =>

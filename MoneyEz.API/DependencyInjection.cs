@@ -147,6 +147,10 @@ namespace MoneyEz.API
             services.AddScoped<ISpendingModelService, SpendingModelService>();
             services.AddScoped<ISpendingModelRepository, SpendingModelRepository>();
 
+            //config user spending model service
+            services.AddScoped<IUserSpendingModelService, UserSpendingModelService>();
+            services.AddScoped<IUserSpendingModelRepository, UserSpendingModelRepository>();
+
             //config spending model category service
             services.AddScoped<ISpendingModelCategoryRepository, SpendingModelCategoryRepository>();
 
@@ -181,6 +185,7 @@ namespace MoneyEz.API
             //config group member service
             services.AddScoped<IGroupMemberRepository, GroupMemberRepository>();
             services.AddScoped<IGroupMemberService, GroupMemberService>();
+            services.AddScoped<IGroupMemberLogRepository, GroupMemberLogRepository>();
 
             // config chat service
             services.AddScoped<IChatHistoryRepository, ChatHistoryRepository>();

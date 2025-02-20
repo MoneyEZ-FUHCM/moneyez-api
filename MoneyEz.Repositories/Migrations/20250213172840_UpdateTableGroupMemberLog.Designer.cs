@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MoneyEz.Repositories.Entities;
 
@@ -11,9 +12,11 @@ using MoneyEz.Repositories.Entities;
 namespace MoneyEz.Repositories.Migrations
 {
     [DbContext(typeof(MoneyEzContext))]
-    partial class MoneyEzContextModelSnapshot : ModelSnapshot
+    [Migration("20250213172840_UpdateTableGroupMemberLog")]
+    partial class UpdateTableGroupMemberLog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -162,7 +165,7 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.HasIndex("SubcategoryId");
 
-                    b.ToTable("CategorySubcategory", (string)null);
+                    b.ToTable("CategorySubcategory");
                 });
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.ChatHistory", b =>
@@ -1085,6 +1088,9 @@ namespace MoneyEz.Repositories.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
 
@@ -1617,7 +1623,6 @@ namespace MoneyEz.Repositories.Migrations
                     b.HasOne("MoneyEz.Repositories.Entities.GroupFund", "Group")
                         .WithMany("GroupFundLogs")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK__GroupFund__Group__75A278F5");
 
@@ -1648,7 +1653,6 @@ namespace MoneyEz.Repositories.Migrations
                     b.HasOne("MoneyEz.Repositories.Entities.GroupMember", "GroupMember")
                         .WithMany("GroupMemberLogs")
                         .HasForeignKey("GroupMemberId")
-                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK__GroupMemb__Group__787EE5A0");
 

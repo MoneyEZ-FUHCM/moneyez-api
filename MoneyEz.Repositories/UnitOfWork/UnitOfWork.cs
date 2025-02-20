@@ -21,6 +21,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         //spending model
         private ISpendingModelRepository _spendingModelRepository;
 
+        //user spending model
+        private IUserSpendingModelRepository _userSpendingModelRepository;
+
         //spending model category
         private ISpendingModelCategoryRepository _spendingModelCategoryRepository;
 
@@ -41,6 +44,7 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IGroupFundLogRepository _groupFundLogRepository;
         //group member
         private IGroupMemberRepository _groupMemberRepository;
+        private IGroupMemberLogRepository _groupMemberLogRepository;
         private ISubscriptionRepository _subscriptionRepository;
 
         // chat
@@ -73,6 +77,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _spendingModelRepository ??= new SpendingModelRepository(_context);
+            }
+        }
+
+        public IUserSpendingModelRepository UserSpendingModelRepository
+        {
+            get
+            {
+                return _userSpendingModelRepository ??= new UserSpendingModelRepository(_context);
             }
         }
 
@@ -135,6 +147,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             }
         }
 
+        public IGroupMemberLogRepository GroupMemberLogRepository
+        {
+            get
+            {
+                return _groupMemberLogRepository ??= new GroupMemberLogRepository(_context);
+            }
+        }
+
         public ISubscriptionRepository SubscriptionRepository
         {
             get { return _subscriptionRepository ??= new SubscriptionRepository(_context); }
@@ -163,8 +183,8 @@ namespace MoneyEz.Repositories.UnitOfWork
             {
                 return _assetRepository ??= new AssetRepository(_context);
             }
-        } 
-        
+        }
+
         public ILiabilityRepository LiabilityRepository
         {
             get

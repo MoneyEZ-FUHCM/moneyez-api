@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.SubcategoryModels;
 using MoneyEz.Services.Services.Interfaces;
 using System;
@@ -11,6 +13,7 @@ namespace MoneyEz.API.Controllers
 {
     [Route("api/v1/subcategories")]
     [ApiController]
+    [Authorize(Roles = nameof(RolesEnum.ADMIN))]
     public class SubcategoriesController : BaseController
     {
         private readonly ISubcategoryService _subcategoryService;
