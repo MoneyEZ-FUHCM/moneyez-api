@@ -198,6 +198,17 @@ namespace MoneyEz.API
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<INotificationService, NotificationService>();
 
+            // config chat service
+            services.AddScoped<IChatService, ChatService>();
+            // Register HTTP client with optional configuration
+            services.AddHttpClient<IExternalApiService, ExternalApiService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
+
+            // Register services
+            services.AddScoped<IChatService, ChatService>();
+
             services.AddSignalR();
 
             #endregion

@@ -130,20 +130,10 @@ namespace MoneyEz.Services.Services.Implements
                 Data = _mapper.Map<TransactionModel>(transaction)
             };
         }
-        public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model)
+        public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model, string email)
         {
-            string userEmail = _claimsService.GetCurrentUserEmail;
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.TRANSACTION_CREATE_DENIED,
-                    Message = "Unauthorized: You must be logged in to create a transaction."
-                };
-            }
 
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email);
             if (user == null)
             {
                 return new BaseResultModel

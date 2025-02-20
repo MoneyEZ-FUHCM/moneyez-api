@@ -11,7 +11,7 @@ namespace MoneyEz.Services.Services.Interfaces
     {
         Task<BaseResultModel> GetAllTransactionsForUserAsync(PaginationParameter paginationParameter);
         Task<BaseResultModel> GetTransactionByIdAsync(Guid transactionId);
-        Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model);
+        Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model, string email);
         Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model);
         Task<BaseResultModel> DeleteTransactionAsync(Guid transactionId);
         Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter);
