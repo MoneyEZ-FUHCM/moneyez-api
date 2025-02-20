@@ -63,6 +63,9 @@ namespace MoneyEz.Services.Constants
         public const string INVALID_TOTAL_PERCENTAGE = "InvalidTotalPercentage";//The total percentage amount of all categories must be greater than 0 and less than or equal to 100.
         public const string PERCENTAGE_REQUIRED = "PercentageRequired";//Percentage amounts must be provided for the categories.
         public const string INVALID_PERCENTAGE_AMOUNT = "Percentage amounts cannot be negative.";
+        public const string INVALID_PERIOD_UNIT = "InvalidPeriodUnit";
+        public const string USER_ALREADY_HAS_ACTIVE_SPENDING_MODEL = "UserAlreadyHasActiveSpendingModel";
+        public const string CURRENT_SPENDING_MODEL_NOT_FINISHED = "CurrentSpendingModelNotFinished";
 
         // category
         public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists";
@@ -143,7 +146,7 @@ namespace MoneyEz.Services.Constants
 
         // Group contribution
         public const string GROUP_SET_CONTRIBUTION_FORBIDDEN = "GroupSetContributionForbidden";
-        public const string GROUP_INVALID_TOTAL_CONTRIBUTION = "GroupInvalidTotalContribution"; 
+        public const string GROUP_INVALID_TOTAL_CONTRIBUTION = "GroupInvalidTotalContribution";
         public const string GROUP_MEMBER_CONTRIBUTION_NOT_FOUND = "GroupMemberContributionNotFound";
         public const string GROUP_SET_CONTRIBUTION_SUCCESS_MESSAGE = "Group contributions updated successfully";
 
