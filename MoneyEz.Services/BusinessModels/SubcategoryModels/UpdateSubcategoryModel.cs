@@ -10,12 +10,11 @@ namespace MoneyEz.Services.BusinessModels.SubcategoryModels
         public Guid Id { get; set; }
 
         [Required(ErrorMessage = "Tên danh mục con là bắt buộc.")]
+        [MaxLength(100, ErrorMessage = "Tên danh mục con không được vượt quá 100 ký tự.")]
         public string Name { get; set; }
 
+        [MaxLength(255, ErrorMessage = "Mô tả không được vượt quá 255 ký tự.")]
         public string Description { get; set; }
-
-        [Required(ErrorMessage = "ID danh mục chính là bắt buộc.")]
-        public Guid CategoryId { get; set; }
 
         public string NameUnsign => StringUtils.ConvertToUnSign(Name);
     }

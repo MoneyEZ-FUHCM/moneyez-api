@@ -24,6 +24,10 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //subcategory
         ISubcategoryRepository SubcategoryRepository { get; }
+
+        //categorysubcategory
+        ICategorySubcategoryRepository CategorySubcategoryRepository { get; }
+
         //transaction
         ITransactionRepository TransactionsRepository { get; }
 

@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.SubcategoryModels;
 using MoneyEz.Services.Services.Interfaces;
 using System;
@@ -11,6 +13,7 @@ namespace MoneyEz.API.Controllers
 {
     [Route("api/v1/subcategories")]
     [ApiController]
+    [Authorize(Roles = nameof(RolesEnum.ADMIN))]
     public class SubcategoriesController : BaseController
     {
         private readonly ISubcategoryService _subcategoryService;
@@ -32,16 +35,29 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _subcategoryService.GetSubcategoryByIdAsync(id));
         }
 
-        [HttpPost]
-        public Task<IActionResult> AddSubcategories([FromBody] List<CreateSubcategoryModel> models)
+        [HttpPost("create")]
+        public Task<IActionResult> CreateSubcategories([FromBody] List<CreateSubcategoryModel> models)
         {
-            return ValidateAndExecute(() => _subcategoryService.AddSubcategoriesAsync(models));
+            return ValidateAndExecute(() => _subcategoryService.CreateSubcategoriesAsync(models));
         }
 
-        [HttpPut]
-        public Task<IActionResult> UpdateSubcategory([FromBody] UpdateSubcategoryModel model)
+        [HttpPut("update")]
+        public Task<IActionResult> UpdateSubcategoryById([FromBody] UpdateSubcategoryModel model)
         {
-            return ValidateAndExecute(() => _subcategoryService.UpdateSubcategoryAsync(model));
+            return ValidateAndExecute(() => _subcategoryService.UpdateSubcategoryByIdAsync(model));
+        }
+
+
+        [HttpPost("assign")]
+        public Task<IActionResult> AddSubcategoriesToCategories([FromBody] AssignSubcategoryModel model)
+        {
+            return ValidateAndExecute(() => _subcategoryService.AddSubcategoriesToCategoriesAsync(model));
+        }
+
+        [HttpDelete("remove")]
+        public Task<IActionResult> RemoveSubcategoriesFromCategories([FromBody] RemoveSubcategoryFromCategoryModel model)
+        {
+            return ValidateAndExecute(() => _subcategoryService.RemoveSubcategoriesFromCategoriesAsync(model));
         }
 
         [HttpDelete("{id}")]

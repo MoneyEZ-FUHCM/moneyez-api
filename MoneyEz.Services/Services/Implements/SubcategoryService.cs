@@ -8,7 +8,6 @@ using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.SubcategoryModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Services.Interfaces;
-using MoneyEz.Services.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,7 +28,10 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetSubcategoriesPaginationAsync(PaginationParameter paginationParameter)
         {
-            var subcategories = await _unitOfWork.SubcategoryRepository.ToPaginationIncludeAsync(paginationParameter);
+            var subcategories = await _unitOfWork.SubcategoryRepository.ToPaginationIncludeAsync(
+               paginationParameter,
+               include: query => query.Include(s => s.CategorySubcategories).ThenInclude(cs => cs.Category)
+           );
 
             var result = _mapper.Map<Pagination<SubcategoryModel>>(subcategories);
 
@@ -55,19 +57,17 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetSubcategoryByIdAsync(Guid id)
         {
-            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(id);
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdIncludeAsync(id,
+               include: query => query.Include(s => s.CategorySubcategories).ThenInclude(cs => cs.Category));
 
             if (subcategory == null || subcategory.IsDeleted)
-            {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
                     ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND
                 };
-            }
 
             var result = _mapper.Map<SubcategoryModel>(subcategory);
-
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -76,46 +76,16 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> AddSubcategoriesAsync(List<CreateSubcategoryModel> models)
+        public async Task<BaseResultModel> CreateSubcategoriesAsync(List<CreateSubcategoryModel> models)
         {
             if (models == null || !models.Any())
-            {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.EMPTY_SUBCATEGORY_LIST,
-                    Message = "The list of subcategories cannot be empty."
+                    ErrorCode = MessageConstants.EMPTY_SUBCATEGORY_LIST
                 };
-            }
 
-            // Kiểm tra xem model nào không có CategoryId
-            if (models.Any(m => m.CategoryId == Guid.Empty))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.CATEGORY_ID_REQUIRED,
-                    Message = "Category ID is required for all subcategories."
-                };
-            }
-
-            // Lấy danh sách danh mục chính hợp lệ từ DB
-            var existingCategories = await _unitOfWork.CategoriesRepository.GetAllAsync();
-            var validCategoryIds = existingCategories.Select(c => c.Id).ToHashSet();
-
-            var invalidCategoryIds = models.Select(m => m.CategoryId).Except(validCategoryIds).ToList();
-            if (invalidCategoryIds.Any())
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.INVALID_CATEGORY_IDS,
-                    Message = $"The following category IDs do not exist: {string.Join(", ", invalidCategoryIds)}"
-                };
-            }
-
-            var existingSubcategories = await _unitOfWork.SubcategoryRepository.GetAllAsync();
-            var existingNames = existingSubcategories
+            var existingNames = (await _unitOfWork.SubcategoryRepository.GetAllAsync())
                 .Where(s => !s.IsDeleted)
                 .Select(s => s.NameUnsign)
                 .ToHashSet();
@@ -138,14 +108,11 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             if (duplicateNames.Any())
-            {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.DUPLICATE_SUBCATEGORY_NAMES,
-                    Message = $"The following subcategory names already exist: {string.Join(", ", duplicateNames)}"
+                    ErrorCode = MessageConstants.DUPLICATE_SUBCATEGORY_NAMES
                 };
-            }
 
             await _unitOfWork.SubcategoryRepository.AddRangeAsync(newSubcategories);
             _unitOfWork.Save();
@@ -157,49 +124,30 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> UpdateSubcategoryAsync(UpdateSubcategoryModel model)
+        public async Task<BaseResultModel> UpdateSubcategoryByIdAsync(UpdateSubcategoryModel model)
         {
-            if (model.CategoryId == Guid.Empty)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.CATEGORY_ID_REQUIRED,
-                    Message = "Category ID is required."
-                };
-            }
-
             var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.Id);
+
             if (subcategory == null || subcategory.IsDeleted)
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND
-                };
-            }
-
-            // Kiểm tra danh mục chính có tồn tại không
-            var existingCategories = await _unitOfWork.CategoriesRepository.GetAllAsync();
-            var validCategoryIds = existingCategories.Select(c => c.Id).ToHashSet();
-            if (!validCategoryIds.Contains(model.CategoryId))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.INVALID_CATEGORY_IDS,
-                    Message = $"Category ID {model.CategoryId} does not exist."
+                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND,
+                    Message = "Subcategory does not exist or has been deleted."
                 };
             }
 
             var unsignName = model.NameUnsign;
-            var existingSubcategories = await _unitOfWork.SubcategoryRepository.GetAllAsync();
-            if (existingSubcategories.Any(s => s.NameUnsign == unsignName && s.Id != model.Id))
+            var allSubcategories = await _unitOfWork.SubcategoryRepository.GetAllAsync();
+
+            if (allSubcategories.Any(s => s.NameUnsign == unsignName && s.Id != model.Id))
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.SUBCATEGORY_ALREADY_EXISTS
+                    ErrorCode = MessageConstants.DUPLICATE_SUBCATEGORY_NAME_GLOBAL,
+                    Message = $"Subcategory '{model.Name}' already exists in the system."
                 };
             }
 
@@ -215,36 +163,90 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> DeleteSubcategoryAsync(Guid id)
+        public async Task<BaseResultModel> AddSubcategoriesToCategoriesAsync(AssignSubcategoryModel model)
         {
-            // Lấy Subcategory từ database cùng với các giao dịch liên quan
-            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdIncludeAsync(
-                id,
-                include: query => query.Include(sc => sc.Transactions).Include(sc => sc.RecurringTransactions)
-            );
+            var existingCategories = await _unitOfWork.CategoriesRepository.GetAllAsync();
+            var existingSubcategories = await _unitOfWork.SubcategoryRepository.GetAllAsync();
 
-            if (subcategory == null || subcategory.IsDeleted)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND,
-                    Message = "The subcategory does not exist or has been deleted."
-                };
-            }
+            var validCategoryIds = existingCategories.Select(c => c.Id).ToHashSet();
+            var validSubcategoryIds = existingSubcategories.Select(s => s.Id).ToHashSet();
 
-            // Kiểm tra nếu Subcategory đang được sử dụng trong giao dịch
-            if (subcategory.Transactions.Any() || subcategory.RecurringTransactions.Any())
+            var invalidCategoryIds = model.Assignments.Select(a => a.CategoryId).Except(validCategoryIds).ToList();
+            if (invalidCategoryIds.Any())
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.SUBCATEGORY_HAS_DEPENDENCIES,
-                    Message = "The subcategory has transactions associated with it and cannot be deleted."
+                    ErrorCode = MessageConstants.INVALID_CATEGORY_IDS,
+                    Message = $"The following category IDs do not exist: {string.Join(", ", invalidCategoryIds)}"
                 };
             }
 
-            // Xóa mềm Subcategory
+            var allSubcategoryIds = model.Assignments.SelectMany(a => a.SubcategoryIds).Distinct().ToList();
+            var invalidSubcategoryIds = allSubcategoryIds.Except(validSubcategoryIds).ToList();
+            if (invalidSubcategoryIds.Any())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.INVALID_SUBCATEGORY_IDS,
+                    Message = $"The following subcategory IDs do not exist: {string.Join(", ", invalidSubcategoryIds)}"
+                };
+            }
+
+            var existingCategorySubcategories = await _unitOfWork.CategorySubcategoryRepository.GetAllAsync();
+            var existingLinks = existingCategorySubcategories
+                .Select(cs => (cs.CategoryId, cs.SubcategoryId))
+                .ToHashSet();
+
+            var newCategorySubcategories = new List<CategorySubcategory>();
+
+            foreach (var assignment in model.Assignments)
+            {
+                foreach (var subcategoryId in assignment.SubcategoryIds)
+                {
+                    if (!existingLinks.Contains((assignment.CategoryId, subcategoryId)))
+                    {
+                        newCategorySubcategories.Add(new CategorySubcategory
+                        {
+                            CategoryId = assignment.CategoryId,
+                            SubcategoryId = subcategoryId
+                        });
+                    }
+                }
+            }
+
+            if (newCategorySubcategories.Any())
+            {
+                await _unitOfWork.CategorySubcategoryRepository.AddRangeAsync(newCategorySubcategories);
+                _unitOfWork.Save();
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status201Created,
+                Message = "Subcategories assigned to categories successfully."
+            };
+        }
+        public async Task<BaseResultModel> DeleteSubcategoryAsync(Guid id)
+        {
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdIncludeAsync(id,
+                include: query => query.Include(sc => sc.Transactions).Include(sc => sc.RecurringTransactions));
+
+            if (subcategory == null || subcategory.IsDeleted)
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND
+                };
+
+            if (subcategory.Transactions.Any() || subcategory.RecurringTransactions.Any())
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.SUBCATEGORY_HAS_DEPENDENCIES
+                };
+
             _unitOfWork.SubcategoryRepository.SoftDeleteAsync(subcategory);
             _unitOfWork.Save();
 
@@ -252,6 +254,54 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.SUBCATEGORY_DELETED_SUCCESS
+            };
+        }
+
+        public async Task<BaseResultModel> RemoveSubcategoriesFromCategoriesAsync(RemoveSubcategoryFromCategoryModel model)
+        {
+            var category = await _unitOfWork.CategoriesRepository.GetByIdAsync(model.CategoryId);
+            if (category == null || category.IsDeleted)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.CATEGORY_NOT_FOUND,
+                    Message = "Category does not exist."
+                };
+            }
+
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId);
+            if (subcategory == null || subcategory.IsDeleted)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND,
+                    Message = "Subcategory does not exist."
+                };
+            }
+
+            var categorySubcategoryList = await _unitOfWork.CategorySubcategoryRepository.GetAllAsync();
+            var categorySubcategory = categorySubcategoryList
+                .FirstOrDefault(cs => cs.CategoryId == model.CategoryId && cs.SubcategoryId == model.SubcategoryId);
+
+            if (categorySubcategory == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND_IN_CATEGORY,
+                    Message = "The subcategory is not found in the selected category."
+                };
+            }
+
+            _unitOfWork.CategorySubcategoryRepository.PermanentDeletedAsync(categorySubcategory);
+            _unitOfWork.Save();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Subcategory removed from category successfully."
             };
         }
     }
