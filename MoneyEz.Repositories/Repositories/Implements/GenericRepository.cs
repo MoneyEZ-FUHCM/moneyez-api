@@ -62,6 +62,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
         public void SoftDeleteAsync(TEntity entity)
         {
             entity.IsDeleted = true;
+            entity.UpdatedDate = CommonUtils.GetCurrentTime();
             _dbSet.Update(entity);
         }
 
@@ -70,6 +71,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
             foreach (var entity in entities)
             {
                 entity.IsDeleted = true;
+                entity.UpdatedDate = CommonUtils.GetCurrentTime();
             }
             _dbSet.UpdateRange(entities);
         }
