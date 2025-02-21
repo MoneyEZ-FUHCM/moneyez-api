@@ -53,6 +53,7 @@ namespace MoneyEz.Services.Services.Implements
             groupFund.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
             groupFund.Status = CommonsStatus.ACTIVE;
             groupFund.Visibility = VisibilityEnum.PRIVATE;
+            groupFund.CreatedBy = user.Email;
 
             groupFund.GroupMembers = new List<GroupMember>
             {
@@ -63,13 +64,15 @@ namespace MoneyEz.Services.Services.Implements
                     Role = RoleGroup.LEADER,
                     Status = GroupMemberStatus.ACTIVE,
                     CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = user.Email,
                     GroupMemberLogs = new List<GroupMemberLog>
                     {
                         new GroupMemberLog
                         {
                             ChangeDiscription = $"{user.FullName} đã tham gia nhóm",
                             ChangeType = GroupAction.JOINED,
-                            CreatedDate = CommonUtils.GetCurrentTime()
+                            CreatedDate = CommonUtils.GetCurrentTime(),
+                            CreatedBy = user.Email
                         }
                     }
                 }
@@ -80,7 +83,8 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     ChangeDescription = $"{user.FullName} đã tạo nhóm",
                     Action = GroupAction.CREATED,
-                    CreatedDate = CommonUtils.GetCurrentTime()
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = user.Email
                 }
             };
             // Add the groupFund to the repository and save changes again
@@ -196,6 +200,7 @@ namespace MoneyEz.Services.Services.Implements
                     ChangeDescription = $"Quỹ đã được đóng bởi {currentUser.FullName}",
                     Action = GroupAction.DELETED,
                     CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = currentUser.Email
                 });
             }
             else
@@ -309,10 +314,12 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     ChangeDiscription = $"{removeMember.FullName} đã rời khỏi nhóm",
                     ChangeType = GroupAction.DELETED,
-                    CreatedDate = CommonUtils.GetCurrentTime()
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = currentUser.Email
                 });
 
                 memberToRemove.Status = GroupMemberStatus.INACTIVE;
+                memberToRemove.UpdatedBy = currentUser.Email;
                 _unitOfWork.GroupMemberRepository.SoftDeleteAsync(memberToRemove);
 
                 // Save the changes to the repository
@@ -392,8 +399,11 @@ namespace MoneyEz.Services.Services.Implements
                 ChangeDescription = $"{currentUser.FullName} đã thay đổi vai trò của " +
                     $"{memberUpdateInfo.FullName} thành {setRoleGroupModel.RoleGroup.ToString()}",
                 Action = GroupAction.UPDATED,
-                CreatedDate = CommonUtils.GetCurrentTime()
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
             });
+
+            groupFund.UpdatedBy = currentUser.Email;
 
             // Save the changes to the repository
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
@@ -509,7 +519,8 @@ namespace MoneyEz.Services.Services.Implements
                     ContributionPercentage = 0,
                     Role = RoleGroup.MEMBER,
                     Status = GroupMemberStatus.PENDING,
-                    CreatedDate = CommonUtils.GetCurrentTime()
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = currentUser.Email,
                 };
                 groupFund.GroupMembers.Add(pendingMember);
             }
@@ -549,10 +560,12 @@ namespace MoneyEz.Services.Services.Implements
             {
                 ChangeDescription = $"{inviteUser.FullName} đã được mời vào nhóm qua Email",
                 Action = GroupAction.INVITED,
-                CreatedDate = CommonUtils.GetCurrentTime()
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
             });
 
             // Save the changes to the repository
+            groupFund.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
 
@@ -617,11 +630,13 @@ namespace MoneyEz.Services.Services.Implements
                     {
                         ChangeDiscription = $"{userInvite.FullName} đã tham gia nhóm",
                         ChangeType = GroupAction.JOINED,
-                        CreatedDate = CommonUtils.GetCurrentTime()
+                        CreatedDate = CommonUtils.GetCurrentTime(),
+                        CreatedBy = userInvite.Email
                     }
                 };
 
                 // Save the changes to the repository
+                groupFund.UpdatedBy = userInvite.Email;
                 _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
                 await _unitOfWork.SaveAsync();
 
@@ -706,10 +721,12 @@ namespace MoneyEz.Services.Services.Implements
             {
                 ChangeDescription = $"{currentUser.FullName} đã tạo liên kết mời vào nhóm",
                 Action = GroupAction.INVITED,
-                CreatedDate = CommonUtils.GetCurrentTime()
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
             });
 
             // Save the changes to the repository
+            groupFund.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
 
@@ -770,7 +787,8 @@ namespace MoneyEz.Services.Services.Implements
                     {
                         ChangeDiscription = $"{currentUser.FullName} đã tham gia nhóm",
                         ChangeType = GroupAction.JOINED,
-                        CreatedDate = CommonUtils.GetCurrentTime()
+                        CreatedDate = CommonUtils.GetCurrentTime(),
+                        CreatedBy = currentUser.Email
                     }
                 };
 
@@ -799,7 +817,8 @@ namespace MoneyEz.Services.Services.Implements
                     {
                         ChangeDiscription = $"{currentUser.FullName} đã tham gia nhóm",
                         ChangeType = GroupAction.JOINED,
-                        CreatedDate = CommonUtils.GetCurrentTime()
+                        CreatedDate = CommonUtils.GetCurrentTime(),
+                        CreatedBy = currentUser.Email
                     }
                 }
             };
@@ -807,6 +826,7 @@ namespace MoneyEz.Services.Services.Implements
             groupFund.GroupMembers.Add(newMember);
 
             // Save the changes to the repository
+            groupFund.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
 
@@ -866,10 +886,12 @@ namespace MoneyEz.Services.Services.Implements
             {
                 ChangeDiscription = $"{currentUser.FullName} đã rời khỏi nhóm",
                 ChangeType = GroupAction.DELETED,
-                CreatedDate = CommonUtils.GetCurrentTime()
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
             });
 
             memberToRemove.Status = GroupMemberStatus.INACTIVE;
+            memberToRemove.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupMemberRepository.SoftDeleteAsync(memberToRemove);
 
             // Save the changes to the repository
@@ -933,10 +955,12 @@ namespace MoneyEz.Services.Services.Implements
             {
                 ChangeDescription = $"{currentUser.FullName} đã cập nhật tỷ lệ đóng góp cho các thành viên",
                 Action = GroupAction.UPDATED,
-                CreatedDate = CommonUtils.GetCurrentTime()
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
             });
 
             // Save changes
+            groupFund.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
 
