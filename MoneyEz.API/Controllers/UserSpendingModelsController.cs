@@ -13,7 +13,7 @@ namespace MoneyEz.API.Controllers
 {
     [Route("api/v1/user-spending-models")]
     [ApiController]
-    [Authorize] // Yêu cầu người dùng phải đăng nhập
+    [Authorize]
     public class UserSpendingModelsController : BaseController
     {
         private readonly IUserSpendingModelService _userSpendingModelService;
