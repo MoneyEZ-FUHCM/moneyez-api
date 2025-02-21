@@ -572,7 +572,11 @@ public partial class MoneyEzContext : DbContext
 
         modelBuilder.Entity<CategorySubcategory>(entity =>
         {
-            entity.HasKey(cs => new { cs.CategoryId, cs.SubcategoryId });
+            entity.HasKey(e => e.Id).HasName("PK__CategorySubcategory");
+
+            entity.ToTable("CategorySubcategory");
+
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
 
             entity.HasOne(cs => cs.Category)
                 .WithMany(c => c.CategorySubcategories)
