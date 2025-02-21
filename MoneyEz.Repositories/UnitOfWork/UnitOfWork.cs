@@ -21,6 +21,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         //spending model
         private ISpendingModelRepository _spendingModelRepository;
 
+        //user spending model
+        private IUserSpendingModelRepository _userSpendingModelRepository;
+
         //spending model category
         private ISpendingModelCategoryRepository _spendingModelCategoryRepository;
 
@@ -74,6 +77,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _spendingModelRepository ??= new SpendingModelRepository(_context);
+            }
+        }
+
+        public IUserSpendingModelRepository UserSpendingModelRepository
+        {
+            get
+            {
+                return _userSpendingModelRepository ??= new UserSpendingModelRepository(_context);
             }
         }
 
@@ -172,8 +183,8 @@ namespace MoneyEz.Repositories.UnitOfWork
             {
                 return _assetRepository ??= new AssetRepository(_context);
             }
-        } 
-        
+        }
+
         public ILiabilityRepository LiabilityRepository
         {
             get

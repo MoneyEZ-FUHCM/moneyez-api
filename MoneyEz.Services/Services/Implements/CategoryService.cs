@@ -36,7 +36,7 @@ namespace MoneyEz.Services.Services.Implements
                                        .ThenInclude(cs => cs.Subcategory)
             );
 
-            var result = _mapper.Map<Pagination<CategoryModel>>(categories);
+            var categoryModels = _mapper.Map<Pagination<CategoryModel>>(categories);
 
             return new BaseResultModel
             {
@@ -44,15 +44,15 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.CATEGORY_LIST_FETCHED_SUCCESS,
                 Data = new ModelPaging
                 {
-                    Data = result,
+                    Data = categoryModels,
                     MetaData = new
                     {
-                        result.TotalCount,
-                        result.PageSize,
-                        result.CurrentPage,
-                        result.TotalPages,
-                        result.HasNext,
-                        result.HasPrevious
+                        categoryModels.TotalCount,
+                        categoryModels.PageSize,
+                        categoryModels.CurrentPage,
+                        categoryModels.TotalPages,
+                        categoryModels.HasNext,
+                        categoryModels.HasPrevious
                     }
                 }
             };
@@ -71,11 +71,13 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
             }
 
+            var categoryModel = _mapper.Map<CategoryModel>(category);
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.CATEGORY_FETCHED_SUCCESS,
-                Data = _mapper.Map<CategoryModel>(category)
+                Data = categoryModel
             };
         }
 

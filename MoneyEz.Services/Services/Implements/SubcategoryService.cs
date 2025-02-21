@@ -29,9 +29,9 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> GetSubcategoriesPaginationAsync(PaginationParameter paginationParameter)
         {
             var subcategories = await _unitOfWork.SubcategoryRepository.ToPaginationIncludeAsync(
-                paginationParameter,
-                include: query => query.Include(s => s.CategorySubcategories).ThenInclude(cs => cs.Category)
-            );
+               paginationParameter,
+               include: query => query.Include(s => s.CategorySubcategories).ThenInclude(cs => cs.Category)
+           );
 
             var result = _mapper.Map<Pagination<SubcategoryModel>>(subcategories);
 
@@ -58,7 +58,7 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> GetSubcategoryByIdAsync(Guid id)
         {
             var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdIncludeAsync(id,
-                include: query => query.Include(s => s.CategorySubcategories).ThenInclude(cs => cs.Category));
+               include: query => query.Include(s => s.CategorySubcategories).ThenInclude(cs => cs.Category));
 
             if (subcategory == null || subcategory.IsDeleted)
                 return new BaseResultModel
@@ -126,8 +126,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> UpdateSubcategoryByIdAsync(UpdateSubcategoryModel model)
         {
-            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdIncludeAsync(model.Id,
-                include: query => query.Include(s => s.CategorySubcategories));
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.Id);
 
             if (subcategory == null || subcategory.IsDeleted)
             {
@@ -140,8 +139,8 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var unsignName = model.NameUnsign;
-
             var allSubcategories = await _unitOfWork.SubcategoryRepository.GetAllAsync();
+
             if (allSubcategories.Any(s => s.NameUnsign == unsignName && s.Id != model.Id))
             {
                 return new BaseResultModel
@@ -152,52 +151,9 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var existingCategories = await _unitOfWork.CategoriesRepository.GetAllAsync();
-            var validCategoryIds = existingCategories.Select(c => c.Id).ToHashSet();
-            var invalidCategoryIds = model.CategoryIds.Except(validCategoryIds).ToList();
-
-            if (invalidCategoryIds.Any())
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.INVALID_CATEGORY_IDS,
-                    Message = $"The following category IDs do not exist: {string.Join(", ", invalidCategoryIds)}"
-                };
-            }
-
-            var duplicateCategorySubcategories = await _unitOfWork.CategorySubcategoryRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageIndex = 1, PageSize = int.MaxValue },
-                filter: cs => model.CategoryIds.Contains(cs.CategoryId) && cs.Subcategory.NameUnsign == unsignName
-            );
-
-            if (duplicateCategorySubcategories.Any(cs => cs.SubcategoryId != model.Id))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.DUPLICATE_SUBCATEGORY_NAME_IN_CATEGORY,
-                    Message = $"Subcategory '{model.Name}' already exists in one of the selected categories."
-                };
-            }
-
             _mapper.Map(model, subcategory);
             subcategory.NameUnsign = unsignName;
             _unitOfWork.SubcategoryRepository.UpdateAsync(subcategory);
-
-            var existingCategorySubcategories = subcategory.CategorySubcategories.ToList();
-            var newCategorySubcategories = model.CategoryIds
-                .Except(existingCategorySubcategories.Select(cs => cs.CategoryId))
-                .Select(categoryId => new CategorySubcategory { CategoryId = categoryId, SubcategoryId = subcategory.Id })
-                .ToList();
-
-            var removedCategorySubcategories = existingCategorySubcategories
-                .Where(cs => !model.CategoryIds.Contains(cs.CategoryId))
-                .ToList();
-
-            _unitOfWork.CategorySubcategoryRepository.PermanentDeletedListAsync(removedCategorySubcategories);
-            await _unitOfWork.CategorySubcategoryRepository.AddRangeAsync(newCategorySubcategories);
-
             _unitOfWork.Save();
 
             return new BaseResultModel
@@ -240,7 +196,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var existingCategorySubcategories = await _unitOfWork.CategorySubcategoryRepository.GetAllAsync();
             var existingLinks = existingCategorySubcategories
-                .Select(cs => (cs.CategoryId, cs.SubcategoryId)) //Tuple ><anonymous type
+                .Select(cs => (cs.CategoryId, cs.SubcategoryId))
                 .ToHashSet();
 
             var newCategorySubcategories = new List<CategorySubcategory>();
@@ -272,7 +228,6 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "Subcategories assigned to categories successfully."
             };
         }
-
         public async Task<BaseResultModel> DeleteSubcategoryAsync(Guid id)
         {
             var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdIncludeAsync(id,

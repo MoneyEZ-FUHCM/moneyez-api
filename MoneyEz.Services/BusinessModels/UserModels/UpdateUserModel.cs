@@ -16,10 +16,11 @@ namespace MoneyEz.Services.BusinessModels.UserModels
         [Display(Name = "Full name")]
         public string FullName { get; set; } = null!;
 
+        [Required(ErrorMessage = "Vui lòng nhập số điện thoại")]
         [Display(Name = "Phone Number")]
         [DataType(DataType.PhoneNumber, ErrorMessage = "Số điện thoại không hợp lệ")]
         [RegularExpression(@"^([0-9]{10})$", ErrorMessage = "Số điện thoại phải có 10 số")]
-        public string? PhoneNumber { get; set; }
+        public string PhoneNumber { get; set; } = null!;
 
         public string? Address { get; set; }
 

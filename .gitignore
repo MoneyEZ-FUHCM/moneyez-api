@@ -484,3 +484,4 @@ $RECYCLE.BIN/
 *.swp
 
 MoneyEz.API/firebase-adminsdk.json
+/MoneyEz.API/Properties
