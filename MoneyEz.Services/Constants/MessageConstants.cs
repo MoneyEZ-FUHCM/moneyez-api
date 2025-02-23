@@ -146,6 +146,13 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_LEAVE_SUCCESS_MESSAGE = "You have left the group successfully.";
         public const string GROUP_MEMBER_ALREADY_ROLE = "MemberAlreadyRole";
 
+        // fundraising request
+        public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
+        public const string FUNDRAISING_REQUEST_ACCESS_DENIED = "FundraisingRequestAccessDenied";
+        public const string FUNDRAISING_REQUEST_LIST_GET_SUCCESS_MESSAGE = "Fundraising request list fetched successfully";
+        public const string FUNDRAISING_REQUEST_GET_SUCCESS_MESSAGE = "Fundraising request details fetched successfully";
+
+
         // Group contribution
         public const string GROUP_SET_CONTRIBUTION_FORBIDDEN = "GroupSetContributionForbidden";
         public const string GROUP_INVALID_TOTAL_CONTRIBUTION = "GroupInvalidTotalContribution";

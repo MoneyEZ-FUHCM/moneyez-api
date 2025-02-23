@@ -20,6 +20,8 @@ using MoneyEz.Services.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.GroupFund.GroupInvite;
+using MoneyEz.Services.BusinessModels.BankAccountModels;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -48,12 +50,19 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
 
+            var bankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(model.AccountBankId);
+            if (bankAccount == null)
+            {
+                throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            }
+
             // Map the model to a new GroupFund entity and set its Id to the one generated for groupEntity
             var groupFund = _mapper.Map<GroupFund>(model);
             groupFund.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
             groupFund.Status = CommonsStatus.ACTIVE;
             groupFund.Visibility = VisibilityEnum.PRIVATE;
             groupFund.CreatedBy = user.Email;
+            groupFund.AccountBankId = model.AccountBankId;
 
             groupFund.GroupMembers = new List<GroupMember>
             {
@@ -968,6 +977,82 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.GROUP_SET_CONTRIBUTION_SUCCESS_MESSAGE
+            };
+        }
+
+        public async Task<BaseResultModel> CreateFundraisingRequest(CreateFundraisingModel createFundraisingModel)
+        {
+            // Get and verify current user
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // Get group with bank account info
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                createFundraisingModel.GroupId,
+                include: q => q.Include(g => g.GroupMembers));
+
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            var groupBankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(groupFund.AccountBankId.Value);
+            if (groupBankAccount == null)
+            {
+                throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            }
+
+            // Verify user is a member of the group
+            var isMember = groupFund.GroupMembers.Any(member => 
+                member.UserId == currentUser.Id && 
+                member.Status == GroupMemberStatus.ACTIVE);
+
+            if (!isMember)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
+            }
+
+            // Generate random 10-digit code
+            var requestCode = StringUtils.GenerateRandomUppercaseString(8);
+
+            // Format final request code with bank short name
+            var finalRequestCode = $"{requestCode}_{groupBankAccount.BankShortName}";
+
+            // Create new transaction
+            var transaction = new Transaction
+            {
+                GroupId = groupFund.Id,
+                UserId = currentUser.Id,
+                Amount = createFundraisingModel.Amount,
+                Description = createFundraisingModel.Description,
+                Type = TransactionType.INCOME,
+                Status = TransactionStatus.PENDING,
+                RequestCode = finalRequestCode,
+                TransactionDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email,
+                ApprovalRequired = true
+            };
+
+            await _unitOfWork.TransactionsRepository.AddAsync(transaction);
+            await _unitOfWork.SaveAsync();
+
+            // Create response with bank account info
+            var response = new FundraisingTransactionResponse
+            {
+                RequestCode = finalRequestCode,
+                Amount = transaction.Amount,
+                Status = transaction.Status.ToString(),
+                BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
+            };
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Fundraising request created successfully",
+                Data = response
             };
         }
     }

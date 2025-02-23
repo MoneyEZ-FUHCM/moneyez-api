@@ -95,6 +95,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var bankAccount = _mapper.Map<BankAccount>(model);
             bankAccount.UserId = user.Id;
+            bankAccount.CreatedBy = user.Email;
             
             await _unitOfWork.BankAccountRepository.AddAsync(bankAccount);
             _unitOfWork.Save();
@@ -127,6 +128,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             _mapper.Map(model, existingAccount);
+            existingAccount.UpdatedBy = user.Email;
             _unitOfWork.BankAccountRepository.UpdateAsync(existingAccount);
             await _unitOfWork.SaveAsync();
 
@@ -164,6 +166,7 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Bank account is registered in group", MessageConstants.BANK_ACCOUNT_REGISTERED_IN_GROUP);
             }
 
+            account.UpdatedBy = user.Email;
             _unitOfWork.BankAccountRepository.SoftDeleteAsync(account);
             _unitOfWork.Save();
 

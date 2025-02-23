@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.Services.Interfaces;
 using System;
@@ -54,6 +56,13 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> GetAllTransactionsForAdmin([FromQuery] PaginationParameter paginationParameter)
         {
             return ValidateAndExecute(() => _transactionService.GetAllTransactionsForAdminAsync(paginationParameter));
+        }
+
+        [HttpGet("groups")]
+        [Authorize]
+        public Task<IActionResult> GetAllTransactionsForGroup([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
+        {
+            return ValidateAndExecute(() => _transactionService.GetTransactionByGroupIdAsync(paginationParameter, filter));
         }
 
     }

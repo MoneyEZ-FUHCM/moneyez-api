@@ -34,5 +34,14 @@ namespace MoneyEz.Services.Utils
             var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(token));
             return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
         }
+
+        public static string GenerateRandomUppercaseString(int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            Random random = new Random();
+            return new string(Enumerable.Repeat(chars, length)
+                                        .Select(s => s[random.Next(s.Length)])
+                                        .ToArray());
+        }
     }
 }
