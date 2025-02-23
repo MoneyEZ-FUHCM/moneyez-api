@@ -146,6 +146,13 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_LEAVE_SUCCESS_MESSAGE = "You have left the group successfully.";
         public const string GROUP_MEMBER_ALREADY_ROLE = "MemberAlreadyRole";
 
+        // fundraising request
+        public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
+        public const string FUNDRAISING_REQUEST_ACCESS_DENIED = "FundraisingRequestAccessDenied";
+        public const string FUNDRAISING_REQUEST_LIST_GET_SUCCESS_MESSAGE = "Fundraising request list fetched successfully";
+        public const string FUNDRAISING_REQUEST_GET_SUCCESS_MESSAGE = "Fundraising request details fetched successfully";
+
+
         // Group contribution
         public const string GROUP_SET_CONTRIBUTION_FORBIDDEN = "GroupSetContributionForbidden";
         public const string GROUP_INVALID_TOTAL_CONTRIBUTION = "GroupInvalidTotalContribution";
@@ -179,5 +186,18 @@ namespace MoneyEz.Services.Constants
         public const string NOTI_PUSH_FAILED = "CannotPushNotification";
         public const string NOTI_UNREAD_EMPTY = "NotificationUnreadEmpty";
         public const string NOTI_CANNOT_MARK_READ = "CannotMarkReadNotification";
+
+        // bank account
+        public const string BANK_ACCOUNT_NOT_FOUND = "BankAccountNotFound";
+        public const string BANK_ACCOUNT_ALREADY_EXISTS = "BankAccountAlreadyExists"; 
+        public const string BANK_ACCOUNT_ACCESS_DENIED = "BankAccountAccessDenied";
+        public const string BANK_ACCOUNT_NUMBER_DUPLICATE = "BankAccountNumberDuplicate";
+        public const string BANK_ACCOUNT_REGISTERED_IN_GROUP = "BankAccountRegisteredInGroup";
+
+        public const string BANK_ACCOUNT_LIST_GET_SUCCESS_MESSAGE = "Bank account list fetched successfully";
+        public const string BANK_ACCOUNT_GET_SUCCESS_MESSAGE = "Bank account details fetched successfully";
+        public const string BANK_ACCOUNT_CREATE_SUCCESS_MESSAGE = "Bank account created successfully";
+        public const string BANK_ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Bank account updated successfully"; 
+        public const string BANK_ACCOUNT_DELETE_SUCCESS_MESSAGE = "Bank account deleted successfully";
     }
 }

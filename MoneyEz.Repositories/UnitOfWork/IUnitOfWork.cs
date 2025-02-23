@@ -55,6 +55,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         // notification
         INotificationRepository NotificationRepository { get; }
 
+        // bank account
+        IBankAccountRepository BankAccountRepository { get; }
+
         int Save();
         void Commit();
         void Rollback();

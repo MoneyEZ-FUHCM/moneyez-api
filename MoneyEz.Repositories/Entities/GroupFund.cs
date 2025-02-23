@@ -19,6 +19,8 @@ public partial class GroupFund : BaseEntity
 
     public VisibilityEnum? Visibility { get; set; }
 
+    public Guid? AccountBankId { get; set; }
+
     public virtual ICollection<FinancialGoal> FinancialGoals { get; set; } = new List<FinancialGoal>();
 
     public virtual ICollection<FinancialReport> FinancialReports { get; set; } = new List<FinancialReport>();
