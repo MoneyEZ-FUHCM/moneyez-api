@@ -20,5 +20,8 @@ namespace MoneyEz.Services.BusinessModels.GroupMember
         [Range(0, double.MaxValue, ErrorMessage = "Số dư hiện tại không hợp lệ.")]
         public decimal? CurrentBalance { get; set; }
 
+        [Required(ErrorMessage = "Vui lòng chọn tài khoản ngân hàng.")]
+        public Guid AccountBankId { get; set; }
+
     }
 }

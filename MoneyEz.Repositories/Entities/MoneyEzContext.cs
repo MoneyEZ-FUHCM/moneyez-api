@@ -70,6 +70,8 @@ public partial class MoneyEzContext : DbContext
     
     public virtual DbSet<Image> Images { get; set; }
 
+    public virtual DbSet<BankAccount> BankAccounts { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Asset>(entity =>
@@ -456,6 +458,7 @@ public partial class MoneyEzContext : DbContext
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Amount).HasColumnType("decimal(15, 2)");
             entity.Property(e => e.ApprovalRequired).HasDefaultValue(false);
+            entity.Property(e => e.RequestCode).HasMaxLength(50);
 
             entity.HasOne(d => d.Group).WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.GroupId)
@@ -585,6 +588,33 @@ public partial class MoneyEzContext : DbContext
             entity.HasOne(cs => cs.Subcategory)
                 .WithMany(s => s.CategorySubcategories)
                 .HasForeignKey(cs => cs.SubcategoryId);
+        });
+
+        modelBuilder.Entity<BankAccount>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__BankAccount__3214EC07");
+
+            entity.ToTable("BankAccount");
+
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.AccountNumber)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.BankName)
+                .IsRequired()
+                .HasMaxLength(250);
+            entity.Property(e => e.BankShortName)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.AccountHolderName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.BankAccounts)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__BankAccount__UserId");
         });
 
         OnModelCreatingPartial(modelBuilder);
