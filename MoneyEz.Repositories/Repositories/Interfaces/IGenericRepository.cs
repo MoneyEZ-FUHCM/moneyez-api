@@ -44,5 +44,10 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
         Task<TEntity?> GetByIdIncludeAsync(Guid id,
             Func<IQueryable<TEntity>, IQueryable<TEntity>>? include = null,
             Expression<Func<TEntity, bool>> filter = null);
+
+        Task<List<TEntity>> GetByConditionAsync(Func<IQueryable<TEntity>,
+            IIncludableQueryable<TEntity, object>>? include = null,
+            Expression<Func<TEntity, bool>> filter = null,
+            Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null);
     }
 }

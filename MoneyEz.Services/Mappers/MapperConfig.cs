@@ -42,6 +42,9 @@ namespace MoneyEz.Services.Mappers
 
             // notification mapper
             NotificationMapperConfig();
+
+            // bank account mapper
+            BankAccountMapperConfig();
         }
 
         partial void UserMapperConfig();
@@ -56,6 +59,8 @@ namespace MoneyEz.Services.Mappers
         partial void LiabilityMapperConfig();
 
         partial void NotificationMapperConfig();
+
+        partial void BankAccountMapperConfig();
     }
 
     public class PaginationConverter<TSource, TDestination> : ITypeConverter<Pagination<TSource>, Pagination<TDestination>>
