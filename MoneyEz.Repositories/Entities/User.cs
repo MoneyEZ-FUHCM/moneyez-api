@@ -16,7 +16,7 @@ public partial class User : BaseEntity
 
     public DateTime? Dob { get; set; }
 
-    public int? Gender { get; set; }
+    public Gender? Gender { get; set; }
 
     public string? Address { get; set; } 
 
