@@ -29,6 +29,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> LeaveGroupAsync(Guid groupId);
         Task<BaseResultModel> SetGroupContribution(SetGroupContributionModel setGroupContributionModel);
         Task<BaseResultModel> CreateFundraisingRequest(CreateFundraisingModel createFundraisingModel);
+        Task<BaseResultModel> ResponsePendingTransaction(UpdateGroupTransactionModel updateGroupTransactionModel);
 
     }
 }
