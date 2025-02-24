@@ -18,5 +18,9 @@ namespace MoneyEz.Repositories.Repositories.Implements
             _context = context;
         }
 
+        public Task<List<GroupFund>> GetByAccountBankId(Guid accountBankId)
+        {
+            return _context.GroupFunds.Where(x => x.AccountBankId == accountBankId).ToListAsync();
+        }
     }
 }

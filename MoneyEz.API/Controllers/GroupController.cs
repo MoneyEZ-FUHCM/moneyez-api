@@ -99,5 +99,11 @@ namespace MoneyEz.API.Controllers
         {
             return await ValidateAndExecute(() => _groupFundsService.SetGroupContribution(setGroupContributionModel));
         }
+
+        [HttpPost("funds/request")]
+        public async Task<IActionResult> CreateFundraisingRequest([FromBody] CreateFundraisingModel model)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.CreateFundraisingRequest(model));
+        }
     }
 }
