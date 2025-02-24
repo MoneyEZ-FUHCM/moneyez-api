@@ -516,7 +516,7 @@ namespace MoneyEz.Services.Services.Implements
             var userAge = CalculateAge(model.Dob);
             if (userAge < 16)
             {
-                throw new DefaultException(MessageConstants.ACCOUNT_NOT_ENOUGH_AGE);
+                throw new DefaultException("", MessageConstants.ACCOUNT_NOT_ENOUGH_AGE);
             }
 
             var existUser = await _unitOfWork.UsersRepository.GetByIdAsync(model.Id);
