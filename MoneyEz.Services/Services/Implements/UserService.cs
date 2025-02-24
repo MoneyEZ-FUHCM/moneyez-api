@@ -519,12 +519,6 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException(MessageConstants.ACCOUNT_NOT_ENOUGH_AGE);
             }
 
-            // check duplicate phone number
-            if (CheckExistPhone(model.PhoneNumber).Result)
-            {
-                throw new DefaultException("", MessageConstants.DUPLICATE_PHONE_NUMBER);
-            }
-
             var existUser = await _unitOfWork.UsersRepository.GetByIdAsync(model.Id);
 
             if (existUser == null)
