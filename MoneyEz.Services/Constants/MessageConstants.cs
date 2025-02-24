@@ -102,6 +102,12 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_DELETED_SUCCESS = "TransactionDeletedSuccessfully";
         public const string TRANSACTION_FETCHED_SUCCESS = "TransactionFetchedSuccessfully";
 
+        // Add new transaction verification messages
+        public const string TRANSACTION_NOT_IN_GROUP = "TransactionDoesNotBelongToGroup";
+        public const string TRANSACTION_RESPONSE_SUCCESS = "TransactionResponseSuccess";
+        public const string TRANSACTION_MUST_BE_PENDING = "TransactionMustBePending";
+        public const string TRANSACTION_APPROVE_DENIED = "TransactionApproveDenied";
+
         public const string TRANSACTION_ACCESS_DENIED = "TransactionAccessDenied";
         public const string TRANSACTION_CREATE_DENIED = "TransactionCreateDenied";
         public const string TRANSACTION_UPDATE_DENIED = "TransactionUpdateDenied";
