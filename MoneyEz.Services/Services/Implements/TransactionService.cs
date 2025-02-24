@@ -479,7 +479,6 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
             }
 
-            // Get transactions for the group with pagination
             var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
                 paginationParameter,
                 include: query => query
