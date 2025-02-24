@@ -171,6 +171,12 @@ public partial class MoneyEzContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Financial__UserI__7E37BEF6");
+
+            entity.HasOne(d => d.Subcategory)
+                .WithMany()
+                .HasForeignKey(d => d.SubcategoryId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK__Financial__Subcategory__8A4B4B5C");
         });
 
         modelBuilder.Entity<FinancialReport>(entity =>

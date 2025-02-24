@@ -33,6 +33,7 @@ namespace MoneyEz.Services.Services.Implements
             _claimsService = claimsService;
         }
 
+        //single user
         public async Task<BaseResultModel> GetAllTransactionsForUserAsync(PaginationParameter paginationParameter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -84,7 +85,6 @@ namespace MoneyEz.Services.Services.Implements
                 }
             };
         }
-
         public async Task<BaseResultModel> GetTransactionByIdAsync(Guid transactionId)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -382,6 +382,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        //admin
         public async Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -443,6 +444,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        //group
         public async Task<BaseResultModel> GetTransactionByGroupIdAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -452,7 +454,6 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
 
-            // Get group and verify its existence
             if (!transactionFilter.GroupId.HasValue)
             {
                 throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
@@ -479,7 +480,6 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
             }
 
-            // Get transactions for the group with pagination
             var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
                 paginationParameter,
                 include: query => query

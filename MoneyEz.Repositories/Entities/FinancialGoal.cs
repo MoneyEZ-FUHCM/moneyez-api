@@ -10,6 +10,8 @@ public partial class FinancialGoal : BaseEntity
 
     public Guid? GroupId { get; set; }
 
+    public Guid? SubcategoryId { get; set; }
+
     public string Name { get; set; }
 
     public string NameUnsign { get; set; }
@@ -23,4 +25,6 @@ public partial class FinancialGoal : BaseEntity
     public virtual GroupFund Group { get; set; }
 
     public virtual User User { get; set; }
+
+    public virtual Subcategory Subcategory { get; set; }
 }
