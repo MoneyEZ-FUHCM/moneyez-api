@@ -12,13 +12,10 @@ namespace MoneyEz.Services.Mappers
         partial void CategoryMapperConfig()
         {
             CreateMap<Category, CategoryModel>()
-                .ForMember(dest => dest.Subcategories, opt => opt.MapFrom(src => src.CategorySubcategories.Select(cs => cs.Subcategory).ToList()));
+                .ForMember(dest => dest.Subcategories, opt => opt.MapFrom(src =>
+                    src.CategorySubcategories.Select(cs => cs.Subcategory)));
 
-            CreateMap<CategorySubcategory, SubcategoryModel>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Subcategory.Id))
-                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Subcategory.Name))
-                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => src.Subcategory.NameUnsign))
-                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Subcategory.Description));
+            CreateMap<Subcategory, SubcategoryModel>();
 
             // Map từ CreateCategoryModel sang Category entity
             CreateMap<CreateCategoryModel, Category>()

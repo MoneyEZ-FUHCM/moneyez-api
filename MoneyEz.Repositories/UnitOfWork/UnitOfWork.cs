@@ -58,6 +58,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         // notification
         private INotificationRepository _notificationRepository;
 
+        // bank account
+        private IBankAccountRepository _bankAccountRepository;
+
         public UnitOfWork(MoneyEzContext context)
         {
             _context = context;
@@ -198,6 +201,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _notificationRepository ??= new NotificationRepository(_context);
+            }
+        }
+
+        public IBankAccountRepository BankAccountRepository
+        {
+            get
+            {
+                return _bankAccountRepository ??= new BankAccountRepository(_context);
             }
         }
 

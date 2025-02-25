@@ -202,6 +202,10 @@ namespace MoneyEz.API
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<INotificationService, NotificationService>();
 
+            // config bank account service
+            services.AddScoped<IBankAccountRepository, BankAccountRepository>();
+            services.AddScoped<IBankAccountService, BankAccountService>();
+
             services.AddSignalR();
 
             #endregion

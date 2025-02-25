@@ -62,6 +62,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
         public void SoftDeleteAsync(TEntity entity)
         {
             entity.IsDeleted = true;
+            entity.UpdatedDate = CommonUtils.GetCurrentTime();
             _dbSet.Update(entity);
         }
 
@@ -70,6 +71,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
             foreach (var entity in entities)
             {
                 entity.IsDeleted = true;
+                entity.UpdatedDate = CommonUtils.GetCurrentTime();
             }
             _dbSet.UpdateRange(entities);
         }
@@ -155,6 +157,28 @@ namespace MoneyEz.Repositories.Repositories.Implements
                 entity.UpdatedDate = CommonUtils.GetCurrentTime();
             }
             _dbSet.UpdateRange(entities);
+        }
+
+        public async Task<List<TEntity>> GetByConditionAsync(Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>? include = null, Expression<Func<TEntity, bool>> filter = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>> orderBy = null)
+        {
+            IQueryable<TEntity> query = _dbSet;
+
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            if (orderBy != null)
+            {
+                query = orderBy(query);
+            }
+
+            return await query.AsNoTracking().ToListAsync();
         }
     }
 }

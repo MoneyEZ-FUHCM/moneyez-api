@@ -10,7 +10,7 @@ namespace MoneyEz.API.Controllers
 {
     [Route("api/v1/categories")]
     [ApiController]
-    [Authorize(Roles = nameof(RolesEnum.ADMIN))]
+    [Authorize]
     public class CategoriesController : BaseController
     {
         private readonly ICategoryService _categoryService;
@@ -26,6 +26,7 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _categoryService.GetCategoryPaginationAsync(paginationParameter));
         }
 
+        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpGet("{id}")]
         public Task<IActionResult> GetCategoryById(Guid id)
         {
@@ -36,18 +37,21 @@ namespace MoneyEz.API.Controllers
         /// Add list categories or one category.
         /// </summary>
         /// <param name="models">List categories will be added.</param>
+        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpPost]
         public Task<IActionResult> AddCategories([FromBody] List<CreateCategoryModel> models)
         {
             return ValidateAndExecute(() => _categoryService.AddCategoriesAsync(models));
         }
 
+        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpPut]
         public Task<IActionResult> UpdateCategory([FromBody] UpdateCategoryModel model)
         {
             return ValidateAndExecute(() => _categoryService.UpdateCategoryAsync(model));
         }
 
+        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpDelete("{id}")]
         public Task<IActionResult> DeleteCategory(Guid id)
         {

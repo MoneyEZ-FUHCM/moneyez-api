@@ -20,6 +20,9 @@ using MoneyEz.Services.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.GroupFund.GroupInvite;
+using MoneyEz.Services.BusinessModels.BankAccountModels;
+using Microsoft.AspNetCore.Mvc;
+using MoneyEz.Services.BusinessModels.TransactionModels;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -48,11 +51,19 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
 
+            var bankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(model.AccountBankId);
+            if (bankAccount == null)
+            {
+                throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            }
+
             // Map the model to a new GroupFund entity and set its Id to the one generated for groupEntity
             var groupFund = _mapper.Map<GroupFund>(model);
             groupFund.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
             groupFund.Status = CommonsStatus.ACTIVE;
             groupFund.Visibility = VisibilityEnum.PRIVATE;
+            groupFund.CreatedBy = user.Email;
+            groupFund.AccountBankId = model.AccountBankId;
 
             groupFund.GroupMembers = new List<GroupMember>
             {
@@ -63,13 +74,15 @@ namespace MoneyEz.Services.Services.Implements
                     Role = RoleGroup.LEADER,
                     Status = GroupMemberStatus.ACTIVE,
                     CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = user.Email,
                     GroupMemberLogs = new List<GroupMemberLog>
                     {
                         new GroupMemberLog
                         {
                             ChangeDiscription = $"{user.FullName} đã tham gia nhóm",
                             ChangeType = GroupAction.JOINED,
-                            CreatedDate = CommonUtils.GetCurrentTime()
+                            CreatedDate = CommonUtils.GetCurrentTime(),
+                            CreatedBy = user.Email
                         }
                     }
                 }
@@ -80,7 +93,8 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     ChangeDescription = $"{user.FullName} đã tạo nhóm",
                     Action = GroupAction.CREATED,
-                    CreatedDate = CommonUtils.GetCurrentTime()
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = user.Email
                 }
             };
             // Add the groupFund to the repository and save changes again
@@ -196,6 +210,7 @@ namespace MoneyEz.Services.Services.Implements
                     ChangeDescription = $"Quỹ đã được đóng bởi {currentUser.FullName}",
                     Action = GroupAction.DELETED,
                     CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = currentUser.Email
                 });
             }
             else
@@ -309,10 +324,12 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     ChangeDiscription = $"{removeMember.FullName} đã rời khỏi nhóm",
                     ChangeType = GroupAction.DELETED,
-                    CreatedDate = CommonUtils.GetCurrentTime()
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = currentUser.Email
                 });
 
                 memberToRemove.Status = GroupMemberStatus.INACTIVE;
+                memberToRemove.UpdatedBy = currentUser.Email;
                 _unitOfWork.GroupMemberRepository.SoftDeleteAsync(memberToRemove);
 
                 // Save the changes to the repository
@@ -392,8 +409,11 @@ namespace MoneyEz.Services.Services.Implements
                 ChangeDescription = $"{currentUser.FullName} đã thay đổi vai trò của " +
                     $"{memberUpdateInfo.FullName} thành {setRoleGroupModel.RoleGroup.ToString()}",
                 Action = GroupAction.UPDATED,
-                CreatedDate = CommonUtils.GetCurrentTime()
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
             });
+
+            groupFund.UpdatedBy = currentUser.Email;
 
             // Save the changes to the repository
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
@@ -509,7 +529,8 @@ namespace MoneyEz.Services.Services.Implements
                     ContributionPercentage = 0,
                     Role = RoleGroup.MEMBER,
                     Status = GroupMemberStatus.PENDING,
-                    CreatedDate = CommonUtils.GetCurrentTime()
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = currentUser.Email,
                 };
                 groupFund.GroupMembers.Add(pendingMember);
             }
@@ -549,10 +570,12 @@ namespace MoneyEz.Services.Services.Implements
             {
                 ChangeDescription = $"{inviteUser.FullName} đã được mời vào nhóm qua Email",
                 Action = GroupAction.INVITED,
-                CreatedDate = CommonUtils.GetCurrentTime()
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
             });
 
             // Save the changes to the repository
+            groupFund.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
 
@@ -617,11 +640,13 @@ namespace MoneyEz.Services.Services.Implements
                     {
                         ChangeDiscription = $"{userInvite.FullName} đã tham gia nhóm",
                         ChangeType = GroupAction.JOINED,
-                        CreatedDate = CommonUtils.GetCurrentTime()
+                        CreatedDate = CommonUtils.GetCurrentTime(),
+                        CreatedBy = userInvite.Email
                     }
                 };
 
                 // Save the changes to the repository
+                groupFund.UpdatedBy = userInvite.Email;
                 _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
                 await _unitOfWork.SaveAsync();
 
@@ -706,10 +731,12 @@ namespace MoneyEz.Services.Services.Implements
             {
                 ChangeDescription = $"{currentUser.FullName} đã tạo liên kết mời vào nhóm",
                 Action = GroupAction.INVITED,
-                CreatedDate = CommonUtils.GetCurrentTime()
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
             });
 
             // Save the changes to the repository
+            groupFund.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
 
@@ -770,7 +797,8 @@ namespace MoneyEz.Services.Services.Implements
                     {
                         ChangeDiscription = $"{currentUser.FullName} đã tham gia nhóm",
                         ChangeType = GroupAction.JOINED,
-                        CreatedDate = CommonUtils.GetCurrentTime()
+                        CreatedDate = CommonUtils.GetCurrentTime(),
+                        CreatedBy = currentUser.Email
                     }
                 };
 
@@ -799,7 +827,8 @@ namespace MoneyEz.Services.Services.Implements
                     {
                         ChangeDiscription = $"{currentUser.FullName} đã tham gia nhóm",
                         ChangeType = GroupAction.JOINED,
-                        CreatedDate = CommonUtils.GetCurrentTime()
+                        CreatedDate = CommonUtils.GetCurrentTime(),
+                        CreatedBy = currentUser.Email
                     }
                 }
             };
@@ -807,6 +836,7 @@ namespace MoneyEz.Services.Services.Implements
             groupFund.GroupMembers.Add(newMember);
 
             // Save the changes to the repository
+            groupFund.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
 
@@ -866,10 +896,12 @@ namespace MoneyEz.Services.Services.Implements
             {
                 ChangeDiscription = $"{currentUser.FullName} đã rời khỏi nhóm",
                 ChangeType = GroupAction.DELETED,
-                CreatedDate = CommonUtils.GetCurrentTime()
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
             });
 
             memberToRemove.Status = GroupMemberStatus.INACTIVE;
+            memberToRemove.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupMemberRepository.SoftDeleteAsync(memberToRemove);
 
             // Save the changes to the repository
@@ -933,10 +965,12 @@ namespace MoneyEz.Services.Services.Implements
             {
                 ChangeDescription = $"{currentUser.FullName} đã cập nhật tỷ lệ đóng góp cho các thành viên",
                 Action = GroupAction.UPDATED,
-                CreatedDate = CommonUtils.GetCurrentTime()
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
             });
 
             // Save changes
+            groupFund.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
 
@@ -944,6 +978,174 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.GROUP_SET_CONTRIBUTION_SUCCESS_MESSAGE
+            };
+        }
+
+        public async Task<BaseResultModel> CreateFundraisingRequest(CreateFundraisingModel createFundraisingModel)
+        {
+            // Get and verify current user
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // Get group with bank account info
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                createFundraisingModel.GroupId,
+                include: q => q.Include(g => g.GroupMembers));
+
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            var groupBankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(groupFund.AccountBankId.Value);
+            if (groupBankAccount == null)
+            {
+                throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            }
+
+            // Verify user is a member of the group
+            var isMember = groupFund.GroupMembers.Any(member => 
+                member.UserId == currentUser.Id && 
+                member.Status == GroupMemberStatus.ACTIVE);
+
+            if (!isMember)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
+            }
+
+            // Generate random 10-digit code
+            var requestCode = StringUtils.GenerateRandomUppercaseString(8);
+
+            // Format final request code with bank short name
+            var finalRequestCode = $"{requestCode}_{groupBankAccount.BankShortName}";
+
+            // Create new transaction
+            var transaction = new Transaction
+            {
+                GroupId = groupFund.Id,
+                UserId = currentUser.Id,
+                Amount = createFundraisingModel.Amount,
+                Description = createFundraisingModel.Description,
+                Type = TransactionType.INCOME,
+                Status = TransactionStatus.PENDING,
+                RequestCode = finalRequestCode,
+                TransactionDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email,
+                ApprovalRequired = true
+            };
+
+            await _unitOfWork.TransactionsRepository.AddAsync(transaction);
+            await _unitOfWork.SaveAsync();
+
+            // Create response with bank account info
+            var response = new FundraisingTransactionResponse
+            {
+                RequestCode = finalRequestCode,
+                Amount = transaction.Amount,
+                Status = transaction.Status.ToString(),
+                BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
+            };
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Fundraising request created successfully",
+                Data = response
+            };
+        }
+
+        public async Task<BaseResultModel> ResponsePendingTransaction(UpdateGroupTransactionModel updateGroupTransactionModel)
+        {
+            // Get current user and verify existence
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // Get group with members to verify leadership
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                updateGroupTransactionModel.GroupId, 
+                include: q => q.Include(g => g.GroupMembers)
+            );
+
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // Verify user is leader of the group
+            var isLeader = groupFund.GroupMembers.Any(member => 
+                member.UserId == currentUser.Id && 
+                member.Role == RoleGroup.LEADER || member.Role == RoleGroup.MOD &&
+                member.Status == GroupMemberStatus.ACTIVE);
+
+            if (!isLeader)
+            {
+                throw new DefaultException("", MessageConstants.TRANSACTION_UPDATE_DENIED);
+            }
+
+            // Get and verify transaction
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(updateGroupTransactionModel.TransactionId);
+            if (transaction == null)
+            {
+                throw new NotExistException("", MessageConstants.TRANSACTION_NOT_FOUND);
+            }
+
+            // Verify transaction belongs to group
+            if (transaction.GroupId != updateGroupTransactionModel.GroupId)
+            {
+                throw new DefaultException("", MessageConstants.TRANSACTION_NOT_IN_GROUP);
+            }
+
+            // Verify transaction is in PENDING status
+            if (transaction.Status != TransactionStatus.PENDING)
+            {
+                throw new DefaultException("", MessageConstants.TRANSACTION_MUST_BE_PENDING);
+            }
+
+            // verify transaction is required approval
+            if (transaction.ApprovalRequired == false)
+            {
+                throw new DefaultException("Transaction must be require approval", MessageConstants.TRANSACTION_APPROVE_DENIED);
+            }
+
+            // Update transaction status
+            transaction.Status = updateGroupTransactionModel.Status;
+            transaction.UpdatedBy = currentUser.Email;
+            transaction.UpdatedDate = CommonUtils.GetCurrentTime();
+
+            // Update group balance if transaction is approved
+            if (updateGroupTransactionModel.Status == TransactionStatus.APPROVED)
+            {
+                if (transaction.Type == TransactionType.INCOME)
+                {
+                    groupFund.CurrentBalance += transaction.Amount;
+                }
+                else
+                {
+                    groupFund.CurrentBalance -= transaction.Amount;
+                }
+                groupFund.UpdatedBy = currentUser.Email;
+                _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            }
+
+            // Update transaction in repository
+            _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
+
+            // push noti to member in group
+
+
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.TRANSACTION_RESPONSE_SUCCESS,
+                Data = _mapper.Map<TransactionModel>(transaction)
             };
         }
     }

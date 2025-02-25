@@ -26,18 +26,21 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpDelete("{groupId}/members/{memberId}")]
+        [Authorize]
         public async Task<IActionResult> RemoveMemberAsync(Guid groupId, Guid memberId)
         {
             return await ValidateAndExecute(() => _groupFundsService.RemoveMemberByLeaderAsync(groupId, memberId));
         }
 
         [HttpGet("members/leave")]
+        [Authorize]
         public async Task<IActionResult> LeaveGroupAsync([FromQuery] Guid groupId)
         {
             return await ValidateAndExecute(() => _groupFundsService.LeaveGroupAsync(groupId));
         }
 
         [HttpPut("members/role")]
+        [Authorize]
         public async Task<IActionResult> SetMemberRoleAsync(SetRoleGroupModel setRoleGroupModel)
         {
             return await ValidateAndExecute(() => _groupFundsService.SetMemberRoleAsync(setRoleGroupModel));
@@ -65,29 +68,34 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpGet("invite-member/qrcode/accept")]
+        [Authorize]
         public async Task<IActionResult> AcceptInvitationQRCodeAsync([FromQuery] string token)
         {
             return await ValidateAndExecute(() => _groupFundsService.AcceptInvitationQRCodeAsync(token));
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreateGroupFund([FromBody] CreateGroupModel model)
         {
             return await ValidateAndExecute(() => _groupFundsService.CreateGroupFundsAsync(model));
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetAllGroupFunds([FromQuery] PaginationParameter paginationParameters)
         {
             return await ValidateAndExecute(() => _groupFundsService.GetAllGroupFunds(paginationParameters));
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<IActionResult> GetGroupFundById(Guid id)
         {
             return await ValidateAndExecute(() => _groupFundsService.GetGroupFundById(id));
         }
 
+        [Authorize]
         [HttpDelete("{groupId}")]
         public async Task<IActionResult> DisbandGroupFund(Guid groupId)
         {
@@ -95,9 +103,24 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpPut("contribution")]
+        [Authorize]
         public async Task<IActionResult> SetGroupContribution([FromBody] SetGroupContributionModel setGroupContributionModel)
         {
             return await ValidateAndExecute(() => _groupFundsService.SetGroupContribution(setGroupContributionModel));
+        }
+
+        [HttpPost("funds/request")]
+        [Authorize]
+        public async Task<IActionResult> CreateFundraisingRequest([FromBody] CreateFundraisingModel model)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.CreateFundraisingRequest(model));
+        }
+
+        [HttpPost("funds/response")]
+        [Authorize]
+        public async Task<IActionResult> ResponseTransactionRequest([FromBody] UpdateGroupTransactionModel model)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.ResponsePendingTransaction(model));
         }
     }
 }

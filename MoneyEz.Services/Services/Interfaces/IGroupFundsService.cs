@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
@@ -27,6 +28,8 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetGroupFundById(Guid groupId);
         Task<BaseResultModel> LeaveGroupAsync(Guid groupId);
         Task<BaseResultModel> SetGroupContribution(SetGroupContributionModel setGroupContributionModel);
+        Task<BaseResultModel> CreateFundraisingRequest(CreateFundraisingModel createFundraisingModel);
+        Task<BaseResultModel> ResponsePendingTransaction(UpdateGroupTransactionModel updateGroupTransactionModel);
 
     }
 }
