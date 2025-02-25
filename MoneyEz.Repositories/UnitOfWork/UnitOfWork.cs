@@ -24,6 +24,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         //user spending model
         private IUserSpendingModelRepository _userSpendingModelRepository;
 
+        //financial goal
+        private IFinancialGoalRepository _financialGoalRepository;
+
         //spending model category
         private ISpendingModelCategoryRepository _spendingModelCategoryRepository;
 
@@ -82,6 +85,15 @@ namespace MoneyEz.Repositories.UnitOfWork
                 return _spendingModelRepository ??= new SpendingModelRepository(_context);
             }
         }
+
+        public IFinancialGoalRepository FinancialGoalRepository
+        {
+            get
+            {
+                return _financialGoalRepository ??= new FinancialGoalRepository(_context);
+            }
+        }
+
 
         public IUserSpendingModelRepository UserSpendingModelRepository
         {

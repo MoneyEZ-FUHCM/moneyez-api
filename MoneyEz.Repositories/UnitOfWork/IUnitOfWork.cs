@@ -22,6 +22,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         //spending model category
         ISpendingModelCategoryRepository SpendingModelCategoryRepository { get; }
 
+        //financialgoal
+        IFinancialGoalRepository FinancialGoalRepository { get; } 
+
         //category
         ICategoriesRepository CategoriesRepository { get; }
 
