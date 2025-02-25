@@ -11,6 +11,10 @@ public partial class Category : BaseEntity
 
     public string? Description { get; set; }
 
+    public string? Code { get; set; }
+
+    public string? Icon { get; set; }
+
     public virtual ICollection<SpendingModelCategory> SpendingModelCategories { get; set; } = new List<SpendingModelCategory>();
 
     public virtual ICollection<CategorySubcategory> CategorySubcategories { get; set; } = new List<CategorySubcategory>();
