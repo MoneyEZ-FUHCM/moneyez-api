@@ -69,6 +69,9 @@ namespace MoneyEz.Services.Constants
         public const string USER_ALREADY_HAS_ACTIVE_SPENDING_MODEL = "UserAlreadyHasActiveSpendingModel";
         public const string CURRENT_SPENDING_MODEL_NOT_FINISHED = "CurrentSpendingModelNotFinished";
         public const string CANNOT_CANCEL_SPENDING_MODEL_HAS_GOALS = "CannotCancelSpendingModelHasGoals";
+        public const string START_DATE_CANNOT_BE_IN_PAST = "StartDateCannotBeInPast";
+        public const string END_DATE_MUST_BE_AFTER_START_DATE = "EndDateMustBeAfterStartDate";
+        public const string CANNOT_SELECT_FUTURE_MODEL_WHEN_ACTIVE = "CannotSelectFutureModelWhenActive";
 
         //financial goal
         public const string USER_HAS_NO_ACTIVE_SPENDING_MODEL = "UserHasNoActiveSpendingModel";
