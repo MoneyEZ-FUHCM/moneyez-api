@@ -176,15 +176,16 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByIdAsync(model.GoalId)
-                ?? throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
+            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.Id == model.GoalId && fg.UserId == user.Id && fg.GroupId == null
+            );
 
-            if (financialGoal.UserId != user.Id)
+            if (!financialGoal.Any())
             {
-                throw new DefaultException("Access denied.", MessageConstants.FINANCIAL_GOAL_ACCESS_DENIED);
+                throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
-            var mappedGoal = _mapper.Map<PersonalFinancialGoalModel>(financialGoal);
+            var mappedGoal = _mapper.Map<PersonalFinancialGoalModel>(financialGoal.First());
 
             return new BaseResultModel
             {
@@ -192,6 +193,7 @@ namespace MoneyEz.Services.Services.Implements
                 Data = mappedGoal
             };
         }
+
         public async Task<BaseResultModel> UpdatePersonalFinancialGoalAsync(UpdatePersonalFinancialGoalModel model)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
