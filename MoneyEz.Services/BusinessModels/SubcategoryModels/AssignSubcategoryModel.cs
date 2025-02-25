@@ -12,10 +12,10 @@ namespace MoneyEz.Services.BusinessModels.SubcategoryModels
 
     public class CategorySubcategoryAssignment
     {
-        [Required(ErrorMessage = "ID danh mục là bắt buộc.")]
-        public Guid CategoryId { get; set; }
+        [Required(ErrorMessage = "Mã danh mục là bắt buộc.")]
+        public required string CategoryCode { get; set; }
 
         [Required(ErrorMessage = "Danh sách danh mục con không được để trống.")]
-        public List<Guid> SubcategoryIds { get; set; } = new List<Guid>();
+        public List<string> SubcategoryCodes { get; set; } = new List<string>();
     }
 }
