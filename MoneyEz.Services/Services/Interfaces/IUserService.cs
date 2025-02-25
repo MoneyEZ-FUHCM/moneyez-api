@@ -1,4 +1,5 @@
 ﻿using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.AuthenModels;
 using MoneyEz.Services.BusinessModels.OtpModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
@@ -45,7 +46,7 @@ namespace MoneyEz.Services.Services.Interfaces
 
         public Task<BaseResultModel> GetUserByIdAsync(Guid id);
 
-        public Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter);
+        public Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter, UserFilter userFilter);
 
         public Task<BaseResultModel> CreateUserAsync(CreateUserModel model);
 

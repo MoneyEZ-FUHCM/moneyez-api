@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
@@ -214,27 +215,24 @@ namespace MoneyEz.Services.Services.Implements
             }
         }
 
-        public async Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter, UserFilter userFilter)
         {
-            var userList = await _unitOfWork.UsersRepository.ToPagination(paginationParameter);
-            var userModels = _mapper.Map<List<UserModel>>(userList);
+            Pagination<User> users = new Pagination<User>();
 
-            //var users = new Pagination<UserModel>(userModels,
-            //    userList.TotalCount,
-            //    userList.CurrentPage,
-            //    userList.PageSize);
+            if (string.IsNullOrEmpty(userFilter.Search) || string.IsNullOrEmpty(userFilter.Fields))
+            {
+                users = await _unitOfWork.UsersRepository
+                    .ToPaginationIncludeAsync(paginationParameter, filter: u => u.IsDeleted == userFilter.IsDeleted);
+            }
+            else if (userFilter.Fields.ToLower() == "email")
+            {
+                users = await _unitOfWork.UsersRepository
+                    .ToPaginationIncludeAsync(paginationParameter, filter: u => u.Email.Contains(userFilter.Search.Trim()) && u.IsDeleted == userFilter.IsDeleted);
+            }
 
-            //var metaData = new
-            //{
-            //    userList.TotalCount,
-            //    userList.PageSize,
-            //    userList.CurrentPage,
-            //    userList.TotalPages,
-            //    userList.HasNext,
-            //    userList.HasPrevious
-            //};
+            var userModels = _mapper.Map<List<UserModel>>(users);
 
-            var paginatedResult = PaginationHelper.GetPaginationResult(userList, userModels);
+            var paginatedResult = PaginationHelper.GetPaginationResult(users, userModels);
 
             return new BaseResultModel
             {
@@ -517,13 +515,6 @@ namespace MoneyEz.Services.Services.Implements
             if (userAge < 16)
             {
                 throw new DefaultException("", MessageConstants.ACCOUNT_NOT_ENOUGH_AGE);
-            }
-
-            var existUser = await _unitOfWork.UsersRepository.GetByIdAsync(model.Id);
-
-            if (existUser == null)
-            {
-                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
 
             var existUser = await _unitOfWork.UsersRepository.GetByIdAsync(model.Id);
