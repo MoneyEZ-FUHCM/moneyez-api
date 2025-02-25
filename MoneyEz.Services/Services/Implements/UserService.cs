@@ -219,12 +219,12 @@ namespace MoneyEz.Services.Services.Implements
         {
             Pagination<User> users = new Pagination<User>();
 
-            if (string.IsNullOrEmpty(userFilter.Search) || string.IsNullOrEmpty(userFilter.Fields))
+            if (string.IsNullOrEmpty(userFilter.Search) || string.IsNullOrEmpty(userFilter.Field))
             {
                 users = await _unitOfWork.UsersRepository
                     .ToPaginationIncludeAsync(paginationParameter, filter: u => u.IsDeleted == userFilter.IsDeleted);
             }
-            else if (userFilter.Fields.ToLower() == "email")
+            else if (userFilter.Field.ToLower() == "email")
             {
                 users = await _unitOfWork.UsersRepository
                     .ToPaginationIncludeAsync(paginationParameter, filter: u => u.Email.Contains(userFilter.Search.Trim()) && u.IsDeleted == userFilter.IsDeleted);
