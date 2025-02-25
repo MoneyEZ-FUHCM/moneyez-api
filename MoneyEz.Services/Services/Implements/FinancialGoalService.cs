@@ -463,12 +463,20 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByIdAsync(model.Id)
-                ?? throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
+            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.Id == model.Id && fg.GroupId == model.GroupId
+            );
 
-            // Kiểm tra xem user có trong nhóm không và có phải Leader/Mod không
+            if (!financialGoal.Any())
+            {
+                throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
+            }
+
+            var goalToUpdate = financialGoal.First();
+
+            // User có trong nhóm không và có phải Leader/Mod không
             var groupMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
-                filter: gm => gm.GroupId == financialGoal.GroupId && gm.UserId == user.Id
+                filter: gm => gm.GroupId == model.GroupId && gm.UserId == user.Id
             );
 
             if (!groupMember.Any())
@@ -492,8 +500,17 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            // Kiểm tra nếu TargetAmount bị giảm xuống dưới CurrentAmount
-            if (model.TargetAmount < financialGoal.CurrentAmount)
+            if (model.TargetAmount <= 0)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.INVALID_TARGET_AMOUNT,
+                    Message = "Target amount must be greater than 0."
+                };
+            }
+
+            if (model.TargetAmount < goalToUpdate.CurrentAmount)
             {
                 return new BaseResultModel
                 {
@@ -503,14 +520,23 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            financialGoal.Name = model.Name;
-            financialGoal.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
-            financialGoal.TargetAmount = model.TargetAmount;
-            financialGoal.CurrentAmount = model.CurrentAmount;
-            financialGoal.Deadline = model.Deadline;
-            financialGoal.UpdatedDate = CommonUtils.GetCurrentTime();
+            if (model.Deadline <= CommonUtils.GetCurrentTime())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.INVALID_DEADLINE,
+                    Message = "Deadline must be a future date."
+                };
+            }
 
-            _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
+            goalToUpdate.Name = model.Name;
+            goalToUpdate.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
+            goalToUpdate.TargetAmount = model.TargetAmount;
+            goalToUpdate.Deadline = model.Deadline;
+            goalToUpdate.UpdatedDate = CommonUtils.GetCurrentTime();
+
+            _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToUpdate);
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
