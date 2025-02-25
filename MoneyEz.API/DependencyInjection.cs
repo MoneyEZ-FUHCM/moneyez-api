@@ -147,6 +147,10 @@ namespace MoneyEz.API
             services.AddScoped<ISpendingModelService, SpendingModelService>();
             services.AddScoped<ISpendingModelRepository, SpendingModelRepository>();
 
+            //config user spending model service
+            services.AddScoped<IUserSpendingModelService, UserSpendingModelService>();
+            services.AddScoped<IUserSpendingModelRepository, UserSpendingModelRepository>();
+
             //config spending model category service
             services.AddScoped<ISpendingModelCategoryRepository, SpendingModelCategoryRepository>();
 
@@ -181,11 +185,26 @@ namespace MoneyEz.API
             //config group member service
             services.AddScoped<IGroupMemberRepository, GroupMemberRepository>();
             services.AddScoped<IGroupMemberService, GroupMemberService>();
+            services.AddScoped<IGroupMemberLogRepository, GroupMemberLogRepository>();
 
             // config chat service
             services.AddScoped<IChatHistoryRepository, ChatHistoryRepository>();
             services.AddScoped<IChatHistoryService, ChatHistoryService>();
             services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
+
+            //config asset and liability service
+            services.AddScoped<IAssetRepository, AssetRepository>();
+            services.AddScoped<IAssetService, AssetService>();
+            services.AddScoped<ILiabilityRepository, LiabilityRepository>();
+            services.AddScoped<ILiabilityService, LiabilityService>();
+
+            // config notification service
+            services.AddScoped<INotificationRepository, NotificationRepository>();
+            services.AddScoped<INotificationService, NotificationService>();
+
+            // config bank account service
+            services.AddScoped<IBankAccountRepository, BankAccountRepository>();
+            services.AddScoped<IBankAccountService, BankAccountService>();
 
             services.AddSignalR();
 

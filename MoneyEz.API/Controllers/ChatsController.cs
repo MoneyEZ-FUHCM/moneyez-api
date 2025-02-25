@@ -8,7 +8,7 @@ using MoneyEz.Services.Services.Interfaces;
 
 namespace MoneyEz.API.Controllers
 {
-    [Route("api/chats")]
+    [Route("api/v1/chats")]
     [ApiController]
     public class ChatsController : BaseController
     {

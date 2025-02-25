@@ -9,6 +9,6 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
 {
     public interface IGroupFundRepository : IGenericRepository<GroupFund>
     {
-        
+        public Task<List<GroupFund>> GetByAccountBankId(Guid accountBankId);
     }
 }

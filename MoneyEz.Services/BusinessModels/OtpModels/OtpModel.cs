@@ -16,6 +16,6 @@ namespace MoneyEz.Services.BusinessModels.OtpModels
 
         public DateTime ExpiryTime { get; set; }
 
-        public bool IsUsed { get; set; } = false;
+        public bool IsValidate { get; set; } = false;
     }
 }

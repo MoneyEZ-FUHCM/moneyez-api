@@ -15,7 +15,7 @@ public partial class GroupMember : BaseEntity
 
     public RoleGroup? Role { get; set; }
 
-    public CommonsStatus? Status { get; set; }
+    public GroupMemberStatus? Status { get; set; }
 
     public virtual GroupFund Group { get; set; }
 

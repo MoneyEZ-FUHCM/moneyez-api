@@ -12,8 +12,6 @@ public partial class MoneyEzContext : DbContext
     {
     }
 
-    public virtual DbSet<AssetAndLiability> AssetAndLiabilities { get; set; }
-
     public virtual DbSet<Category> Categories { get; set; }
 
     public virtual DbSet<ChatHistory> ChatHistories { get; set; }
@@ -72,22 +70,40 @@ public partial class MoneyEzContext : DbContext
     
     public virtual DbSet<Image> Images { get; set; }
 
+    public virtual DbSet<BankAccount> BankAccounts { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<AssetAndLiability>(entity =>
+        modelBuilder.Entity<Asset>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__AssetAnd__3214EC0799645AEF");
+            entity.HasKey(e => e.Id).HasName("PK__Asset__3214EC07");
 
-            entity.ToTable("AssetAndLiability");
+            entity.ToTable("Asset");
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Amount).HasColumnType("decimal(15, 2)");
             entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
             entity.Property(e => e.NameUnsign).HasMaxLength(200);
-            entity.HasOne(d => d.User).WithMany(p => p.AssetAndLiabilities)
+            entity.HasOne(d => d.User).WithMany(p => p.Assets)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__AssetAndL__UserI__123EB7A3");
+                .HasConstraintName("FK__Asset__UserId");
+        });
+
+        modelBuilder.Entity<Liability>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Liability__3214EC07");
+
+            entity.ToTable("Liability");
+
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Amount).HasColumnType("decimal(15, 2)");
+            entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.NameUnsign).HasMaxLength(200);
+            entity.HasOne(d => d.User).WithMany(p => p.Liabilities)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Liability__UserId");
         });
 
         modelBuilder.Entity<Category>(entity =>
@@ -101,6 +117,8 @@ public partial class MoneyEzContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.NameUnsign).HasMaxLength(100);
+            entity.Property(e => e.Code).HasMaxLength(50);
+            entity.Property(e => e.Icon).HasMaxLength(50);
         });
 
         modelBuilder.Entity<ChatHistory>(entity =>
@@ -155,6 +173,12 @@ public partial class MoneyEzContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Financial__UserI__7E37BEF6");
+
+            entity.HasOne(d => d.Subcategory)
+                .WithMany()
+                .HasForeignKey(d => d.SubcategoryId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK__Financial__Subcategory__8A4B4B5C");
         });
 
         modelBuilder.Entity<FinancialReport>(entity =>
@@ -206,13 +230,10 @@ public partial class MoneyEzContext : DbContext
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.ChangeDescription).IsRequired();
-            entity.Property(e => e.ChangedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
 
             entity.HasOne(d => d.Group).WithMany(p => p.GroupFundLogs)
                 .HasForeignKey(d => d.GroupId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__GroupFund__Group__75A278F5");
         });
 
@@ -243,13 +264,12 @@ public partial class MoneyEzContext : DbContext
             entity.ToTable("GroupMemberLog");
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.ChangedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+
+            entity.Property(e => e.ChangeDiscription).HasMaxLength(250);
 
             entity.HasOne(d => d.GroupMember).WithMany(p => p.GroupMemberLogs)
                 .HasForeignKey(d => d.GroupMemberId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__GroupMemb__Group__787EE5A0");
         });
 
@@ -260,8 +280,10 @@ public partial class MoneyEzContext : DbContext
             entity.ToTable("Notification");
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Title).HasMaxLength(255);
+            entity.Property(e => e.Title).HasMaxLength(255).IsRequired();
             entity.Property(e => e.TitleUnsign).HasMaxLength(255);
+            entity.Property(e => e.Message).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Href).HasMaxLength(500);
 
             entity.HasOne(d => d.User).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.UserId)
@@ -406,6 +428,8 @@ public partial class MoneyEzContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.NameUnsign).HasMaxLength(50);
+            entity.Property(e => e.Code).HasMaxLength(50);
+            entity.Property(e => e.Icon).HasMaxLength(50);
         });
 
         modelBuilder.Entity<Subscription>(entity =>
@@ -444,6 +468,7 @@ public partial class MoneyEzContext : DbContext
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Amount).HasColumnType("decimal(15, 2)");
             entity.Property(e => e.ApprovalRequired).HasDefaultValue(false);
+            entity.Property(e => e.RequestCode).HasMaxLength(50);
 
             entity.HasOne(d => d.Group).WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.GroupId)
@@ -560,7 +585,11 @@ public partial class MoneyEzContext : DbContext
 
         modelBuilder.Entity<CategorySubcategory>(entity =>
         {
-            entity.HasKey(cs => new { cs.CategoryId, cs.SubcategoryId });
+            entity.HasKey(e => e.Id).HasName("PK__CategorySubcategory");
+
+            entity.ToTable("CategorySubcategory");
+
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
 
             entity.HasOne(cs => cs.Category)
                 .WithMany(c => c.CategorySubcategories)
@@ -569,6 +598,33 @@ public partial class MoneyEzContext : DbContext
             entity.HasOne(cs => cs.Subcategory)
                 .WithMany(s => s.CategorySubcategories)
                 .HasForeignKey(cs => cs.SubcategoryId);
+        });
+
+        modelBuilder.Entity<BankAccount>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__BankAccount__3214EC07");
+
+            entity.ToTable("BankAccount");
+
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.AccountNumber)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.BankName)
+                .IsRequired()
+                .HasMaxLength(250);
+            entity.Property(e => e.BankShortName)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.AccountHolderName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.BankAccounts)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__BankAccount__UserId");
         });
 
         OnModelCreatingPartial(modelBuilder);

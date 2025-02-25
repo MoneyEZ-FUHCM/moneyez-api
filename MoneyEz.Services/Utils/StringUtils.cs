@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -24,6 +25,23 @@ namespace MoneyEz.Services.Utils
                 str2 = str2.Remove(str2.IndexOf("?"), 1);
             }
             return str2;
+        }
+
+        public static string HashToken(string token)
+        {
+            var secretKey = Encoding.UTF8.GetBytes("f8c3d2e4b1a7e9d0c5f3b2a8d7c6e1f9a0b2c3d4e5w=");
+            using var hmac = new HMACSHA256(secretKey);
+            var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(token));
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+        }
+
+        public static string GenerateRandomUppercaseString(int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            Random random = new Random();
+            return new string(Enumerable.Repeat(chars, length)
+                                        .Select(s => s[random.Next(s.Length)])
+                                        .ToArray());
         }
     }
 }

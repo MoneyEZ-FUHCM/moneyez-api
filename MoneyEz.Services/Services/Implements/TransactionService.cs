@@ -15,6 +15,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MoneyEz.Services.BusinessModels.BankAccountModels;
+using MoneyEz.Repositories.Commons.Filters;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -31,6 +33,7 @@ namespace MoneyEz.Services.Services.Implements
             _claimsService = claimsService;
         }
 
+        //single user
         public async Task<BaseResultModel> GetAllTransactionsForUserAsync(PaginationParameter paginationParameter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -82,7 +85,6 @@ namespace MoneyEz.Services.Services.Implements
                 }
             };
         }
-
         public async Task<BaseResultModel> GetTransactionByIdAsync(Guid transactionId)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -380,6 +382,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        //admin
         public async Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -441,5 +444,62 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        //group
+        public async Task<BaseResultModel> GetTransactionByGroupIdAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter)
+        {
+            string userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            if (!transactionFilter.GroupId.HasValue)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                transactionFilter.GroupId.Value,
+                include: q => q.Include(g => g.GroupMembers)
+                             .Include(g => g.Transactions)
+            );
+
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // Verify user is a member of the group
+            var isMember = groupFund.GroupMembers.Any(member =>
+                member.UserId == user.Id &&
+                member.Status == GroupMemberStatus.ACTIVE);
+
+            if (!isMember)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+                paginationParameter,
+                include: query => query
+                    .Include(t => t.Subcategory)
+                    .Include(t => t.User),
+                filter: t =>
+                    (!transactionFilter.GroupId.HasValue || t.GroupId == transactionFilter.GroupId.Value) &&
+                    (!transactionFilter.UserId.HasValue || t.UserId == transactionFilter.UserId.Value),
+                orderBy: t => t.OrderByDescending(t => t.TransactionDate)
+            );
+
+            var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
+            var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.TRANSACTION_FETCHED_SUCCESS,
+                Data = result
+            };
+        }
     }
 }

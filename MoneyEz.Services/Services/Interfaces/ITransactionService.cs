@@ -1,4 +1,5 @@
 ﻿using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
 using System;
@@ -15,6 +16,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model);
         Task<BaseResultModel> DeleteTransactionAsync(Guid transactionId);
         Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter);
+        Task<BaseResultModel> GetTransactionByGroupIdAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter);
 
     }
 }

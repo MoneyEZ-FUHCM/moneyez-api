@@ -13,7 +13,7 @@ namespace MoneyEz.API.Controllers
 {
     [Route("api/v1/subcategories")]
     [ApiController]
-    [Authorize(Roles = nameof(RolesEnum.ADMIN))]
+    [Authorize]
     public class SubcategoriesController : BaseController
     {
         private readonly ISubcategoryService _subcategoryService;
@@ -29,31 +29,35 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _subcategoryService.GetSubcategoriesPaginationAsync(paginationParameter));
         }
 
+        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpGet("{id}")]
         public Task<IActionResult> GetSubcategoryById(Guid id)
         {
             return ValidateAndExecute(() => _subcategoryService.GetSubcategoryByIdAsync(id));
         }
 
+        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpPost("create")]
         public Task<IActionResult> CreateSubcategories([FromBody] List<CreateSubcategoryModel> models)
         {
             return ValidateAndExecute(() => _subcategoryService.CreateSubcategoriesAsync(models));
         }
 
+        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpPut("update")]
         public Task<IActionResult> UpdateSubcategoryById([FromBody] UpdateSubcategoryModel model)
         {
             return ValidateAndExecute(() => _subcategoryService.UpdateSubcategoryByIdAsync(model));
         }
 
-
+        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpPost("assign")]
         public Task<IActionResult> AddSubcategoriesToCategories([FromBody] AssignSubcategoryModel model)
         {
             return ValidateAndExecute(() => _subcategoryService.AddSubcategoriesToCategoriesAsync(model));
         }
 
+        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpDelete("remove")]
         public Task<IActionResult> RemoveSubcategoriesFromCategories([FromBody] RemoveSubcategoryFromCategoryModel model)
         {
