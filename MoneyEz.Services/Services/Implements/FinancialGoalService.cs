@@ -130,7 +130,6 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "Financial goal created successfully."
             };
         }
-
         public async Task<BaseResultModel> GetPersonalFinancialGoalsAsync(PaginationParameter paginationParameter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -267,7 +266,7 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            // Kiểm tra xem user có trong nhóm không và có phải Leader/Mod không
+            // User có trong nhóm không và có phải Leader/Mod không
             var groupMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
                 filter: gm => gm.GroupId == model.GroupId && gm.UserId == user.Id
             );
@@ -293,37 +292,52 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            // Kiểm tra xem nhóm đã có Goal chưa
-            var existingGoals = await _unitOfWork.FinancialGoalRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = 1, PageIndex = 1 },
+            // Nhóm đã có Goal chưa
+            var existingGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
                 filter: fg => fg.GroupId == model.GroupId
             );
 
             if (existingGoals.Any())
             {
-                return new BaseResultModel
+                var activeGoal = existingGoals.First();
+                if (activeGoal.Deadline > CommonUtils.GetCurrentTime() || activeGoal.CurrentAmount < activeGoal.TargetAmount)
                 {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.GROUP_ALREADY_HAS_GOAL,
-                    Message = "The group already has an active financial goal."
-                };
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        ErrorCode = MessageConstants.GROUP_ALREADY_HAS_GOAL,
+                        Message = "The group already has an active financial goal that is not yet completed or past its deadline."
+                    };
+                }
             }
 
-            // Kiểm tra xem GroupFund có đủ CurrentAmount không
             var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(model.GroupId)
                 ?? throw new NotExistException(MessageConstants.GROUP_NOT_FOUND);
 
-            if (model.TargetAmount <= 0 || model.TargetAmount <= model.CurrentAmount)
+            if (model.TargetAmount <= 0)
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_TARGET_AMOUNT,
-                    Message = "Target amount must be greater than 0 and greater than current amount."
+                    Message = "Target amount must be greater than 0."
                 };
             }
 
-            if (model.CurrentAmount > groupFund.CurrentBalance)
+            if (model.TargetAmount <= model.CurrentAmount)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.INVALID_TARGET_AMOUNT,
+                    Message = "Target amount must be greater than current amount."
+                };
+            }
+
+            // Lấy `CurrentBalance` từ `GroupFund`
+            decimal currentBalance = groupFund.CurrentBalance;
+
+            if (model.CurrentAmount > currentBalance)
             {
                 return new BaseResultModel
                 {
@@ -333,7 +347,16 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            // Tạo mới Financial Goal cho nhóm
+            if (model.Deadline <= CommonUtils.GetCurrentTime())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.INVALID_DEADLINE,
+                    Message = "Deadline must be a future date."
+                };
+            }
+
             var financialGoal = new FinancialGoal
             {
                 UserId = user.Id,
@@ -341,7 +364,7 @@ namespace MoneyEz.Services.Services.Implements
                 Name = model.Name,
                 NameUnsign = StringUtils.ConvertToUnSign(model.Name),
                 TargetAmount = model.TargetAmount,
-                CurrentAmount = model.CurrentAmount,
+                CurrentAmount = model.CurrentAmount > 0 ? model.CurrentAmount : currentBalance, // Nếu CurrentAmount không được truyền, lấy từ CurrentBalance
                 Deadline = model.Deadline,
                 CreatedDate = CommonUtils.GetCurrentTime()
             };
