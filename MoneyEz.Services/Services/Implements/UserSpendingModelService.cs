@@ -49,7 +49,30 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Selected spending model is not a template.", MessageConstants.SPENDING_MODEL_NOT_FOUND);
             }
 
-            // Kiểm tra xem user đã có mô hình chi tiêu nào đang được sử dụng chưa
+            var startDate = model.StartDate ?? CommonUtils.GetCurrentTime();
+
+            if (startDate < CommonUtils.GetCurrentTime().Date)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.START_DATE_CANNOT_BE_IN_PAST,
+                    Message = "Start date cannot be in the past."
+                };
+            }
+
+            var endDate = CalculateEndDate(startDate, model.PeriodUnit, model.PeriodValue);
+
+            if (endDate < startDate)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.END_DATE_MUST_BE_AFTER_START_DATE,
+                    Message = "End date must be after start date."
+                };
+            }
+
             var activeModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
                 new PaginationParameter { PageSize = 1, PageIndex = 1 },
                 filter: usm => usm.UserId == user.Id && usm.EndDate > CommonUtils.GetCurrentTime() && !usm.IsDeleted
@@ -57,6 +80,16 @@ namespace MoneyEz.Services.Services.Implements
 
             if (activeModels.Any())
             {
+                if (startDate > CommonUtils.GetCurrentTime())
+                {
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        ErrorCode = MessageConstants.CANNOT_SELECT_FUTURE_MODEL_WHEN_ACTIVE,
+                        Message = "You cannot select a future spending model while your current model is still active."
+                    };
+                }
+
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
@@ -64,11 +97,6 @@ namespace MoneyEz.Services.Services.Implements
                     Message = "You already have an active spending model. Please switch or cancel it before choosing a new one."
                 };
             }
-
-            // Nếu StartDate không được nhập, mặc định là hôm nay
-            var startDate = model.StartDate ?? CommonUtils.GetCurrentTime();
-
-            var endDate = CalculateEndDate(startDate, model.PeriodUnit, model.PeriodValue);
 
             var userSpendingModel = new UserSpendingModel
             {
@@ -89,27 +117,37 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "Spending model selected successfully."
             };
         }
+
         public async Task<BaseResultModel> SwitchSpendingModelAsync(SwitchSpendingModelModel model)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            // Kiểm tra xem có mô hình chi tiêu hiện tại chưa kết thúc không
-            var currentModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
+            var activeModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
                 new PaginationParameter { PageSize = 1, PageIndex = 1 },
                 filter: usm => usm.UserId == user.Id && usm.EndDate > CommonUtils.GetCurrentTime() && !usm.IsDeleted
             );
 
-            var currentModel = currentModels.FirstOrDefault();
+            var activeModel = activeModels.FirstOrDefault();
 
-            if (currentModel != null)
+            if (activeModel != null)
             {
+                if (model.StartDate > CommonUtils.GetCurrentTime())
+                {
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        ErrorCode = MessageConstants.CANNOT_SELECT_FUTURE_MODEL_WHEN_ACTIVE,
+                        Message = "You cannot switch to a future spending model while your current model is still active."
+                    };
+                }
+
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.CURRENT_SPENDING_MODEL_NOT_FINISHED,
-                    Message = "You cannot switch to a new spending model until your current model has ended."
+                    ErrorCode = MessageConstants.USER_ALREADY_HAS_ACTIVE_SPENDING_MODEL,
+                    Message = "You already have an active spending model. Please wait until it ends before switching."
                 };
             }
 
@@ -121,10 +159,29 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Selected spending model is not a template.", MessageConstants.SPENDING_MODEL_NOT_FOUND);
             }
 
-            // Nếu không có StartDate, mặc định là ngày mai
             var startDate = model.StartDate ?? CommonUtils.GetCurrentTime().AddDays(1);
 
+            if (startDate < CommonUtils.GetCurrentTime().Date)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.START_DATE_CANNOT_BE_IN_PAST,
+                    Message = "Start date cannot be in the past."
+                };
+            }
+
             var endDate = CalculateEndDate(startDate, model.PeriodUnit, model.PeriodValue);
+
+            if (endDate < startDate)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.END_DATE_MUST_BE_AFTER_START_DATE,
+                    Message = "End date must be after start date."
+                };
+            }
 
             var newModel = new UserSpendingModel
             {
@@ -157,7 +214,12 @@ namespace MoneyEz.Services.Services.Implements
                 filter: usm => usm.UserId == user.Id
                             && usm.SpendingModelId == spendingModelId
                             && usm.EndDate > CommonUtils.GetCurrentTime()
-                            && !usm.IsDeleted
+                            && !usm.IsDeleted,
+                include: query => query.Include(usm => usm.SpendingModel)
+                                       .ThenInclude(sm => sm.SpendingModelCategories)
+                                       .ThenInclude(smc => smc.Category)
+                                       .ThenInclude(c => c.CategorySubcategories)
+                                       .ThenInclude(cs => cs.Subcategory)
             );
 
             var spendingModel = spendingModels.FirstOrDefault();
@@ -172,8 +234,31 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            // Lấy danh sách Subcategory
+            var subcategoryIds = spendingModel.SpendingModel.SpendingModelCategories
+                .SelectMany(smc => smc.Category.CategorySubcategories)
+                .Select(cs => cs.Subcategory.Id)
+                .Distinct()
+                .ToList();
+
+            // Kiểm tra xem có FinancialGoal nào liên quan đến Subcategory trong mô hình này không
+            var existingGoals = await _unitOfWork.FinancialGoalRepository.ToPaginationIncludeAsync(
+                new PaginationParameter { PageSize = 1, PageIndex = 1 },
+                filter: fg => fg.UserId == user.Id && subcategoryIds.Contains(fg.SubcategoryId.Value)
+            );
+
+            if (existingGoals.Any())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.CANNOT_CANCEL_SPENDING_MODEL_HAS_GOALS,
+                    Message = "You cannot cancel this spending model because some subcategories are linked to active financial goals."
+                };
+            }
+
             _unitOfWork.UserSpendingModelRepository.SoftDeleteAsync(spendingModel);
-            _unitOfWork.Save();
+            _unitOfWork.Save(); 
 
             return new BaseResultModel
             {
@@ -181,7 +266,6 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "Spending model cancelled successfully."
             };
         }
-
 
         public async Task<BaseResultModel> GetCurrentSpendingModelAsync()
         {
