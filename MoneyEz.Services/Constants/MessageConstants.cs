@@ -68,6 +68,7 @@ namespace MoneyEz.Services.Constants
         public const string INVALID_PERIOD_UNIT = "InvalidPeriodUnit";
         public const string USER_ALREADY_HAS_ACTIVE_SPENDING_MODEL = "UserAlreadyHasActiveSpendingModel";
         public const string CURRENT_SPENDING_MODEL_NOT_FINISHED = "CurrentSpendingModelNotFinished";
+        public const string CANNOT_CANCEL_SPENDING_MODEL_HAS_GOALS = "CannotCancelSpendingModelHasGoals";
 
         // category
         public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists";

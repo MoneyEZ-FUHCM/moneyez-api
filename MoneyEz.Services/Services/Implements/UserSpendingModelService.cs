@@ -157,7 +157,12 @@ namespace MoneyEz.Services.Services.Implements
                 filter: usm => usm.UserId == user.Id
                             && usm.SpendingModelId == spendingModelId
                             && usm.EndDate > CommonUtils.GetCurrentTime()
-                            && !usm.IsDeleted
+                            && !usm.IsDeleted,
+                include: query => query.Include(usm => usm.SpendingModel)
+                                       .ThenInclude(sm => sm.SpendingModelCategories)
+                                       .ThenInclude(smc => smc.Category)
+                                       .ThenInclude(c => c.CategorySubcategories)
+                                       .ThenInclude(cs => cs.Subcategory)
             );
 
             var spendingModel = spendingModels.FirstOrDefault();
@@ -172,8 +177,31 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            // Lấy danh sách Subcategory
+            var subcategoryIds = spendingModel.SpendingModel.SpendingModelCategories
+                .SelectMany(smc => smc.Category.CategorySubcategories)
+                .Select(cs => cs.Subcategory.Id)
+                .Distinct()
+                .ToList();
+
+            // Kiểm tra xem có FinancialGoal nào liên quan đến Subcategory trong mô hình này không
+            var existingGoals = await _unitOfWork.FinancialGoalRepository.ToPaginationIncludeAsync(
+                new PaginationParameter { PageSize = 1, PageIndex = 1 },
+                filter: fg => fg.UserId == user.Id && subcategoryIds.Contains(fg.SubcategoryId.Value)
+            );
+
+            if (existingGoals.Any())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.CANNOT_CANCEL_SPENDING_MODEL_HAS_GOALS,
+                    Message = "You cannot cancel this spending model because some subcategories are linked to active financial goals."
+                };
+            }
+
             _unitOfWork.UserSpendingModelRepository.SoftDeleteAsync(spendingModel);
-            _unitOfWork.Save();
+            _unitOfWork.Save(); 
 
             return new BaseResultModel
             {
@@ -181,7 +209,6 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "Spending model cancelled successfully."
             };
         }
-
 
         public async Task<BaseResultModel> GetCurrentSpendingModelAsync()
         {
