@@ -193,7 +193,6 @@ namespace MoneyEz.Services.Services.Implements
                 Data = mappedGoal
             };
         }
-
         public async Task<BaseResultModel> UpdatePersonalFinancialGoalAsync(UpdatePersonalFinancialGoalModel model)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -558,7 +557,7 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            // Kiểm tra xem user có trong nhóm không
+            // user có trong nhóm không
             var groupMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
                 filter: gm => gm.GroupId == model.GroupId && gm.UserId == user.Id
             );
@@ -573,16 +572,17 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByIdAsync(model.GoalId)
-                ?? throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
+            // chỉ lấy Goal thuộc nhóm
+            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.Id == model.GoalId && fg.GroupId == model.GroupId
+            );
 
-            // Kiểm tra xem Goal có thuộc nhóm không
-            if (financialGoal.GroupId != model.GroupId)
+            if (!financialGoal.Any())
             {
-                throw new DefaultException("Financial goal does not belong to the specified group.", MessageConstants.FINANCIAL_GOAL_NOT_IN_GROUP);
+                throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
-            var mappedGoal = _mapper.Map<GroupFinancialGoalModel>(financialGoal);
+            var mappedGoal = _mapper.Map<GroupFinancialGoalModel>(financialGoal.First());
 
             return new BaseResultModel
             {
