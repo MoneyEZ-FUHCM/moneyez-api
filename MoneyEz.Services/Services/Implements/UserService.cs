@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -217,21 +218,14 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter, UserFilter userFilter)
         {
-            Pagination<User> users = new Pagination<User>();
+            // Get filter expression using GetFilter method
+            var filterExpression = GetFilter(userFilter);
 
-            if (string.IsNullOrEmpty(userFilter.Search) || string.IsNullOrEmpty(userFilter.Field))
-            {
-                users = await _unitOfWork.UsersRepository
-                    .ToPaginationIncludeAsync(paginationParameter, filter: u => u.IsDeleted == userFilter.IsDeleted);
-            }
-            else if (userFilter.Field.ToLower() == "email")
-            {
-                users = await _unitOfWork.UsersRepository
-                    .ToPaginationIncludeAsync(paginationParameter, filter: u => u.Email.Contains(userFilter.Search.Trim()) && u.IsDeleted == userFilter.IsDeleted);
-            }
+            // Apply filter to pagination query
+            var users = await _unitOfWork.UsersRepository
+                .ToPaginationIncludeAsync(paginationParameter, filter: filterExpression);
 
             var userModels = _mapper.Map<List<UserModel>>(users);
-
             var paginatedResult = PaginationHelper.GetPaginationResult(users, userModels);
 
             return new BaseResultModel
@@ -791,6 +785,43 @@ namespace MoneyEz.Services.Services.Implements
             {
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
+        }
+
+        private Expression<Func<User, bool>> GetFilter(UserFilter userFilter)
+        {
+            Expression<Func<User, bool>> spec = null;
+
+            if (userFilter.IsDeleted)
+            {
+                spec = GenericSpecification<User>.HasEqual("IsDeleted", userFilter.IsDeleted);
+            }
+
+            if (!string.IsNullOrEmpty(userFilter.Search))
+            {
+                var searchSpec = GenericSpecification<User>.HasLike("Email", userFilter.Search);
+                spec = spec == null ? searchSpec : GenericSpecification<User>.CombineExpressions(spec, searchSpec);
+            }
+
+            if (!string.IsNullOrEmpty(userFilter.Field))
+            {
+                switch (userFilter.Field.ToLower())
+                {
+                    case "fullname":
+                        var nameSpec = GenericSpecification<User>.HasLike("FullName", userFilter.Search);
+                        spec = spec == null ? nameSpec : GenericSpecification<User>.CombineExpressions(spec, nameSpec);
+                        break;
+                    case "email":
+                        var emailSpec = GenericSpecification<User>.HasLike("Email", userFilter.Search);
+                        spec = spec == null ? emailSpec : GenericSpecification<User>.CombineExpressions(spec, emailSpec);
+                        break;
+                    case "phone":
+                        var phoneSpec = GenericSpecification<User>.HasLike("PhoneNumber", userFilter.Search);
+                        spec = spec == null ? phoneSpec : GenericSpecification<User>.CombineExpressions(spec, phoneSpec);
+                        break;
+                }
+            }
+
+            return spec ?? (u => true); // Return default expression that matches all if no filters applied
         }
     }
 }
