@@ -20,6 +20,10 @@ namespace MoneyEz.Services.Mappers
             SpendingModelMapperConfig();
             // user spending model mapper
             UserSpendingModelMapperConfig();
+
+            //financialgoal
+            FinancialGoalMapperConfig();
+
             //category mapper
             CategoryMapperConfig();
             //subcategory mapper
@@ -50,6 +54,7 @@ namespace MoneyEz.Services.Mappers
         partial void UserMapperConfig();
         partial void SpendingModelMapperConfig();
         partial void UserSpendingModelMapperConfig();
+        partial void FinancialGoalMapperConfig();
         partial void CategoryMapperConfig();
         partial void SubcategoryMapperConfig();
         partial void TransactionMapperConfig();

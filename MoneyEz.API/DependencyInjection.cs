@@ -153,6 +153,7 @@ namespace MoneyEz.API
 
             //config financial goal
             services.AddScoped<IFinancialGoalRepository, FinancialGoalRepository>();
+            services.AddScoped<IFinancialGoalService, FinancialGoalService>();
 
             //config spending model category service
             services.AddScoped<ISpendingModelCategoryRepository, SpendingModelCategoryRepository>();
