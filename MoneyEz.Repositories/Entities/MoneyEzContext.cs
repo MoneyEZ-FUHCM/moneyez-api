@@ -117,6 +117,8 @@ public partial class MoneyEzContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.NameUnsign).HasMaxLength(100);
+            entity.Property(e => e.Code).HasMaxLength(50);
+            entity.Property(e => e.Icon).HasMaxLength(50);
         });
 
         modelBuilder.Entity<ChatHistory>(entity =>
@@ -426,6 +428,8 @@ public partial class MoneyEzContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.NameUnsign).HasMaxLength(50);
+            entity.Property(e => e.Code).HasMaxLength(50);
+            entity.Property(e => e.Icon).HasMaxLength(50);
         });
 
         modelBuilder.Entity<Subscription>(entity =>

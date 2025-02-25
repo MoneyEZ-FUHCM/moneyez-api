@@ -90,6 +90,7 @@ namespace MoneyEz.Services.Constants
         public const string SUBCATEGORY_NOT_FOUND = "SubcategoryNotFound";
         public const string SUBCATEGORY_ALREADY_EXISTS = "SubcategoryAlreadyExists";
         public const string DUPLICATE_SUBCATEGORY_NAMES = "DuplicateSubcategoryNames";
+        public const string DUPLICATE_SUBCATEGORY_CODES = "DuplicateSubcategoryCodes";
         public const string EMPTY_SUBCATEGORY_LIST = "EmptySubcategoryList";
         public const string CATEGORY_ID_REQUIRED = "CategoryIdRequired";
         public const string SUBCATEGORY_NOT_FOUND_IN_CATEGORY = "SubcategoryNotFoundInCategory";

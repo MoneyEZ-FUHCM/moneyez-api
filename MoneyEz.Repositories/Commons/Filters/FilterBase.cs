@@ -10,8 +10,12 @@ namespace MoneyEz.Repositories.Commons.Filters
     {
         public string? Search { get; set; }
 
+        public string? Fields { get; set; }
+
         public string? SortBy { get; set; }
 
         public string? Dir { get; set; }
+
+        public bool IsDeleted { get; set; } = false;
     }
 }
