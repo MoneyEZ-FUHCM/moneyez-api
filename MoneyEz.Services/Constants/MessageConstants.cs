@@ -77,6 +77,8 @@ namespace MoneyEz.Services.Constants
         public const string FINANCIAL_GOAL_NOT_FOUND = "FinancialGoalNotFound";
         public const string FINANCIAL_GOAL_ACCESS_DENIED = "FinancialGoalAccessDenied";
         public const string INVALID_TARGET_AMOUNT = "InvalidTargetAmount";
+        public const string INVALID_DEADLINE = "InvalidDeadline";
+        public const string SPENDING_MODEL_DATA_MISSING = "SpendingModelDataMissing";
 
         public const string USER_NOT_IN_GROUP = "UserNotInGroup";
         public const string USER_NOT_AUTHORIZED = "UserNotAuthorized";
@@ -85,7 +87,9 @@ namespace MoneyEz.Services.Constants
         public const string FINANCIAL_GOAL_NOT_IN_GROUP = "FinancialGoalNotInGroup";
         public const string INSUFFICIENT_GROUP_FUNDS = "InsufficientGroupFunds";
         public const string GOAL_NOT_COMPLETED = "GoalNotCompleted";
-
+        public const string INVALID_SPENDING_MODEL = "InvalidSpendingModel";
+        public const string SPENDING_MODEL_HAS_NO_CATEGORIES = "SpendingModelHasNoCategories";
+        public const string SPENDING_MODEL_HAS_NO_SUBCATEGORIES = "SpendingModelHasNoSubcategories";
 
         // category
         public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists";

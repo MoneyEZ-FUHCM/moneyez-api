@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
@@ -42,8 +44,8 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var activeSpendingModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = 1, PageIndex = 1 },
+            // UserSpendingModel đang hoạt động
+            var activeSpendingModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
                 filter: usm => usm.UserId == user.Id && usm.EndDate > CommonUtils.GetCurrentTime() && !usm.IsDeleted
             );
 
@@ -52,14 +54,67 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("User does not have an active spending model.", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
             }
 
-            var existingGoals = await _unitOfWork.FinancialGoalRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = 1, PageIndex = 1 },
+            var activeSpendingModelId = activeSpendingModels
+                .Select(usm => usm.SpendingModelId)
+                .FirstOrDefault();
+
+            if (activeSpendingModelId == Guid.Empty)
+            {
+                throw new DefaultException("Invalid spending model data.", MessageConstants.INVALID_SPENDING_MODEL);
+            }
+
+            // SpendingModelCategory của SpendingModel hiện tại
+            var spendingModelCategories = await _unitOfWork.SpendingModelCategoryRepository.GetByConditionAsync(
+                filter: smc => smc.SpendingModelId == activeSpendingModelId
+            );
+
+            if (!spendingModelCategories.Any())
+            {
+                throw new DefaultException("No categories found for the current spending model.", MessageConstants.SPENDING_MODEL_HAS_NO_CATEGORIES);
+            }
+
+            // `CategorySubcategories` liên quan
+            var categoryIds = spendingModelCategories.Select(smc => smc.CategoryId).ToList();
+            var categorySubcategories = await _unitOfWork.CategorySubcategoryRepository.GetByConditionAsync(
+                filter: cs => categoryIds.Contains(cs.CategoryId)
+            );
+
+            if (!categorySubcategories.Any())
+            {
+                throw new DefaultException("No subcategories found in the associated categories.", MessageConstants.SPENDING_MODEL_HAS_NO_SUBCATEGORIES);
+            }
+
+            // `SubcategoryId` có tồn tại trong danh sách CategorySubcategories không
+            var subcategoryExists = categorySubcategories.Any(cs => cs.SubcategoryId == model.SubcategoryId);
+
+            if (!subcategoryExists)
+            {
+                throw new DefaultException("The selected subcategory does not exist in the current spending model.", MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL);
+            }
+
+            // Subcategory này đã có Goal chưa
+            var existingGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
                 filter: fg => fg.UserId == user.Id && fg.SubcategoryId == model.SubcategoryId
             );
 
             if (existingGoals.Any())
             {
                 throw new DefaultException("A financial goal already exists for this subcategory.", MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL);
+            }
+
+            if (model.TargetAmount <= 0)
+            {
+                throw new DefaultException("Target amount must be greater than 0.", MessageConstants.INVALID_TARGET_AMOUNT);
+            }
+
+            if (model.TargetAmount <= model.CurrentAmount)
+            {
+                throw new DefaultException("Target amount must be greater than current amount.", MessageConstants.INVALID_TARGET_AMOUNT);
+            }
+
+            if (model.Deadline <= CommonUtils.GetCurrentTime())
+            {
+                throw new DefaultException("Deadline must be a future date.", MessageConstants.INVALID_DEADLINE);
             }
 
             var financialGoal = _mapper.Map<FinancialGoal>(model);
@@ -75,6 +130,7 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "Financial goal created successfully."
             };
         }
+
         public async Task<BaseResultModel> GetPersonalFinancialGoalsAsync(PaginationParameter paginationParameter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;

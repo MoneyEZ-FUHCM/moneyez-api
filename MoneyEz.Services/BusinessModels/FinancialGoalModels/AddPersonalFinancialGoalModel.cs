@@ -15,7 +15,7 @@ namespace MoneyEz.Services.BusinessModels.FinancialGoalModels
         public string NameUnsign => StringUtils.ConvertToUnSign(Name);
 
         [Required]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Số tiền mục tiêu phải lớn hơn 0.")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Target amount must be greater than 0.")]
         public decimal TargetAmount { get; set; }
 
         public decimal CurrentAmount { get; set; } = 0;
