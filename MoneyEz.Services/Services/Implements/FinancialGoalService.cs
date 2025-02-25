@@ -138,7 +138,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var financialGoals = await _unitOfWork.FinancialGoalRepository.ToPaginationIncludeAsync(
                 paginationParameter,
-                filter: fg => fg.UserId == user.Id
+                filter: fg => fg.UserId == user.Id && fg.GroupId == null
             );
 
             var mappedGoals = _mapper.Map<List<PersonalFinancialGoalModel>>(financialGoals);
