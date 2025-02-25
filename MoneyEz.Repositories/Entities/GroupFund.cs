@@ -13,7 +13,7 @@ public partial class GroupFund : BaseEntity
 
     public string Description { get; set; }
 
-    public decimal? CurrentBalance { get; set; }
+    public decimal CurrentBalance { get; set; }
 
     public CommonsStatus? Status { get; set; }
 
