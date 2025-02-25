@@ -263,15 +263,28 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByIdAsync(model.Id)
-                ?? throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
+            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.Id == model.Id && fg.UserId == user.Id && fg.GroupId == null
+            );
 
-            if (financialGoal.UserId != user.Id)
+            if (!financialGoal.Any())
             {
-                throw new DefaultException("Access denied.", MessageConstants.FINANCIAL_GOAL_ACCESS_DENIED);
+                throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
-            _unitOfWork.FinancialGoalRepository.SoftDeleteAsync(financialGoal);
+            var goalToDelete = financialGoal.First();
+
+            if (goalToDelete.TargetAmount > goalToDelete.CurrentAmount || goalToDelete.Deadline > CommonUtils.GetCurrentTime())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.FINANCIAL_GOAL_CANNOT_BE_DELETED,
+                    Message = "Cannot delete a financial goal that is not yet completed or past its deadline."
+                };
+            }
+
+            _unitOfWork.FinancialGoalRepository.SoftDeleteAsync(goalToDelete);
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
@@ -280,6 +293,7 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "Financial goal deleted successfully."
             };
         }
+
 
         #endregion Personal
 
@@ -551,12 +565,19 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByIdAsync(model.Id)
-                ?? throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
+            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.Id == model.Id && fg.GroupId != null
+            );
 
-            // Kiểm tra xem user có trong nhóm không và có phải Leader không
+            if (!financialGoal.Any())
+            {
+                throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
+            }
+
+            var goalToDelete = financialGoal.First();
+
             var groupMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
-                filter: gm => gm.GroupId == financialGoal.GroupId && gm.UserId == user.Id
+                filter: gm => gm.GroupId == goalToDelete.GroupId && gm.UserId == user.Id
             );
 
             if (!groupMember.Any())
@@ -580,18 +601,17 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            // Kiểm tra nếu Goal chưa hoàn thành hoặc chưa tới Deadline
-            if (financialGoal.TargetAmount > financialGoal.CurrentAmount || financialGoal.Deadline > CommonUtils.GetCurrentTime())
+            if (goalToDelete.TargetAmount > goalToDelete.CurrentAmount || goalToDelete.Deadline > CommonUtils.GetCurrentTime())
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.GOAL_NOT_COMPLETED,
-                    Message = "Cannot delete an unfinished financial goal."
+                    ErrorCode = MessageConstants.FINANCIAL_GOAL_CANNOT_BE_DELETED,
+                    Message = "Cannot delete a financial goal that is not yet completed or past its deadline."
                 };
             }
 
-            _unitOfWork.FinancialGoalRepository.SoftDeleteAsync(financialGoal);
+            _unitOfWork.FinancialGoalRepository.SoftDeleteAsync(goalToDelete);
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel

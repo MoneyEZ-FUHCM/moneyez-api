@@ -93,6 +93,7 @@ namespace MoneyEz.Services.Constants
         public const string INVALID_SPENDING_MODEL = "InvalidSpendingModel";
         public const string SPENDING_MODEL_HAS_NO_CATEGORIES = "SpendingModelHasNoCategories";
         public const string SPENDING_MODEL_HAS_NO_SUBCATEGORIES = "SpendingModelHasNoSubcategories";
+        public const string FINANCIAL_GOAL_CANNOT_BE_DELETED = "FinancialGoalCannotBeDeleted";
 
         // category
         public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists";
