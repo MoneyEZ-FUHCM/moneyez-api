@@ -1,4 +1,6 @@
-﻿using MoneyEz.Repositories.Entities;
+﻿using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
+using MoneyEz.Repositories.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +16,8 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
         Task<User> GetUserByPhoneAsync(string phoneNumber);
 
         Task<List<User>> GetUsersByUserIdsAsync(List<Guid> userIds);
+
+        Task<Pagination<User>> GetUsersByFilter(PaginationParameter paginationParameter, UserFilter filter);
 
     }
 }

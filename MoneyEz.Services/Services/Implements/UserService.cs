@@ -218,12 +218,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter, UserFilter userFilter)
         {
-            // Get filter expression using GetFilter method
-            var filterExpression = GetFilter(userFilter);
-
-            // Apply filter to pagination query
-            var users = await _unitOfWork.UsersRepository
-                .ToPaginationIncludeAsync(paginationParameter, filter: filterExpression);
+            var users = await _unitOfWork.UsersRepository.GetUsersByFilter(paginationParameter, userFilter);
 
             var userModels = _mapper.Map<List<UserModel>>(users);
             var paginatedResult = PaginationHelper.GetPaginationResult(users, userModels);
@@ -785,43 +780,6 @@ namespace MoneyEz.Services.Services.Implements
             {
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
-        }
-
-        private Expression<Func<User, bool>> GetFilter(UserFilter userFilter)
-        {
-            Expression<Func<User, bool>> spec = null;
-
-            if (userFilter.IsDeleted)
-            {
-                spec = GenericSpecification<User>.HasEqual("IsDeleted", userFilter.IsDeleted);
-            }
-
-            if (!string.IsNullOrEmpty(userFilter.Search))
-            {
-                var searchSpec = GenericSpecification<User>.HasLike("Email", userFilter.Search);
-                spec = spec == null ? searchSpec : GenericSpecification<User>.CombineExpressions(spec, searchSpec);
-            }
-
-            if (!string.IsNullOrEmpty(userFilter.Field))
-            {
-                switch (userFilter.Field.ToLower())
-                {
-                    case "fullname":
-                        var nameSpec = GenericSpecification<User>.HasLike("FullName", userFilter.Search);
-                        spec = spec == null ? nameSpec : GenericSpecification<User>.CombineExpressions(spec, nameSpec);
-                        break;
-                    case "email":
-                        var emailSpec = GenericSpecification<User>.HasLike("Email", userFilter.Search);
-                        spec = spec == null ? emailSpec : GenericSpecification<User>.CombineExpressions(spec, emailSpec);
-                        break;
-                    case "phone":
-                        var phoneSpec = GenericSpecification<User>.HasLike("PhoneNumber", userFilter.Search);
-                        spec = spec == null ? phoneSpec : GenericSpecification<User>.CombineExpressions(spec, phoneSpec);
-                        break;
-                }
-            }
-
-            return spec ?? (u => true); // Return default expression that matches all if no filters applied
         }
     }
 }
