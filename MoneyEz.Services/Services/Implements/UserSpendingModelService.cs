@@ -282,6 +282,28 @@ namespace MoneyEz.Services.Services.Implements
 
             var currentModel = currentModels.FirstOrDefault();
 
+            var currentModelReturn = _mapper.Map<UserSpendingModelModel>(currentModel);
+
+            // Get all transactions for this user where groupId is null
+            var allTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id &&
+                            t.GroupId == null &&
+                            t.Status == TransactionStatus.APPROVED
+            );
+
+            // Calculate totals for each model
+            var modelTransactions = allTransactions.Where(t =>
+                t.TransactionDate >= currentModel.StartDate &&
+                t.TransactionDate <= currentModel.EndDate);
+
+            currentModelReturn.TotalIncome = modelTransactions
+                    .Where(t => t.Type == TransactionType.INCOME)
+                    .Sum(t => t.Amount);
+
+            currentModelReturn.TotalExpense = Math.Abs(modelTransactions
+                    .Where(t => t.Type == TransactionType.EXPENSE)
+                    .Sum(t => t.Amount));
+
 
             if (currentModel == null)
             {
@@ -295,7 +317,7 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = _mapper.Map<UserSpendingModelModel>(currentModel)
+                Data = currentModelReturn
             };
         }
 
@@ -311,10 +333,31 @@ namespace MoneyEz.Services.Services.Implements
                 include: query => query.Include(usm => usm.SpendingModel)
             );
 
-            var spendingModel = spendingModels.FirstOrDefault();
+            var userSpendingModel = spendingModels.FirstOrDefault();
+            var userSpendingModelReturn = _mapper.Map<UserSpendingModelModel>(userSpendingModel);
+
+            // Get all transactions for this user where groupId is null
+            var allTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id &&
+                            t.GroupId == null &&
+                            t.Status == TransactionStatus.APPROVED
+            );
+
+            // Calculate totals for each model
+                var modelTransactions = allTransactions.Where(t =>
+                    t.TransactionDate >= userSpendingModel.StartDate &&
+                    t.TransactionDate <= userSpendingModel.EndDate);
+
+            userSpendingModelReturn.TotalIncome = modelTransactions
+                    .Where(t => t.Type == TransactionType.INCOME)
+                    .Sum(t => t.Amount);
+
+            userSpendingModelReturn.TotalExpense = Math.Abs(modelTransactions
+                    .Where(t => t.Type == TransactionType.EXPENSE)
+                    .Sum(t => t.Amount));
 
 
-            if (spendingModel == null)
+            if (userSpendingModel == null)
             {
                 return new BaseResultModel
                 {
@@ -326,7 +369,7 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = _mapper.Map<UserSpendingModelModel>(spendingModel)
+                Data = userSpendingModelReturn
             };
         }
 
@@ -346,8 +389,7 @@ namespace MoneyEz.Services.Services.Implements
             var mappedResult = _mapper.Map<List<UserSpendingModelHistoryModel>>(usedSpendingModels);
 
             // Get all transactions for this user where groupId is null
-            var allTransactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = int.MaxValue, PageIndex = 1 },
+            var allTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
                 filter: t => t.UserId == user.Id && 
                             t.GroupId == null && 
                             t.Status == TransactionStatus.APPROVED

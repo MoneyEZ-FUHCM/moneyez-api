@@ -1,9 +1,10 @@
-﻿using MoneyEz.Repositories.Enums;
+﻿using MoneyEz.Repositories.Entities;
+using MoneyEz.Repositories.Enums;
 using System;
 
 namespace MoneyEz.Services.BusinessModels.SpendingModelModels
 {
-    public class UserSpendingModelHistoryModel
+    public class UserSpendingModelHistoryModel : BaseEntity
     {
         public Guid SpendingModelId { get; set; }
         public string? Name { get; set; }
@@ -13,7 +14,6 @@ namespace MoneyEz.Services.BusinessModels.SpendingModelModels
         public int PeriodValue { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
-        public bool IsDeleted { get; set; }
         public decimal TotalIncome { get; set; }
         public decimal TotalExpense { get; set; }
     }
