@@ -61,28 +61,19 @@ namespace MoneyEz.Services.Services.Implements
             var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
                 paginationParameter,
                 include: query => query.Include(t => t.Subcategory),
-                filter: t => t.UserId == user.Id
+                filter: t => t.UserId == user.Id,
+                orderBy: t => t.OrderByDescending(t => t.CreatedDate)
             );
 
-            var result = _mapper.Map<Pagination<TransactionModel>>(transactions);
+            var transactionModels = _mapper.Map<Pagination<TransactionModel>>(transactions);
+
+            var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.TRANSACTION_LIST_FETCHED_SUCCESS,
-                Data = new ModelPaging
-                {
-                    Data = result,
-                    MetaData = new
-                    {
-                        result.TotalCount,
-                        result.PageSize,
-                        result.CurrentPage,
-                        result.TotalPages,
-                        result.HasNext,
-                        result.HasPrevious
-                    }
-                }
+                Data = result
             };
         }
         public async Task<BaseResultModel> GetTransactionByIdAsync(Guid transactionId)
