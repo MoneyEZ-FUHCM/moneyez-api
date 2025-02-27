@@ -339,36 +339,42 @@ namespace MoneyEz.Services.Services.Implements
             var usedSpendingModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
                 paginationParameter,
                 filter: usm => usm.UserId == user.Id,
-                include: query => query.Include(usm => usm.SpendingModel)
+                include: query => query.Include(usm => usm.SpendingModel),
+                orderBy: query => query.OrderByDescending(usm => usm.CreatedDate)
             );
 
             var mappedResult = _mapper.Map<List<UserSpendingModelHistoryModel>>(usedSpendingModels);
 
-            var paginatedResult = new Pagination<UserSpendingModelHistoryModel>(
-                mappedResult,
-                usedSpendingModels.TotalCount,
-                usedSpendingModels.CurrentPage,
-                usedSpendingModels.PageSize
+            // Get all transactions for this user where groupId is null
+            var allTransactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+                new PaginationParameter { PageSize = int.MaxValue, PageIndex = 1 },
+                filter: t => t.UserId == user.Id && 
+                            t.GroupId == null && 
+                            t.Status == TransactionStatus.APPROVED
             );
 
-            var metaData = new
+            // Calculate totals for each model
+            foreach (var model in mappedResult)
             {
-                usedSpendingModels.TotalCount,
-                usedSpendingModels.PageSize,
-                usedSpendingModels.CurrentPage,
-                usedSpendingModels.TotalPages,
-                usedSpendingModels.HasNext,
-                usedSpendingModels.HasPrevious
-            };
+                var modelTransactions = allTransactions.Where(t => 
+                    t.TransactionDate >= model.StartDate && 
+                    t.TransactionDate <= model.EndDate);
+
+                model.TotalIncome = modelTransactions
+                    .Where(t => t.Type == TransactionType.INCOME)
+                    .Sum(t => t.Amount);
+
+                model.TotalExpense = Math.Abs(modelTransactions
+                    .Where(t => t.Type == TransactionType.EXPENSE)
+                    .Sum(t => t.Amount));
+            }
+
+            var result = PaginationHelper.GetPaginationResult(usedSpendingModels, mappedResult);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = new
-                {
-                    Data = paginatedResult,
-                    MetaData = metaData
-                }
+                Data = result
             };
         }
 
@@ -431,7 +437,7 @@ namespace MoneyEz.Services.Services.Implements
             // Get all transactions within the model's time period
             var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
                 new PaginationParameter { PageSize = int.MaxValue, PageIndex = 1 },
-                filter: t => t.UserId == user.Id &&
+                filter: t => t.UserId == user.Id && t.GroupId == null &&
                             t.TransactionDate >= currentModel.StartDate &&
                             t.TransactionDate <= currentModel.EndDate &&
                             t.Status == TransactionStatus.APPROVED,
