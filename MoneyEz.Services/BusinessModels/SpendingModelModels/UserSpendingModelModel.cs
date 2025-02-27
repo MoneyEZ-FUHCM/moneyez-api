@@ -12,6 +12,8 @@ namespace MoneyEz.Services.BusinessModels.SpendingModelModels
         public int PeriodValue { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+        public decimal TotalIncome { get; set; }
+        public decimal TotalExpense { get; set; }
 
         public SpendingModelModel SpendingModel { get; set; }
     }
