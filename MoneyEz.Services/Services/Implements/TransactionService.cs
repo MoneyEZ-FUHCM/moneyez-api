@@ -62,7 +62,8 @@ namespace MoneyEz.Services.Services.Implements
             var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
                 paginationParameter,
                 include: query => query.Include(t => t.Subcategory),
-                filter: t => t.UserId == user.Id
+                filter: t => t.UserId == user.Id,
+                orderBy: t=> t.OrderByDescending(t => t.CreatedDate)
             );
 
             var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
