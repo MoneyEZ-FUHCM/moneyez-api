@@ -1,5 +1,6 @@
 ﻿using MoneyEz.Repositories.Enums;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace MoneyEz.Services.BusinessModels.TransactionModels
@@ -9,8 +10,7 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
         [Required(ErrorMessage = "Transaction ID is required.")]
         public Guid Id { get; set; }
 
-        [Required(ErrorMessage = "Amount is required.")]
-        public decimal Amount { get; set; }
+        public decimal? Amount { get; set; }
 
         [Required(ErrorMessage = "Transaction type is required.")]
         public TransactionType Type { get; set; }
@@ -22,6 +22,7 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
         public DateTime TransactionDate { get; set; }
 
         public string Description { get; set; }
-        public bool? ApprovalRequired { get; set; }
+
+        public List<string>? Images { get; set; }
     }
 }

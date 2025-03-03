@@ -41,6 +41,10 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //transaction
         private ITransactionRepository _transactionsRepository;
+
+        //image
+        private IImageRepository _imageRepository;
+
         //group
         private IGroupFundRepository _groupFundRepository;
         //group fund log
@@ -137,6 +141,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _transactionsRepository ??= new TransactionRepository(_context);
+            }
+        }
+
+        public IImageRepository ImageRepository
+        {
+            get
+            {
+                return _imageRepository ??= new ImageRepository(_context);
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿using MoneyEz.Repositories.Enums;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace MoneyEz.Services.BusinessModels.TransactionModels
@@ -19,6 +20,7 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
         public DateTime TransactionDate { get; set; }
 
         public string Description { get; set; }
-        public bool? ApprovalRequired { get; set; }
+
+        public List<string>? Images { get; set; }
     }
 }

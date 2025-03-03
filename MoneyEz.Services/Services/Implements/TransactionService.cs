@@ -58,22 +58,40 @@ namespace MoneyEz.Services.Services.Implements
                     Message = "User not found."
                 };
             }
+
             var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
                 paginationParameter,
                 include: query => query.Include(t => t.Subcategory),
-                filter: t => t.UserId == user.Id,
-                orderBy: t => t.OrderByDescending(t => t.CreatedDate)
+                filter: t => t.UserId == user.Id
             );
 
-            var transactionModels = _mapper.Map<Pagination<TransactionModel>>(transactions);
+            var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
 
-            var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
+            foreach (var transactionModel in transactionModels)
+            {
+                var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transactionModel.Id, "Transaction");
+                transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+            }
+
+            var result = new Pagination<TransactionModel>(transactionModels, transactions.TotalCount, transactions.CurrentPage, transactions.PageSize);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.TRANSACTION_LIST_FETCHED_SUCCESS,
-                Data = result
+                Data = new ModelPaging
+                {
+                    Data = result,
+                    MetaData = new
+                    {
+                        result.TotalCount,
+                        result.PageSize,
+                        result.CurrentPage,
+                        result.TotalPages,
+                        result.HasNext,
+                        result.HasPrevious
+                    }
+                }
             };
         }
         public async Task<BaseResultModel> GetTransactionByIdAsync(Guid transactionId)
@@ -116,11 +134,16 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            var transactionModel = _mapper.Map<TransactionModel>(transaction);
+
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, "Transaction");
+            transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.TRANSACTION_FETCHED_SUCCESS,
-                Data = _mapper.Map<TransactionModel>(transaction)
+                Data = transactionModel
             };
         }
         public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model)
@@ -136,7 +159,10 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            var user = (await _unitOfWork.UsersRepository.GetByConditionAsync(
+                filter: u => u.Email == userEmail
+            )).FirstOrDefault();
+
             if (user == null)
             {
                 return new BaseResultModel
@@ -198,11 +224,76 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            var currentSpendingModel = (await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == user.Id &&
+                               usm.StartDate <= DateTime.UtcNow &&
+                               (usm.EndDate == null || usm.EndDate >= DateTime.UtcNow)
+            )).FirstOrDefault();
+
+            if (currentSpendingModel == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.SPENDING_MODEL_DATA_MISSING,
+                    Message = "User must select a spending model before creating a transaction."
+                };
+            }
+
+            var validCategory = (await _unitOfWork.SpendingModelCategoryRepository.GetByConditionAsync(
+                filter: smc => smc.SpendingModelId == currentSpendingModel.SpendingModelId &&
+                               smc.Category.CategorySubcategories.Any(cs => cs.SubcategoryId == model.SubcategoryId)
+            )).FirstOrDefault();
+
+            if (validCategory == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL,
+                    Message = "Selected subcategory is not allowed in the current spending model."
+                };
+            }
+
             var transaction = _mapper.Map<Transaction>(model);
             transaction.UserId = user.Id;
+            transaction.ApprovalRequired = false; // Giao dịch cá nhân không cần phê duyệt
             transaction.Status = TransactionStatus.APPROVED;
 
             await _unitOfWork.TransactionsRepository.AddAsync(transaction);
+
+            // Tìm financial goal hiện tại
+            var financialGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.SubcategoryId == model.SubcategoryId && fg.UserId == user.Id
+            )).FirstOrDefault();
+
+            if (financialGoal != null)
+            {
+                if (model.Type == TransactionType.EXPENSE)
+                {
+                    financialGoal.CurrentAmount += model.Amount;
+                }
+                else if (model.Type == TransactionType.INCOME)
+                {
+                    financialGoal.CurrentAmount += model.Amount;
+                }
+
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
+            }
+
+            if (model.Images != null && model.Images.Any())
+            {
+                var images = model.Images.Select(url => new Image
+                {
+                    EntityId = transaction.Id,
+                    EntityName = "Transaction",
+                    ImageUrl = url,
+                    CreatedDate = DateTime.UtcNow
+                }).ToList();
+
+                await _unitOfWork.ImageRepository.AddRangeAsync(images);
+            }
+
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
@@ -224,7 +315,10 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            var user = (await _unitOfWork.UsersRepository.GetByConditionAsync(
+                filter: u => u.Email == userEmail
+            )).FirstOrDefault();
+
             if (user == null)
             {
                 return new BaseResultModel
@@ -246,7 +340,6 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.Id);
-
             if (transaction == null)
             {
                 return new BaseResultModel
@@ -267,7 +360,7 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            if (model.Amount <= 0)
+            if (model.Amount.HasValue && model.Amount <= 0)
             {
                 return new BaseResultModel
                 {
@@ -307,6 +400,38 @@ namespace MoneyEz.Services.Services.Implements
                     Message = "Subcategory does not exist."
                 };
             }
+
+            var currentSpendingModel = (await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == user.Id &&
+                               usm.StartDate <= DateTime.UtcNow &&
+                               (usm.EndDate == null || usm.EndDate >= DateTime.UtcNow)
+            )).FirstOrDefault();
+
+            if (currentSpendingModel == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.SPENDING_MODEL_DATA_MISSING,
+                    Message = "User must select a spending model before updating a transaction."
+                };
+            }
+
+            var validCategory = (await _unitOfWork.SpendingModelCategoryRepository.GetByConditionAsync(
+                filter: smc => smc.SpendingModelId == currentSpendingModel.SpendingModelId &&
+                               smc.Category.CategorySubcategories.Any(cs => cs.SubcategoryId == model.SubcategoryId)
+            )).FirstOrDefault();
+
+            if (validCategory == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL,
+                    Message = "Selected subcategory is not allowed in the current spending model."
+                };
+            }
+
             if (model.TransactionDate == default)
             {
                 return new BaseResultModel
@@ -318,7 +443,59 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             _mapper.Map(model, transaction);
+            transaction.ApprovalRequired = false;  // Giao dịch cá nhân không cần phê duyệt
+            transaction.Status = TransactionStatus.APPROVED;
+
             _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
+
+            var oldImages = await _unitOfWork.ImageRepository.GetByConditionAsync(
+                filter: img => img.EntityId == transaction.Id && img.EntityName == "Transaction"
+            );
+
+            _unitOfWork.ImageRepository.PermanentDeletedListAsync(oldImages);
+
+            if (model.Images != null && model.Images.Any())
+            {
+                var newImages = model.Images.Select(url => new Image
+                {
+                    EntityId = transaction.Id,
+                    EntityName = "Transaction",
+                    ImageUrl = url,
+                    CreatedDate = DateTime.UtcNow
+                }).ToList();
+
+                await _unitOfWork.ImageRepository.AddRangeAsync(newImages);
+            }
+
+            var financialGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.SubcategoryId == model.SubcategoryId && fg.UserId == user.Id
+            )).FirstOrDefault();
+
+            if (financialGoal != null)
+            {
+                // Loại bỏ ảnh hưởng của giao dịch cũ trước khi cộng giao dịch mới
+                if (transaction.Type == TransactionType.EXPENSE)
+                {
+                    financialGoal.CurrentAmount -= transaction.Amount;
+                }
+                else if (transaction.Type == TransactionType.INCOME)
+                {
+                    financialGoal.CurrentAmount -= transaction.Amount;
+                }
+
+                // Cộng giá trị mới vào goal
+                if (model.Type == TransactionType.EXPENSE)
+                {
+                    financialGoal.CurrentAmount += model.Amount ?? transaction.Amount;
+                }
+                else if (model.Type == TransactionType.INCOME)
+                {
+                    financialGoal.CurrentAmount += model.Amount ?? transaction.Amount;
+                }
+
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
+            }
+
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
@@ -341,7 +518,10 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            var user = (await _unitOfWork.UsersRepository.GetByConditionAsync(
+                filter: u => u.Email == userEmail
+            )).FirstOrDefault();
+
             if (user == null)
             {
                 return new BaseResultModel
@@ -363,7 +543,32 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            var financialGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.SubcategoryId == transaction.SubcategoryId && fg.UserId == user.Id
+            )).FirstOrDefault();
+
+            if (financialGoal != null)
+            {
+                if (transaction.Type == TransactionType.EXPENSE)
+                {
+                    financialGoal.CurrentAmount -= transaction.Amount;
+                }
+                else if (transaction.Type == TransactionType.INCOME)
+                {
+                    financialGoal.CurrentAmount -= transaction.Amount;
+                }
+
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
+            }
+
+            var images = await _unitOfWork.ImageRepository.GetByConditionAsync(
+                filter: img => img.EntityId == transaction.Id && img.EntityName == "Transaction"
+            );
+
+            _unitOfWork.ImageRepository.PermanentDeletedListAsync(images);
+
             _unitOfWork.TransactionsRepository.PermanentDeletedAsync(transaction);
+
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
