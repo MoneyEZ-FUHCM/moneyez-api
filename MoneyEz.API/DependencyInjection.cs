@@ -173,6 +173,9 @@ namespace MoneyEz.API
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<ITransactionRepository, TransactionRepository>();
 
+            // config image service
+            services.AddScoped<IImageRepository, ImageRepository>();
+
             // config mail service
             services.AddScoped<IMailService, MailService>();
 

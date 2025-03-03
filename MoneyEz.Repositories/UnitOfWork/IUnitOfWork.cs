@@ -37,6 +37,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         //transaction
         ITransactionRepository TransactionsRepository { get; }
 
+        //image
+        IImageRepository ImageRepository { get; }
+
         //group
         IGroupFundRepository GroupFundRepository { get; }
         IGroupFundLogRepository GroupFundLogRepository { get; }

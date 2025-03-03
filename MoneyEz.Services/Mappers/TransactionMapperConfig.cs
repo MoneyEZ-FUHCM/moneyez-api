@@ -11,17 +11,14 @@ namespace MoneyEz.Services.Mappers
     {
         partial void TransactionMapperConfig()
         {
-            // Map từ Transaction entity sang TransactionModel
-            CreateMap<Transaction, TransactionModel>();
+            CreateMap<Transaction, TransactionModel>()
+                 .ForMember(dest => dest.Images, opt => opt.Ignore());
 
-            // Map từ CreateTransactionModel sang Transaction entity
             CreateMap<CreateTransactionModel, Transaction>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => TransactionStatus.APPROVED)); // Mặc định approved
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => TransactionStatus.APPROVED));
 
-            // Map từ UpdateTransactionModel sang Transaction entity
             CreateMap<UpdateTransactionModel, Transaction>();
 
-            // Map từ Pagination<Transaction> sang Pagination<TransactionModel>
             CreateMap<Pagination<Transaction>, Pagination<TransactionModel>>()
                 .ConvertUsing<PaginationConverter<Transaction, TransactionModel>>();
         }
