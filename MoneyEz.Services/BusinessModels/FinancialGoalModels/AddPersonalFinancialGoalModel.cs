@@ -18,7 +18,7 @@ namespace MoneyEz.Services.BusinessModels.FinancialGoalModels
         [Range(0.01, double.MaxValue, ErrorMessage = "Target amount must be greater than 0.")]
         public decimal TargetAmount { get; set; }
 
-        public decimal CurrentAmount { get; set; } = 0;
+        public decimal CurrentAmount = 0;
 
         [Required]
         public DateTime Deadline { get; set; }

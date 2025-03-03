@@ -95,11 +95,14 @@ namespace MoneyEz.Services.Services.Implements
             // Subcategory này đã có Goal chưa
             var existingGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
                 filter: fg => fg.UserId == user.Id && fg.SubcategoryId == model.SubcategoryId
+                                                     && !fg.IsDeleted // Chưa bị xóa
+                                                      && fg.Deadline > CommonUtils.GetCurrentTime() // Còn hạn sử dụng
+                                                        && fg.GroupId == null // Goal cá nhân
             );
 
             if (existingGoals.Any())
             {
-                throw new DefaultException("A financial goal already exists for this subcategory.", MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL);
+                throw new DefaultException("A financial goal already exists for this subcategory and is still active.", MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL);
             }
 
             if (model.TargetAmount <= 0)
