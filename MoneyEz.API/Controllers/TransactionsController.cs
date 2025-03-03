@@ -37,28 +37,28 @@ namespace MoneyEz.API.Controllers
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
-        [HttpGet("{transactionId}")]
+        [HttpGet("user/{transactionId}")]
         public Task<IActionResult> GetTransactionById(Guid transactionId)
         {
             return ValidateAndExecute(() => _transactionService.GetTransactionByIdAsync(transactionId));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
-        [HttpPost]
+        [HttpPost("user")]
         public Task<IActionResult> CreateTransaction([FromBody] CreateTransactionModel model)
         {
             return ValidateAndExecute(() => _transactionService.CreateTransactionAsync(model));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
-        [HttpPut]
+        [HttpPut("user")]
         public Task<IActionResult> UpdateTransaction([FromBody] UpdateTransactionModel model)
         {
             return ValidateAndExecute(() => _transactionService.UpdateTransactionAsync(model));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
-        [HttpDelete("{transactionId}")]
+        [HttpDelete("user/{transactionId}")]
         public Task<IActionResult> DeleteTransaction(Guid transactionId)
         {
             return ValidateAndExecute(() => _transactionService.DeleteTransactionAsync(transactionId));
