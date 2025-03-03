@@ -1,5 +1,6 @@
 ﻿using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
+using MoneyEz.Services.BusinessModels.ImageModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,5 +19,6 @@ namespace MoneyEz.Services.BusinessModels.GroupFund
         public string? Status { get; set; }
         public string? Visibility { get; set; }
         public List<GroupMemberModel> GroupMembers { get; set; } = new List<GroupMemberModel>();
+        public List<ImageModel> Images { get; set; } = new List<ImageModel>();
     }
 }

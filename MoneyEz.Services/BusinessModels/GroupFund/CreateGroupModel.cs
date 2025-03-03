@@ -14,14 +14,19 @@ namespace MoneyEz.Services.BusinessModels.GroupMember
 
         [Required(ErrorMessage = "Vui lòng nhập tên nhóm.")]
         [Display(Name = "Name")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
+
         [Display(Name = "Description")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
+        
         [Range(0, double.MaxValue, ErrorMessage = "Số dư hiện tại không hợp lệ.")]
         public decimal? CurrentBalance { get; set; }
 
+
         [Required(ErrorMessage = "Vui lòng chọn tài khoản ngân hàng.")]
         public Guid AccountBankId { get; set; }
+
+        public string? Image { get; set; }
 
     }
 }
