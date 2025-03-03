@@ -62,7 +62,8 @@ namespace MoneyEz.Services.Services.Implements
             var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
                 paginationParameter,
                 include: query => query.Include(t => t.Subcategory),
-                filter: t => t.UserId == user.Id
+                filter: t => t.UserId == user.Id,
+                orderBy: t=> t.OrderByDescending(t => t.CreatedDate)
             );
 
             var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
@@ -73,27 +74,17 @@ namespace MoneyEz.Services.Services.Implements
                 transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
             }
 
-            var result = new Pagination<TransactionModel>(transactionModels, transactions.TotalCount, transactions.CurrentPage, transactions.PageSize);
+            var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.TRANSACTION_LIST_FETCHED_SUCCESS,
-                Data = new ModelPaging
-                {
-                    Data = result,
-                    MetaData = new
-                    {
-                        result.TotalCount,
-                        result.PageSize,
-                        result.CurrentPage,
-                        result.TotalPages,
-                        result.HasNext,
-                        result.HasPrevious
-                    }
-                }
+                Data = result
             };
         }
+
+
         public async Task<BaseResultModel> GetTransactionByIdAsync(Guid transactionId)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
