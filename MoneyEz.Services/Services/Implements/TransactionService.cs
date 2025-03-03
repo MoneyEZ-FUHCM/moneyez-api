@@ -442,16 +442,21 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            var oldSubcategoryId = transaction.SubcategoryId;
+            var oldAmount = transaction.Amount;
+            var oldType = transaction.Type;
+
+            // Cập nhật transaction theo model mới
             _mapper.Map(model, transaction);
-            transaction.ApprovalRequired = false;  // Giao dịch cá nhân không cần phê duyệt
+            transaction.ApprovalRequired = false;
             transaction.Status = TransactionStatus.APPROVED;
 
             _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
 
+            // Xóa và thêm lại ảnh
             var oldImages = await _unitOfWork.ImageRepository.GetByConditionAsync(
                 filter: img => img.EntityId == transaction.Id && img.EntityName == "Transaction"
             );
-
             _unitOfWork.ImageRepository.PermanentDeletedListAsync(oldImages);
 
             if (model.Images != null && model.Images.Any())
@@ -467,33 +472,62 @@ namespace MoneyEz.Services.Services.Implements
                 await _unitOfWork.ImageRepository.AddRangeAsync(newImages);
             }
 
-            var financialGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.SubcategoryId == model.SubcategoryId && fg.UserId == user.Id
-            )).FirstOrDefault();
-
-            if (financialGoal != null)
+            // Xử lý FinancialGoal (2 trường hợp: Subcategory giữ nguyên hoặc đổi)
+            if (oldSubcategoryId != model.SubcategoryId)
             {
-                // Loại bỏ ảnh hưởng của giao dịch cũ trước khi cộng giao dịch mới
-                if (transaction.Type == TransactionType.EXPENSE)
+                // Hoàn trả goal cũ
+                var oldGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                    filter: fg => fg.SubcategoryId == oldSubcategoryId && fg.UserId == user.Id
+                )).FirstOrDefault();
+
+                if (oldGoal != null)
                 {
-                    financialGoal.CurrentAmount -= transaction.Amount;
-                }
-                else if (transaction.Type == TransactionType.INCOME)
-                {
-                    financialGoal.CurrentAmount -= transaction.Amount;
+                    if (oldType == TransactionType.EXPENSE)
+                        oldGoal.CurrentAmount -= oldAmount;
+                    else if (oldType == TransactionType.INCOME)
+                        oldGoal.CurrentAmount -= oldAmount;
+
+                    _unitOfWork.FinancialGoalRepository.UpdateAsync(oldGoal);
                 }
 
-                // Cộng giá trị mới vào goal
-                if (model.Type == TransactionType.EXPENSE)
-                {
-                    financialGoal.CurrentAmount += model.Amount ?? transaction.Amount;
-                }
-                else if (model.Type == TransactionType.INCOME)
-                {
-                    financialGoal.CurrentAmount += model.Amount ?? transaction.Amount;
-                }
+                // Cộng goal mới
+                var newGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                    filter: fg => fg.SubcategoryId == model.SubcategoryId && fg.UserId == user.Id
+                )).FirstOrDefault();
 
-                _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
+                if (newGoal != null)
+                {
+                    var newAmount = model.Amount ?? transaction.Amount;
+                    if (model.Type == TransactionType.EXPENSE)
+                        newGoal.CurrentAmount += newAmount;
+                    else if (model.Type == TransactionType.INCOME)
+                        newGoal.CurrentAmount += newAmount;
+
+                    _unitOfWork.FinancialGoalRepository.UpdateAsync(newGoal);
+                }
+            }
+            else
+            {
+                // Không đổi subcategory -> cập nhật ngay trên goal hiện tại
+                var currentGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                    filter: fg => fg.SubcategoryId == model.SubcategoryId && fg.UserId == user.Id
+                )).FirstOrDefault();
+
+                if (currentGoal != null)
+                {
+                    if (oldType == TransactionType.EXPENSE)
+                        currentGoal.CurrentAmount -= oldAmount;
+                    else if (oldType == TransactionType.INCOME)
+                        currentGoal.CurrentAmount -= oldAmount;
+
+                    var newAmount = model.Amount ?? transaction.Amount;
+                    if (model.Type == TransactionType.EXPENSE)
+                        currentGoal.CurrentAmount += newAmount;
+                    else if (model.Type == TransactionType.INCOME)
+                        currentGoal.CurrentAmount += newAmount;
+
+                    _unitOfWork.FinancialGoalRepository.UpdateAsync(currentGoal);
+                }
             }
 
             await _unitOfWork.SaveAsync();
@@ -504,6 +538,7 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.TRANSACTION_UPDATED_SUCCESS
             };
         }
+
         public async Task<BaseResultModel> DeleteTransactionAsync(Guid transactionId)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
