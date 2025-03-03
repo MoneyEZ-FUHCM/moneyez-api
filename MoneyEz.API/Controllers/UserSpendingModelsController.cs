@@ -51,6 +51,13 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _userSpendingModelService.GetCurrentSpendingModelAsync());
         }
 
+        [HttpGet("current/chart")]
+        [Authorize(Roles = nameof(RolesEnum.USER))]
+        public Task<IActionResult> GetChartCurrentSpendingModel()
+        {
+            return ValidateAndExecute(() => _userSpendingModelService.GetChartCurrentSpendingModelAsync());
+        }
+
         [HttpGet("{id}")]
         [Authorize(Roles = nameof(RolesEnum.USER))]
         public Task<IActionResult> GetUsedSpendingModelById(Guid id)

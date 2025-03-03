@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.UserModels;
 using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
@@ -22,10 +23,10 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "ADMIN")]
-        public Task<IActionResult> GetUsers([FromQuery] PaginationParameter paginationParameter)
+        [Authorize]
+        public Task<IActionResult> GetUsers([FromQuery] PaginationParameter paginationParameter, [FromQuery] UserFilter userFilter)
         {
-            return ValidateAndExecute(() => _userService.GetUserPaginationAsync(paginationParameter));
+            return ValidateAndExecute(() => _userService.GetUserPaginationAsync(paginationParameter, userFilter));
         }
 
         [HttpGet("{id}")]

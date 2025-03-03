@@ -29,6 +29,12 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _transactionService.GetAllTransactionsForUserAsync(paginationParameter));
         }
+        
+        [HttpGet("user-spending-model/{userSpendingModelId}")]
+        public Task<IActionResult> GetAllTransactionsBySpendingModel([FromQuery] PaginationParameter paginationParameter, Guid userSpendingModelId)
+        {
+            return ValidateAndExecute(() => _transactionService.GetTransactionsByUserSpendingModelAsync(paginationParameter, userSpendingModelId));
+        }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("{transactionId}")]

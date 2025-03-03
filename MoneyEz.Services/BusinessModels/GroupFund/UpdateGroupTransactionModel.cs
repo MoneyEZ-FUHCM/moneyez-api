@@ -7,9 +7,11 @@ using System.Threading.Tasks;
 
 namespace MoneyEz.Services.BusinessModels.GroupFund
 {
-    public class UpdateFundraisingModel
+    public class UpdateGroupTransactionModel
     {
-        public Guid Id { get; set; }
+        public Guid GroupId { get; set; }
+
+        public Guid TransactionId { get; set; }
 
         public TransactionStatus Status { get; set; }
     }

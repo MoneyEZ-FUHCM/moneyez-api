@@ -26,7 +26,6 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _categoryService.GetCategoryPaginationAsync(paginationParameter));
         }
 
-        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpGet("{id}")]
         public Task<IActionResult> GetCategoryById(Guid id)
         {
