@@ -562,8 +562,10 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var financialGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.SubcategoryId == transaction.SubcategoryId && fg.UserId == user.Id
-            )).FirstOrDefault();
+                filter: fg => fg.SubcategoryId == transaction.SubcategoryId && fg.UserId == user.Id &&
+                                  !fg.IsDeleted &&
+                                  fg.Deadline >= DateTime.UtcNow
+                            )).FirstOrDefault();
 
             if (financialGoal != null)
             {
