@@ -19,5 +19,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetGroupFinancialGoalByIdAsync(GetGroupFinancialGoalDetailModel model);
         Task<BaseResultModel> UpdateGroupFinancialGoalAsync(UpdateGroupFinancialGoalModel model);
         Task<BaseResultModel> DeleteGroupFinancialGoalAsync(DeleteFinancialGoalModel model);
+        Task<BaseResultModel> ApproveGroupFinancialGoalAsync(ApproveGroupFinancialGoalRequestModel model);
+
     }
 }
