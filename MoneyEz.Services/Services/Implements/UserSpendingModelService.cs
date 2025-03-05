@@ -75,9 +75,11 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var activeModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = 1, PageIndex = 1 },
-                filter: usm => usm.UserId == user.Id && usm.EndDate > CommonUtils.GetCurrentTime() && !usm.IsDeleted
+            var activeModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == user.Id
+                    && usm.EndDate > CommonUtils.GetCurrentTime()
+                    && usm.Status == UserSpendingModelStatus.ACTIVE
+                    && !usm.IsDeleted
             );
 
             if (activeModels.Any())
@@ -260,7 +262,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             _unitOfWork.UserSpendingModelRepository.SoftDeleteAsync(spendingModel);
-            _unitOfWork.Save(); 
+            _unitOfWork.Save();
 
             return new BaseResultModel
             {
@@ -275,13 +277,25 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var currentModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = 1, PageIndex = 1 },
-                filter: usm => usm.UserId == user.Id && usm.EndDate > CommonUtils.GetCurrentTime() && !usm.IsDeleted,
+            //var currentModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
+            //    new PaginationParameter { PageSize = 1, PageIndex = 1 },
+            //    filter: usm => usm.UserId == user.Id && usm.EndDate > CommonUtils.GetCurrentTime() && !usm.IsDeleted,
+            //    include: query => query.Include(usm => usm.SpendingModel)
+            //);
+
+            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.Status == UserSpendingModelStatus.ACTIVE
+                                && usm.UserId == user.Id
+                                && usm.EndDate > CommonUtils.GetCurrentTime()
+                                && !usm.IsDeleted,
                 include: query => query.Include(usm => usm.SpendingModel)
             );
 
             var currentModel = currentModels.FirstOrDefault();
+            if (currentModel == null)
+            {
+                throw new NotExistException("", MessageConstants.SPENDING_MODEL_NOT_FOUND);
+            }
 
             var currentModelReturn = _mapper.Map<UserSpendingModelModel>(currentModel);
 
@@ -328,13 +342,18 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var spendingModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = 1, PageIndex = 1 },
+            var spendingModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
                 filter: usm => usm.UserId == user.Id && usm.Id == id,
                 include: query => query.Include(usm => usm.SpendingModel)
             );
 
             var userSpendingModel = spendingModels.FirstOrDefault();
+
+            if (userSpendingModel == null)
+            {
+                throw new NotExistException("", MessageConstants.SPENDING_MODEL_NOT_FOUND);
+            }
+
             var userSpendingModelReturn = _mapper.Map<UserSpendingModelModel>(userSpendingModel);
 
             // Get all transactions for this user where groupId is null
@@ -345,9 +364,9 @@ namespace MoneyEz.Services.Services.Implements
             );
 
             // Calculate totals for each model
-                var modelTransactions = allTransactions.Where(t =>
-                    t.TransactionDate >= userSpendingModel.StartDate &&
-                    t.TransactionDate <= userSpendingModel.EndDate);
+            var modelTransactions = allTransactions.Where(t =>
+                t.TransactionDate >= userSpendingModel.StartDate &&
+                t.TransactionDate <= userSpendingModel.EndDate);
 
             userSpendingModelReturn.TotalIncome = modelTransactions
                     .Where(t => t.Type == TransactionType.INCOME)
@@ -391,16 +410,16 @@ namespace MoneyEz.Services.Services.Implements
 
             // Get all transactions for this user where groupId is null
             var allTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.UserId == user.Id && 
-                            t.GroupId == null && 
+                filter: t => t.UserId == user.Id &&
+                            t.GroupId == null &&
                             t.Status == TransactionStatus.APPROVED
             );
 
             // Calculate totals for each model
             foreach (var model in mappedResult)
             {
-                var modelTransactions = allTransactions.Where(t => 
-                    t.TransactionDate >= model.StartDate && 
+                var modelTransactions = allTransactions.Where(t =>
+                    t.TransactionDate >= model.StartDate &&
                     t.TransactionDate <= model.EndDate);
 
                 model.TotalIncome = modelTransactions
@@ -445,7 +464,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var currentModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
                 new PaginationParameter { PageSize = 1, PageIndex = 1 },
-                filter: usm => usm.UserId == user.Id && usm.EndDate > CommonUtils.GetCurrentTime() && !usm.IsDeleted,
+                filter: usm => usm.UserId == user.Id && usm.Status == UserSpendingModelStatus.ACTIVE && !usm.IsDeleted,
                 include: query => query
                     .Include(usm => usm.SpendingModel)
                     .ThenInclude(sm => sm.SpendingModelCategories)
@@ -478,8 +497,7 @@ namespace MoneyEz.Services.Services.Implements
             decimal totalSpent = 0;
 
             // Get all transactions within the model's time period
-            var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = int.MaxValue, PageIndex = 1 },
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
                 filter: t => t.UserId == user.Id && t.GroupId == null &&
                             t.TransactionDate >= currentModel.StartDate &&
                             t.TransactionDate <= currentModel.EndDate &&
@@ -584,6 +602,43 @@ namespace MoneyEz.Services.Services.Implements
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.TRANSACTION_LIST_FETCHED_SUCCESS,
                 Data = result
+            };
+        }
+
+        private async Task<BaseResultModel> UpdateExpiredSpendingModelsAsync()
+        {
+            var currentTime = CommonUtils.GetCurrentTime();
+
+            // Get all active spending models that have passed their end date
+            var expiredModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.Status == UserSpendingModelStatus.ACTIVE
+                    && usm.EndDate < currentTime
+                    && !usm.IsDeleted
+            );
+
+            if (!expiredModels.Any())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = "No expired models found to update."
+                };
+            }
+
+            // Update status to EXPIRED for all expired models
+            foreach (var model in expiredModels)
+            {
+                model.Status = UserSpendingModelStatus.EXPIRED;
+                model.UpdatedDate = currentTime;
+            }
+
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = $"Successfully updated {expiredModels.Count()} expired spending models.",
+                Data = expiredModels.Count()
             };
         }
     }

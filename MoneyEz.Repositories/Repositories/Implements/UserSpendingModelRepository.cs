@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MoneyEz.Repositories.Entities;
+using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.Repositories.Interfaces;
+using MoneyEz.Repositories.Utils;
 
 namespace MoneyEz.Repositories.Repositories.Implements
 {
@@ -17,8 +19,9 @@ namespace MoneyEz.Repositories.Repositories.Implements
         {
             return await _context.UserSpendingModels
                 .Where(usm => usm.UserId == userId
-                            && usm.StartDate <= DateTime.UtcNow
-                            && usm.EndDate >= DateTime.UtcNow
+                            && usm.StartDate <= CommonUtils.GetCurrentTime()
+                            && usm.EndDate >= CommonUtils.GetCurrentTime()
+                            && usm.Status == UserSpendingModelStatus.ACTIVE
                             && !usm.IsDeleted)
                 .OrderByDescending(usm => usm.StartDate)
                 .FirstOrDefaultAsync();

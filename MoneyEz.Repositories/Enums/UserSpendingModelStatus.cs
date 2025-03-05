@@ -9,6 +9,6 @@ namespace MoneyEz.Repositories.Enums
     public enum UserSpendingModelStatus
     {
         ACTIVE,
-        EXPRIED
+        EXPIRED
     }
 }
