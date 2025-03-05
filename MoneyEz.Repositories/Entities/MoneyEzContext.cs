@@ -67,7 +67,7 @@ public partial class MoneyEzContext : DbContext
     public virtual DbSet<UserSetting> UserSettings { get; set; }
 
     public virtual DbSet<UserSpendingModel> UserSpendingModels { get; set; }
-    
+
     public virtual DbSet<Image> Images { get; set; }
 
     public virtual DbSet<BankAccount> BankAccounts { get; set; }
@@ -164,6 +164,14 @@ public partial class MoneyEzContext : DbContext
                 .HasMaxLength(100);
             entity.Property(e => e.NameUnsign).HasMaxLength(100);
             entity.Property(e => e.TargetAmount).HasColumnType("decimal(15, 2)");
+
+            entity.Property(e => e.Status)
+                .HasConversion<int>()
+                .IsRequired();
+
+            entity.Property(e => e.ApprovalStatus)
+                .HasConversion<int>()
+                .IsRequired();
 
             entity.HasOne(d => d.Group).WithMany(p => p.FinancialGoals)
                 .HasForeignKey(d => d.GroupId)
