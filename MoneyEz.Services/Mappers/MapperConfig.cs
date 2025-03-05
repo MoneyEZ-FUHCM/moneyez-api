@@ -33,8 +33,8 @@ namespace MoneyEz.Services.Mappers
             // group fund mapper
             GroupFundConfig();
 
-            // transaction mapper
-
+            // report
+            FinancialReportMapperConfig();
             // chat mapper
             ChatMapperConfig();
 
@@ -58,6 +58,7 @@ namespace MoneyEz.Services.Mappers
         partial void SpendingModelMapperConfig();
         partial void UserSpendingModelMapperConfig();
         partial void FinancialGoalMapperConfig();
+        partial void FinancialReportMapperConfig();
         partial void CategoryMapperConfig();
         partial void SubcategoryMapperConfig();
         partial void TransactionMapperConfig();

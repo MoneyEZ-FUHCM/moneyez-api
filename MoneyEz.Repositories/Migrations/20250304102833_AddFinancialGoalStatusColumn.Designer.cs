@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MoneyEz.Repositories.Entities;
 
@@ -11,9 +12,11 @@ using MoneyEz.Repositories.Entities;
 namespace MoneyEz.Repositories.Migrations
 {
     [DbContext(typeof(MoneyEzContext))]
-    partial class MoneyEzContextModelSnapshot : ModelSnapshot
+    [Migration("20250304102833_AddFinancialGoalStatusColumn")]
+    partial class AddFinancialGoalStatusColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -183,9 +186,6 @@ namespace MoneyEz.Repositories.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int?>("Type")
-                        .HasColumnType("int");
-
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("nvarchar(max)");
 
@@ -321,9 +321,6 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("ApprovalStatus")
-                        .HasColumnType("int");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
@@ -1353,9 +1350,6 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("UserSpendingModelId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id")
                         .HasName("PK__Transact__3214EC07AC448F93");
 
@@ -1605,9 +1599,6 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<int?>("Status")
-                        .HasColumnType("int");
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("nvarchar(max)");

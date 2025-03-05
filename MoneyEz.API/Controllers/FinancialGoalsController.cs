@@ -93,6 +93,12 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _financialGoalService.DeleteGroupFinancialGoalAsync(model));
         }
 
+        [HttpPost("approve-group-goal")]
+        public Task<IActionResult> ApproveGroupFinancialGoal([FromBody] ApproveGroupFinancialGoalRequestModel model)
+        {
+            return ValidateAndExecute(() => _financialGoalService.ApproveGroupFinancialGoalAsync(model));
+        }
+
         #endregion
     }
 }

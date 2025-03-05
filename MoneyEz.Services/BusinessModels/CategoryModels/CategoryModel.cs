@@ -10,6 +10,7 @@ namespace MoneyEz.Services.BusinessModels.CategoryModels
         public string? Description { get; set; }
         public string? Code { get; set; }
         public string? Icon { get; set; }
+        public string? Type { get; set; }
         public List<SubcategoryModel> Subcategories { get; set; } = new List<SubcategoryModel>();
     }
 }
