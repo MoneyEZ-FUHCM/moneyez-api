@@ -25,15 +25,17 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
+        private readonly ITransactionNotificationService _transactionNotificationService;
 
-        public TransactionService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService)
+        public TransactionService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService, ITransactionNotificationService transactionNotificationService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
+            _transactionNotificationService = transactionNotificationService;
         }
 
-        //single user
+        #region single user
         public async Task<BaseResultModel> GetAllTransactionsForUserAsync(PaginationParameter paginationParameter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -63,7 +65,7 @@ namespace MoneyEz.Services.Services.Implements
                 paginationParameter,
                 include: query => query.Include(t => t.Subcategory),
                 filter: t => t.UserId == user.Id,
-                orderBy: t=> t.OrderByDescending(t => t.CreatedDate)
+                orderBy: t => t.OrderByDescending(t => t.CreatedDate)
             );
 
             var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
@@ -137,125 +139,17 @@ namespace MoneyEz.Services.Services.Implements
         }
         public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model)
         {
-            string userEmail = _claimsService.GetCurrentUserEmail;
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.TRANSACTION_CREATE_DENIED,
-                    Message = "Unauthorized: You must be logged in to create a transaction."
-                };
-            }
-
-            var user = (await _unitOfWork.UsersRepository.GetByConditionAsync(
-                filter: u => u.Email == userEmail
-            )).FirstOrDefault();
-
-            if (user == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
-                    Message = "User not found."
-                };
-            }
-
-            if (model.Amount <= 0)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_AMOUNT_REQUIRED,
-                    Message = "Amount must be greater than zero."
-                };
-            }
-
-            if (!Enum.IsDefined(typeof(TransactionType), model.Type))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_TYPE_INVALID,
-                    Message = "Transaction type is invalid."
-                };
-            }
-
-            if (model.SubcategoryId == Guid.Empty)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_SUBCATEGORY_REQUIRED,
-                    Message = "Subcategory ID is required."
-                };
-            }
-
-            if (model.TransactionDate == default)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_DATE_REQUIRED,
-                    Message = "Transaction date is required."
-                };
-            }
-
-            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId);
-            if (subcategory == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND,
-                    Message = "Subcategory does not exist."
-                };
-            }
-
-            var currentSpendingModel = (await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
-                filter: usm => usm.UserId == user.Id &&
-                               usm.StartDate <= DateTime.UtcNow &&
-                               (usm.EndDate == null || usm.EndDate >= DateTime.UtcNow)
-            )).FirstOrDefault();
-
-            if (currentSpendingModel == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.SPENDING_MODEL_DATA_MISSING,
-                    Message = "User must select a spending model before creating a transaction."
-                };
-            }
+            var user = await GetCurrentUserAsync();
+            await ValidateSubcategoryInCurrentSpendingModel(model.SubcategoryId, user.Id);
 
             var transaction = _mapper.Map<Transaction>(model);
             transaction.UserId = user.Id;
-            transaction.ApprovalRequired = false;
             transaction.Status = TransactionStatus.APPROVED;
 
+            await CheckAndNotifyCategorySpendingLimit(transaction, user);
+
             await _unitOfWork.TransactionsRepository.AddAsync(transaction);
-
-            var financialGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.SubcategoryId == model.SubcategoryId &&
-                              fg.UserId == user.Id &&
-                              !fg.IsDeleted &&
-                              fg.Deadline >= DateTime.UtcNow
-            )).FirstOrDefault();
-
-            if (financialGoal != null)
-            {
-                if (model.Type == TransactionType.EXPENSE)
-                {
-                    financialGoal.CurrentAmount += model.Amount;
-                }
-                else if (model.Type == TransactionType.INCOME)
-                {
-                    financialGoal.CurrentAmount += model.Amount;
-                }
-
-                _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
-            }
+            await UpdateFinancialGoalProgress(transaction, user);
 
             if (model.Images != null && model.Images.Any())
             {
@@ -263,8 +157,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     EntityId = transaction.Id,
                     EntityName = "Transaction",
-                    ImageUrl = url,
-                    CreatedDate = DateTime.UtcNow
+                    ImageUrl = url
                 }).ToList();
 
                 await _unitOfWork.ImageRepository.AddRangeAsync(images);
@@ -278,239 +171,44 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.TRANSACTION_CREATED_SUCCESS
             };
         }
+
         public async Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model)
         {
-            string userEmail = _claimsService.GetCurrentUserEmail;
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.TRANSACTION_UPDATE_DENIED,
-                    Message = "Unauthorized: You must be logged in to update a transaction."
-                };
-            }
+            var user = await GetCurrentUserAsync();
 
-            var user = (await _unitOfWork.UsersRepository.GetByConditionAsync(
-                filter: u => u.Email == userEmail
-            )).FirstOrDefault();
-
-            if (user == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
-                    Message = "User not found."
-                };
-            }
-
-            if (model.Id == Guid.Empty)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_ID_REQUIRED,
-                    Message = "Transaction ID is required."
-                };
-            }
-
-            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.Id);
-            if (transaction == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.TRANSACTION_NOT_FOUND,
-                    Message = "Transaction not found."
-                };
-            }
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.Id)
+                ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
 
             if (transaction.UserId != user.Id)
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status403Forbidden,
-                    ErrorCode = MessageConstants.TRANSACTION_UPDATE_DENIED,
-                    Message = "Access denied: You can only update your own transactions."
-                };
+                throw new DefaultException("You can only modify your own transactions.", MessageConstants.TRANSACTION_UPDATE_DENIED);
             }
 
-            if (model.Amount.HasValue && model.Amount <= 0)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_AMOUNT_REQUIRED,
-                    Message = "Amount must be greater than zero."
-                };
-            }
+            await UpdateFinancialGoalProgress(transaction, user, isRollback: true);
 
-            if (!Enum.IsDefined(typeof(TransactionType), model.Type))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_TYPE_INVALID,
-                    Message = "Transaction type is invalid."
-                };
-            }
-
-            if (model.SubcategoryId == Guid.Empty)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_SUBCATEGORY_REQUIRED,
-                    Message = "Subcategory ID is required."
-                };
-            }
-
-            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId);
-            if (subcategory == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_FOUND,
-                    Message = "Subcategory does not exist."
-                };
-            }
-
-            var currentSpendingModel = (await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
-                filter: usm => usm.UserId == user.Id &&
-                               usm.StartDate <= DateTime.UtcNow &&
-                               (usm.EndDate == null || usm.EndDate >= DateTime.UtcNow)
-            )).FirstOrDefault();
-
-            if (currentSpendingModel == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.SPENDING_MODEL_DATA_MISSING,
-                    Message = "User must select a spending model before updating a transaction."
-                };
-            }
-
-            var validCategory = (await _unitOfWork.SpendingModelCategoryRepository.GetByConditionAsync(
-                filter: smc => smc.SpendingModelId == currentSpendingModel.SpendingModelId &&
-                               smc.Category.CategorySubcategories.Any(cs => cs.SubcategoryId == model.SubcategoryId)
-            )).FirstOrDefault();
-
-            if (validCategory == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL,
-                    Message = "Selected subcategory is not allowed in the current spending model."
-                };
-            }
-
-            if (model.TransactionDate == default)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.TRANSACTION_DATE_REQUIRED,
-                    Message = "Transaction date is required."
-                };
-            }
-
-            var oldSubcategoryId = transaction.SubcategoryId;
-            var oldAmount = transaction.Amount;
-            var oldType = transaction.Type;
-
-            // Cập nhật transaction theo model mới
             _mapper.Map(model, transaction);
-            transaction.ApprovalRequired = false;
-            transaction.Status = TransactionStatus.APPROVED;
+
+            await ValidateSubcategoryInCurrentSpendingModel(transaction.SubcategoryId.Value, user.Id);
+
+            await CheckAndNotifyCategorySpendingLimit(transaction, user);
 
             _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
 
-            // Xóa và thêm lại ảnh
-            var oldImages = await _unitOfWork.ImageRepository.GetByConditionAsync(
-                filter: img => img.EntityId == transaction.Id && img.EntityName == "Transaction"
-            );
+            await UpdateFinancialGoalProgress(transaction, user);
+
+            var oldImages = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, "Transaction");
             _unitOfWork.ImageRepository.PermanentDeletedListAsync(oldImages);
 
             if (model.Images != null && model.Images.Any())
             {
-                var newImages = model.Images.Select(url => new Image
+                var images = model.Images.Select(url => new Image
                 {
                     EntityId = transaction.Id,
                     EntityName = "Transaction",
-                    ImageUrl = url,
-                    CreatedDate = DateTime.UtcNow
+                    ImageUrl = url
                 }).ToList();
 
-                await _unitOfWork.ImageRepository.AddRangeAsync(newImages);
-            }
-
-            // Xử lý FinancialGoal (2 trường hợp: Subcategory giữ nguyên hoặc đổi)
-            if (oldSubcategoryId != model.SubcategoryId)
-            {
-                // Hoàn trả goal cũ
-                var oldGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                            filter: fg => fg.SubcategoryId == transaction.SubcategoryId &&
-                                  fg.UserId == user.Id &&
-                                  !fg.IsDeleted &&
-                                  fg.Deadline >= DateTime.UtcNow
-                            )).FirstOrDefault();
-
-                if (oldGoal != null)
-                {
-                    if (oldType == TransactionType.EXPENSE)
-                        oldGoal.CurrentAmount -= oldAmount;
-                    else if (oldType == TransactionType.INCOME)
-                        oldGoal.CurrentAmount -= oldAmount;
-
-                    _unitOfWork.FinancialGoalRepository.UpdateAsync(oldGoal);
-                }
-
-                // Cộng goal mới
-                var newGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                    filter: fg => fg.SubcategoryId == model.SubcategoryId && fg.UserId == user.Id &&
-                                  !fg.IsDeleted &&
-                                  fg.Deadline >= DateTime.UtcNow
-                )).FirstOrDefault();
-
-                if (newGoal != null)
-                {
-                    var newAmount = model.Amount ?? transaction.Amount;
-                    if (model.Type == TransactionType.EXPENSE)
-                        newGoal.CurrentAmount += newAmount;
-                    else if (model.Type == TransactionType.INCOME)
-                        newGoal.CurrentAmount += newAmount;
-
-                    _unitOfWork.FinancialGoalRepository.UpdateAsync(newGoal);
-                }
-            }
-            else
-            {
-                // Không đổi subcategory -> cập nhật ngay trên goal hiện tại
-                var currentGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                    filter: fg => fg.SubcategoryId == model.SubcategoryId && fg.UserId == user.Id &&
-                                  !fg.IsDeleted &&
-                                  fg.Deadline >= DateTime.UtcNow
-                )).FirstOrDefault();
-
-                if (currentGoal != null)
-                {
-                    if (oldType == TransactionType.EXPENSE)
-                        currentGoal.CurrentAmount -= oldAmount;
-                    else if (oldType == TransactionType.INCOME)
-                        currentGoal.CurrentAmount -= oldAmount;
-
-                    var newAmount = model.Amount ?? transaction.Amount;
-                    if (model.Type == TransactionType.EXPENSE)
-                        currentGoal.CurrentAmount += newAmount;
-                    else if (model.Type == TransactionType.INCOME)
-                        currentGoal.CurrentAmount += newAmount;
-
-                    _unitOfWork.FinancialGoalRepository.UpdateAsync(currentGoal);
-                }
+                await _unitOfWork.ImageRepository.AddRangeAsync(images);
             }
 
             await _unitOfWork.SaveAsync();
@@ -524,68 +222,23 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> DeleteTransactionAsync(Guid transactionId)
         {
-            string userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await GetCurrentUserAsync();
 
-            if (string.IsNullOrEmpty(userEmail))
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId)
+                ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
+
+            if (transaction.UserId != user.Id)
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
-                    Message = "Unauthorized: Cannot retrieve user email."
-                };
+                throw new DefaultException("You can only delete your own transactions.", MessageConstants.TRANSACTION_DELETE_DENIED);
             }
 
-            var user = (await _unitOfWork.UsersRepository.GetByConditionAsync(
-                filter: u => u.Email == userEmail
-            )).FirstOrDefault();
+            await UpdateFinancialGoalProgress(transaction, user, isRollback: true);
 
-            if (user == null)
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, "Transaction");
+            if (images.Any())
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
-                    Message = "User not found."
-                };
+                _unitOfWork.ImageRepository.PermanentDeletedListAsync(images);
             }
-
-            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId);
-            if (transaction == null || transaction.UserId != user.Id)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status403Forbidden,
-                    ErrorCode = MessageConstants.TRANSACTION_DELETE_DENIED,
-                    Message = "Access denied: You can only delete your own transactions."
-                };
-            }
-
-            var financialGoal = (await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.SubcategoryId == transaction.SubcategoryId && fg.UserId == user.Id &&
-                                  !fg.IsDeleted &&
-                                  fg.Deadline >= DateTime.UtcNow
-                            )).FirstOrDefault();
-
-            if (financialGoal != null)
-            {
-                if (transaction.Type == TransactionType.EXPENSE)
-                {
-                    financialGoal.CurrentAmount -= transaction.Amount;
-                }
-                else if (transaction.Type == TransactionType.INCOME)
-                {
-                    financialGoal.CurrentAmount -= transaction.Amount;
-                }
-
-                _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
-            }
-
-            var images = await _unitOfWork.ImageRepository.GetByConditionAsync(
-                filter: img => img.EntityId == transaction.Id && img.EntityName == "Transaction"
-            );
-
-            _unitOfWork.ImageRepository.PermanentDeletedListAsync(images);
 
             _unitOfWork.TransactionsRepository.PermanentDeletedAsync(transaction);
 
@@ -597,6 +250,137 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.TRANSACTION_DELETED_SUCCESS
             };
         }
+        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, Guid userSpendingModelId)
+        {
+            string userEmail = _claimsService.GetCurrentUserEmail;
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
+                    Message = "Unauthorized: Cannot retrieve user email."
+                };
+            }
+
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetByIdAsync(userSpendingModelId);
+            if (userSpendingModel == null || userSpendingModel.UserId != user.Id)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.SPENDING_MODEL_NOT_FOUND,
+                    Message = "Spending model not found for the user."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+                paginationParameter,
+                include: query => query.Include(t => t.Subcategory),
+                filter: t => t.UserId == user.Id
+                             && t.TransactionDate >= userSpendingModel.StartDate
+                             && t.TransactionDate <= userSpendingModel.EndDate,
+                orderBy: t => t.OrderByDescending(t => t.CreatedDate)
+            );
+
+            var transactionModels = _mapper.Map<Pagination<TransactionModel>>(transactions);
+            var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.TRANSACTION_LIST_FETCHED_SUCCESS,
+                Data = result
+            };
+        }
+
+
+        private async Task<User> GetCurrentUserAsync()
+        {
+            var email = _claimsService.GetCurrentUserEmail;
+            return await _unitOfWork.UsersRepository.GetUserByEmailAsync(email)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+        }
+
+        private async Task ValidateSubcategoryInCurrentSpendingModel(Guid subcategoryId, Guid userId)
+        {
+            var currentSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(userId)
+                ?? throw new DefaultException("User has no active spending model.", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+
+            var allowedSubcategories = await _unitOfWork.CategorySubcategoryRepository.GetSubcategoriesBySpendingModelId(currentSpendingModel.SpendingModelId.Value);
+            if (!allowedSubcategories.Any(s => s.Id == subcategoryId))
+            {
+                throw new DefaultException("Selected subcategory is not allowed in the current spending model.", MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL);
+            }
+        }
+
+        private async Task CheckAndNotifyCategorySpendingLimit(Transaction transaction, User user)
+        {
+            var currentSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(transaction.UserId.Value);
+            var totalIncome = await _unitOfWork.TransactionsRepository.GetTotalIncomeAsync(
+                transaction.UserId.Value, null, currentSpendingModel.StartDate.Value, currentSpendingModel.EndDate.Value);
+
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(transaction.SubcategoryId.Value);
+            var category = await _unitOfWork.CategorySubcategoryRepository.GetCategoryBySubcategoryId(subcategory.Id);
+            var spendingModelCategory = await _unitOfWork.SpendingModelCategoryRepository.GetByModelAndCategory(
+                currentSpendingModel.SpendingModelId.Value, category.Id);
+
+            decimal categoryBudget = totalIncome * (spendingModelCategory.PercentageAmount ?? 0) / 100m;
+
+            var totalCategoryExpense = await _unitOfWork.TransactionsRepository.GetTotalExpenseByCategory(
+                transaction.UserId.Value, category.Id, currentSpendingModel.StartDate.Value, currentSpendingModel.EndDate.Value);
+
+            if ((totalCategoryExpense + transaction.Amount) > categoryBudget)
+            {
+                decimal exceededAmount = (totalCategoryExpense + transaction.Amount) - categoryBudget;
+                await _transactionNotificationService.NotifyBudgetExceededAsync(user, category, exceededAmount, transaction.Type);
+            }
+        }
+
+        private async Task UpdateFinancialGoalProgress(Transaction transaction, User user, bool isRollback = false)
+        {
+            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(transaction.UserId.Value, transaction.SubcategoryId.Value);
+
+            if (financialGoal == null || financialGoal.Status == FinancialGoalStatus.COMPLETED)
+            {
+                return;
+            }
+
+            var adjustmentAmount = isRollback ? -transaction.Amount : transaction.Amount;
+
+            financialGoal.CurrentAmount += adjustmentAmount;
+
+            if (financialGoal.CurrentAmount >= financialGoal.TargetAmount)
+            {
+                financialGoal.CurrentAmount = financialGoal.TargetAmount;
+                financialGoal.Status = FinancialGoalStatus.COMPLETED;
+                financialGoal.ApprovalStatus = ApprovalStatus.APPROVED;
+
+                await _transactionNotificationService.NotifyGoalAchievedAsync(user, financialGoal);
+            }
+            else if (!isRollback)
+            {
+                await _transactionNotificationService.NotifyGoalProgressTrackingAsync(user, financialGoal);
+            }
+
+            _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
+        }
+
+        #endregion single user
+
+
+
 
         //admin
         public async Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter)

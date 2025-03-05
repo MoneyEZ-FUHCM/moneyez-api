@@ -160,7 +160,6 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_DELETED_SUCCESS = "TransactionDeletedSuccessfully";
         public const string TRANSACTION_FETCHED_SUCCESS = "TransactionFetchedSuccessfully";
 
-        // Add new transaction verification messages
         public const string TRANSACTION_NOT_IN_GROUP = "TransactionDoesNotBelongToGroup";
         public const string TRANSACTION_RESPONSE_SUCCESS = "TransactionResponseSuccess";
         public const string TRANSACTION_MUST_BE_PENDING = "TransactionMustBePending";
@@ -185,6 +184,7 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_SUBCATEGORY_REQUIRED = "TransactionSubcategoryRequired";
         public const string TRANSACTION_DATE_REQUIRED = "TransactionDateRequired";
         public const string TRANSACTION_ADMIN_ACCESS_DENIED = "TransactionAdminAccessDenied";
+        public const string SPENDING_MODEL_OVER_LIMIT = "SpendingModelOverLimit";
 
 
         // group

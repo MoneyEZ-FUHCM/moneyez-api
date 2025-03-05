@@ -9,5 +9,8 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
     {
         Task<decimal> GetTotalIncomeAsync(Guid? userId, Guid? groupId, DateTime startDate, DateTime endDate);
         Task<decimal> GetTotalExpenseAsync(Guid? userId, Guid? groupId, DateTime startDate, DateTime endDate);
+
+        Task<decimal> GetTotalExpenseByCategory(Guid userId, Guid categoryId, DateTime startDate, DateTime endDate);
+
     }
 }

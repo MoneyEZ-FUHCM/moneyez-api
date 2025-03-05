@@ -4,7 +4,8 @@
     {
         PENDING,
         ACTIVE,
-        ARCHIVED
+        ARCHIVED,
+        COMPLETED
     }
 
     public enum ApprovalStatus
