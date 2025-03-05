@@ -48,6 +48,8 @@ public partial class MoneyEzContext : DbContext
 
     public virtual DbSet<SpendingModel> SpendingModels { get; set; }
 
+    public virtual DbSet<CategorySubcategory> CategorySubcategory { get; set; }
+
     public virtual DbSet<SpendingModelCategory> SpendingModelCategories { get; set; }
 
     public virtual DbSet<Subcategory> Subcategories { get; set; }
