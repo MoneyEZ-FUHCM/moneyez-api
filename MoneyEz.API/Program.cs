@@ -37,11 +37,11 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddWebAPIService(builder);
 builder.Services.AddInfractstructure(builder.Configuration);
 
-/*// config firebase
+// config firebase
 FirebaseApp.Create(new AppOptions()
 {
     Credential = GoogleCredential.FromFile("firebase-adminsdk.json")
-});*/
+});
 
 var app = builder.Build();
 
