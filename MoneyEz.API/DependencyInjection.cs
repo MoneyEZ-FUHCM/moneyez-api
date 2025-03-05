@@ -223,8 +223,6 @@ namespace MoneyEz.API
 
             services.AddDbContext<MoneyEzContext>(options =>
             {
-                //options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
-                options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
             });
 
             #endregion
