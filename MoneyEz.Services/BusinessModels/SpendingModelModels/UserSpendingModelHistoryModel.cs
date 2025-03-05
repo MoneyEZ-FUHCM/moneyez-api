@@ -16,5 +16,6 @@ namespace MoneyEz.Services.BusinessModels.SpendingModelModels
         public DateTime EndDate { get; set; }
         public decimal TotalIncome { get; set; }
         public decimal TotalExpense { get; set; }
+        public string? Status { get; set; }
     }
 }
