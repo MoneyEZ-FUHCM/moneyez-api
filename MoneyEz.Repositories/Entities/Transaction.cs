@@ -26,6 +26,8 @@ public partial class Transaction : BaseEntity
 
     public TransactionStatus Status { get; set; } = TransactionStatus.PENDING; // Mặc định là PENDING
 
+    public Guid? UserSpendingModelId { get; set; }
+
     public virtual GroupFund? Group { get; set; }
 
     public virtual Subcategory? Subcategory { get; set; }
