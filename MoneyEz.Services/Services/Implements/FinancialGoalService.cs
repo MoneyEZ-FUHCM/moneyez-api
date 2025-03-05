@@ -438,19 +438,19 @@ namespace MoneyEz.Services.Services.Implements
                 // Leader và MOD thấy tất cả
                 allowedStatuses.AddRange(new[]
                 {
-            FinancialGoalStatus.PENDING,
-            FinancialGoalStatus.ACTIVE,
-            FinancialGoalStatus.ARCHIVED
-        });
+                    FinancialGoalStatus.PENDING,
+                    FinancialGoalStatus.ACTIVE,
+                    FinancialGoalStatus.ARCHIVED
+                });
             }
             else
             {
                 // Member chỉ thấy mục tiêu đã duyệt hoặc đã lưu trữ
                 allowedStatuses.AddRange(new[]
                 {
-            FinancialGoalStatus.ACTIVE,
-            FinancialGoalStatus.ARCHIVED
-        });
+                    FinancialGoalStatus.ACTIVE,
+                    FinancialGoalStatus.ARCHIVED
+                });
             }
 
             var financialGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
