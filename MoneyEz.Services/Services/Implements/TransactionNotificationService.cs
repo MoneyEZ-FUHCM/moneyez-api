@@ -21,19 +21,13 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task NotifyBudgetExceededAsync(User user, Category category, decimal exceededAmount, TransactionType type)
         {
-            string message;
-            string title;
+            string title = type == TransactionType.EXPENSE
+                ? "Chi tiêu vượt hạn mức!"
+                : "Thu nhập vượt kế hoạch!";
 
-            if (type == TransactionType.EXPENSE)
-            {
-                title = "Chi tiêu vượt hạn mức!";
-                message = $"Bạn đã chi vượt ngân sách cho danh mục '{category.Name}' thêm {exceededAmount:N0} VNĐ.";
-            }
-            else
-            {
-                title = "Thu nhập vượt kế hoạch!";
-                message = $"Bạn đã tiết kiệm thêm được {exceededAmount:N0} VNĐ cho danh mục '{category.Name}'. Rất tuyệt vời!";
-            }
+            string message = type == TransactionType.EXPENSE
+                ? $"Bạn đã chi vượt ngân sách cho danh mục '{category.Name}' thêm {exceededAmount:N0} VNĐ trong kỳ hiện tại."
+                : $"Bạn đã tiết kiệm thêm được {exceededAmount:N0} VNĐ cho danh mục '{category.Name}'. Tuyệt vời!";
 
             var notification = new Notification
             {

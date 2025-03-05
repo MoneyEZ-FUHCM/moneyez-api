@@ -58,5 +58,16 @@ namespace MoneyEz.Repositories.Repositories.Implements
                 .SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
 
+
+        public async Task<decimal> GetTotalIncomeByCategory(Guid userId, Guid categoryId, DateTime startDate, DateTime endDate)
+        {
+            return await _context.Transactions
+                .Where(t => t.UserId == userId &&
+                            t.TransactionDate >= startDate && t.TransactionDate <= endDate &&
+                            t.Type == TransactionType.INCOME &&
+                            t.Subcategory.CategorySubcategories.Any(cs => cs.CategoryId == categoryId))
+                .SumAsync(t => (decimal?)t.Amount) ?? 0;
+        }
+
     }
 }

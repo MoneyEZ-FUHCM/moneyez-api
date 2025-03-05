@@ -338,15 +338,17 @@ namespace MoneyEz.Services.Services.Implements
 
             decimal categoryBudget = totalIncome * (spendingModelCategory.PercentageAmount ?? 0) / 100m;
 
-            var totalCategoryExpense = await _unitOfWork.TransactionsRepository.GetTotalExpenseByCategory(
-                transaction.UserId.Value, category.Id, currentSpendingModel.StartDate.Value, currentSpendingModel.EndDate.Value);
+            decimal totalCategoryTransaction = transaction.Type == TransactionType.EXPENSE
+                ? await _unitOfWork.TransactionsRepository.GetTotalExpenseByCategory(transaction.UserId.Value, category.Id, currentSpendingModel.StartDate.Value, currentSpendingModel.EndDate.Value)
+                : await _unitOfWork.TransactionsRepository.GetTotalIncomeByCategory(transaction.UserId.Value, category.Id, currentSpendingModel.StartDate.Value, currentSpendingModel.EndDate.Value);
 
-            if ((totalCategoryExpense + transaction.Amount) > categoryBudget)
+            if ((totalCategoryTransaction + transaction.Amount) > categoryBudget)
             {
-                decimal exceededAmount = (totalCategoryExpense + transaction.Amount) - categoryBudget;
+                decimal exceededAmount = (totalCategoryTransaction + transaction.Amount) - categoryBudget;
                 await _transactionNotificationService.NotifyBudgetExceededAsync(user, category, exceededAmount, transaction.Type);
             }
         }
+
 
         private async Task UpdateFinancialGoalProgress(Transaction transaction, User user, bool isRollback = false)
         {
