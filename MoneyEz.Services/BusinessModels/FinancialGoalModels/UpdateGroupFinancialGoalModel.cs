@@ -1,4 +1,5 @@
-﻿using MoneyEz.Services.Utils;
+﻿using MoneyEz.Repositories.Enums;
+using MoneyEz.Services.Utils;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -22,5 +23,9 @@ namespace MoneyEz.Services.BusinessModels.FinancialGoalModels
 
         [Required]
         public DateTime Deadline { get; set; }
+
+        public FinancialGoalStatus Status = FinancialGoalStatus.PENDING;
+
+        public ApprovalStatus ApprovalStatus = ApprovalStatus.PENDING;
     }
 }

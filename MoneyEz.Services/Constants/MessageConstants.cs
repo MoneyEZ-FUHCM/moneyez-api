@@ -94,6 +94,37 @@ namespace MoneyEz.Services.Constants
         public const string SPENDING_MODEL_HAS_NO_CATEGORIES = "SpendingModelHasNoCategories";
         public const string SPENDING_MODEL_HAS_NO_SUBCATEGORIES = "SpendingModelHasNoSubcategories";
         public const string FINANCIAL_GOAL_CANNOT_BE_DELETED = "FinancialGoalCannotBeDeleted";
+        public const string GOAL_ALREADY_COMPLETED = "GoalAlreadyCompleted";
+        //financial report
+        public const string REPORT_NOT_FOUND = "ReportNotFound";
+        public const string REPORT_CREATE_FAILED = "ReportCreateFailed";
+        public const string REPORT_UPDATE_FAILED = "ReportUpdateFailed";
+        public const string REPORT_DELETE_FAILED = "ReportDeleteFailed";
+        public const string REPORT_ACCESS_DENIED = "ReportAccessDenied";
+        public const string INVALID_REPORT_DATE_RANGE = "InvalidReportDateRange";
+        public const string REPORT_USER_NOT_FOUND = "ReportUserNotFound";
+        public const string REPORT_GROUP_NOT_FOUND = "ReportGroupNotFound";
+        public const string REPORT_TRANSACTION_ERROR = "ReportTransactionError";
+
+        public const string REPORT_GENERATE_SUCCESS_MESSAGE = "Financial report generated successfully.";
+        public const string REPORT_FETCHED_SUCCESS_MESSAGE = "Financial report retrieved successfully.";
+        public const string REPORT_LIST_FETCHED_SUCCESS_MESSAGE = "Financial report list retrieved successfully.";
+        public const string REPORT_UPDATED_SUCCESS_MESSAGE = "Financial report updated successfully.";
+        public const string REPORT_DELETED_SUCCESS_MESSAGE = "Financial report deleted successfully.";
+
+        public const string REPORT_NAME_REQUIRED = "ReportNameRequired";
+        public const string REPORT_START_DATE_REQUIRED = "ReportStartDateRequired";
+        public const string REPORT_END_DATE_REQUIRED = "ReportEndDateRequired";
+        public const string REPORT_TYPE_REQUIRED = "ReportTypeRequired";
+        public const string REPORT_GROUP_ID_REQUIRED = "ReportGroupIdRequired";
+
+        public const string REPORT_NAME_REQUIRED_MESSAGE = "Report name is required.";
+        public const string REPORT_START_DATE_REQUIRED_MESSAGE = "Start date is required.";
+        public const string REPORT_END_DATE_REQUIRED_MESSAGE = "End date is required.";
+        public const string REPORT_TYPE_REQUIRED_MESSAGE = "Report type is required.";
+        public const string REPORT_GROUP_ID_REQUIRED_MESSAGE = "Group ID is required for group reports.";
+        public const string REPORT_PERMISSION_DENIED = "ReportPermissionDenied";
+        public const string REPORT_PERMISSION_DENIED_MESSAGE = "You do not have permission to access this report.";
 
         // category
         public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists";
@@ -129,7 +160,6 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_DELETED_SUCCESS = "TransactionDeletedSuccessfully";
         public const string TRANSACTION_FETCHED_SUCCESS = "TransactionFetchedSuccessfully";
 
-        // Add new transaction verification messages
         public const string TRANSACTION_NOT_IN_GROUP = "TransactionDoesNotBelongToGroup";
         public const string TRANSACTION_RESPONSE_SUCCESS = "TransactionResponseSuccess";
         public const string TRANSACTION_MUST_BE_PENDING = "TransactionMustBePending";
@@ -154,6 +184,7 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_SUBCATEGORY_REQUIRED = "TransactionSubcategoryRequired";
         public const string TRANSACTION_DATE_REQUIRED = "TransactionDateRequired";
         public const string TRANSACTION_ADMIN_ACCESS_DENIED = "TransactionAdminAccessDenied";
+        public const string SPENDING_MODEL_OVER_LIMIT = "SpendingModelOverLimit";
 
 
         // group
@@ -195,9 +226,6 @@ namespace MoneyEz.Services.Constants
 
         //subscription
         public const string SUBSCRIPTION_CREATE_SUCCESS_MESSAGE = "Subscription created successfully";
-
-        // report
-        public const string REPORT_GENERATE_SUCCESS_MESSAGE = "Báo cáo sức khỏe tài chính đã được tạo thành công.";
 
         // chat
         public const string CHAT_USER_NOT_EXIST = "UserNotExistChatConversation";

@@ -1,6 +1,5 @@
 ﻿using MoneyEz.Repositories.Entities;
-using MoneyEz.Services.Utils;
-using System;
+using MoneyEz.Repositories.Enums;
 
 namespace MoneyEz.Services.BusinessModels.FinancialGoalModels
 {
@@ -13,5 +12,7 @@ namespace MoneyEz.Services.BusinessModels.FinancialGoalModels
         public decimal TargetAmount { get; set; }
         public decimal CurrentAmount { get; set; }
         public DateTime Deadline { get; set; }
+        public FinancialGoalStatus Status { get; set; }
+        public ApprovalStatus ApprovalStatus { get; set; }
     }
 }

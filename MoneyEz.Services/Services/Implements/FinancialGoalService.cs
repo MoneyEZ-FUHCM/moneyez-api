@@ -26,15 +26,19 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
+        private readonly INotificationService _notificationService;
 
         public FinancialGoalService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            IClaimsService claimsService)
+            IClaimsService claimsService,
+            INotificationService notificationService)
+
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
+            _notificationService = notificationService;
         }
 
         #region Personal
@@ -44,36 +48,27 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            // UserSpendingModel đang hoạt động
             var activeSpendingModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
                 filter: usm => usm.UserId == user.Id && usm.EndDate > CommonUtils.GetCurrentTime() && !usm.IsDeleted
             );
 
             if (!activeSpendingModels.Any())
             {
-                throw new DefaultException("User does not have an active spending model.", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+                throw new DefaultException("Bạn chưa có mô hình chi tiêu đang hoạt động.", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
             }
 
-            var activeSpendingModelId = activeSpendingModels
-                .Select(usm => usm.SpendingModelId)
-                .FirstOrDefault();
+            var activeSpendingModelId = activeSpendingModels.First().SpendingModelId;
 
-            if (activeSpendingModelId == Guid.Empty)
-            {
-                throw new DefaultException("Invalid spending model data.", MessageConstants.INVALID_SPENDING_MODEL);
-            }
-
-            // SpendingModelCategory của SpendingModel hiện tại
             var spendingModelCategories = await _unitOfWork.SpendingModelCategoryRepository.GetByConditionAsync(
                 filter: smc => smc.SpendingModelId == activeSpendingModelId
             );
 
             if (!spendingModelCategories.Any())
             {
-                throw new DefaultException("No categories found for the current spending model.", MessageConstants.SPENDING_MODEL_HAS_NO_CATEGORIES);
+                throw new DefaultException("Mô hình chi tiêu hiện tại không có danh mục nào.",
+                    MessageConstants.SPENDING_MODEL_HAS_NO_CATEGORIES);
             }
 
-            // `CategorySubcategories` liên quan
             var categoryIds = spendingModelCategories.Select(smc => smc.CategoryId).ToList();
             var categorySubcategories = await _unitOfWork.CategorySubcategoryRepository.GetByConditionAsync(
                 filter: cs => categoryIds.Contains(cs.CategoryId)
@@ -81,47 +76,51 @@ namespace MoneyEz.Services.Services.Implements
 
             if (!categorySubcategories.Any())
             {
-                throw new DefaultException("No subcategories found in the associated categories.", MessageConstants.SPENDING_MODEL_HAS_NO_SUBCATEGORIES);
+                throw new DefaultException("Không tìm thấy tiểu mục nào trong mô hình chi tiêu hiện tại.",
+                    MessageConstants.SPENDING_MODEL_HAS_NO_SUBCATEGORIES);
             }
 
-            // `SubcategoryId` có tồn tại trong danh sách CategorySubcategories không
-            var subcategoryExists = categorySubcategories.Any(cs => cs.SubcategoryId == model.SubcategoryId);
-
-            if (!subcategoryExists)
+            if (!categorySubcategories.Any(cs => cs.SubcategoryId == model.SubcategoryId))
             {
-                throw new DefaultException("The selected subcategory does not exist in the current spending model.", MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL);
+                throw new DefaultException("Tiểu mục đã chọn không thuộc mô hình chi tiêu hiện tại.",
+                    MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL);
             }
 
-            // Subcategory này đã có Goal chưa
             var existingGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.UserId == user.Id && fg.SubcategoryId == model.SubcategoryId
-                                                     && !fg.IsDeleted // Chưa bị xóa
-                                                      && fg.Deadline > CommonUtils.GetCurrentTime() // Còn hạn sử dụng
-                                                        && fg.GroupId == null // Goal cá nhân
+                filter: fg => fg.UserId == user.Id
+                            && fg.SubcategoryId == model.SubcategoryId
+                            && fg.Status == FinancialGoalStatus.ACTIVE
+                            && !fg.IsDeleted
+                            && fg.GroupId == null
             );
 
             if (existingGoals.Any())
             {
-                throw new DefaultException("A financial goal already exists for this subcategory and is still active.", MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL);
+                throw new DefaultException("Bạn đã có mục tiêu tài chính đang hoạt động cho tiểu mục này.",
+                    MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL);
             }
 
             if (model.TargetAmount <= 0)
             {
-                throw new DefaultException("Target amount must be greater than 0.", MessageConstants.INVALID_TARGET_AMOUNT);
+                throw new DefaultException("Số tiền mục tiêu phải lớn hơn 0.", MessageConstants.INVALID_TARGET_AMOUNT);
             }
 
             if (model.TargetAmount <= model.CurrentAmount)
             {
-                throw new DefaultException("Target amount must be greater than current amount.", MessageConstants.INVALID_TARGET_AMOUNT);
+                throw new DefaultException("Số tiền mục tiêu phải lớn hơn số tiền hiện có.",
+                    MessageConstants.INVALID_TARGET_AMOUNT);
             }
 
             if (model.Deadline <= CommonUtils.GetCurrentTime())
             {
-                throw new DefaultException("Deadline must be a future date.", MessageConstants.INVALID_DEADLINE);
+                throw new DefaultException("Ngày hoàn thành mục tiêu phải ở tương lai.",
+                    MessageConstants.INVALID_DEADLINE);
             }
 
             var financialGoal = _mapper.Map<FinancialGoal>(model);
             financialGoal.UserId = user.Id;
+            financialGoal.Status = FinancialGoalStatus.ACTIVE; // Mặc định ACTIVE
+            financialGoal.ApprovalStatus = ApprovalStatus.APPROVED; // Mặc định APPROVED
             financialGoal.CreatedDate = CommonUtils.GetCurrentTime();
 
             await _unitOfWork.FinancialGoalRepository.AddAsync(financialGoal);
@@ -130,7 +129,7 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status201Created,
-                Message = "Financial goal created successfully."
+                Message = "Tạo mục tiêu tài chính thành công."
             };
         }
         public async Task<BaseResultModel> GetPersonalFinancialGoalsAsync(PaginationParameter paginationParameter)
@@ -146,31 +145,12 @@ namespace MoneyEz.Services.Services.Implements
 
             var mappedGoals = _mapper.Map<List<PersonalFinancialGoalModel>>(financialGoals);
 
-            var paginatedResult = new Pagination<PersonalFinancialGoalModel>(
-                mappedGoals,
-                financialGoals.TotalCount,
-                financialGoals.CurrentPage,
-                financialGoals.PageSize
-            );
-
-            var metaData = new
-            {
-                financialGoals.TotalCount,
-                financialGoals.PageSize,
-                financialGoals.CurrentPage,
-                financialGoals.TotalPages,
-                financialGoals.HasNext,
-                financialGoals.HasPrevious
-            };
+            var paginatedResult = PaginationHelper.GetPaginationResult(financialGoals, mappedGoals);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = new
-                {
-                    Data = paginatedResult,
-                    MetaData = metaData
-                }
+                Data = paginatedResult
             };
         }
         public async Task<BaseResultModel> GetPersonalFinancialGoalByIdAsync(GetPersonalFinancialGoalDetailModel model)
@@ -180,7 +160,9 @@ namespace MoneyEz.Services.Services.Implements
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
             var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.Id == model.GoalId && fg.UserId == user.Id && fg.GroupId == null
+                filter: fg => fg.Id == model.GoalId
+                            && fg.UserId == user.Id
+                            && fg.GroupId == null
             );
 
             if (!financialGoal.Any())
@@ -203,7 +185,11 @@ namespace MoneyEz.Services.Services.Implements
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
             var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.Id == model.Id && fg.UserId == user.Id && fg.GroupId == null
+                filter: fg => fg.Id == model.Id
+                            && fg.UserId == user.Id
+                            && fg.GroupId == null
+                            && fg.Status == FinancialGoalStatus.ACTIVE
+                            && !fg.IsDeleted
             );
 
             if (!financialGoal.Any())
@@ -213,14 +199,13 @@ namespace MoneyEz.Services.Services.Implements
 
             var goalToUpdate = financialGoal.First();
 
-            // TargetAmount phải lớn hơn 0 và lớn hơn CurrentAmount
             if (model.TargetAmount <= 0)
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_TARGET_AMOUNT,
-                    Message = "Target amount must be greater than 0."
+                    Message = "Số tiền mục tiêu phải lớn hơn 0."
                 };
             }
 
@@ -230,7 +215,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_TARGET_AMOUNT,
-                    Message = "Target amount cannot be less than the current amount."
+                    Message = "Số tiền mục tiêu không được nhỏ hơn số tiền hiện tại."
                 };
             }
 
@@ -240,16 +225,17 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_DEADLINE,
-                    Message = "Deadline must be a future date."
+                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai."
                 };
             }
 
-            //CurrentAmount sẽ được cập nhật theo từng transaction
             goalToUpdate.Name = model.Name;
             goalToUpdate.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
             goalToUpdate.TargetAmount = model.TargetAmount;
             goalToUpdate.Deadline = model.Deadline;
             goalToUpdate.UpdatedDate = CommonUtils.GetCurrentTime();
+            goalToUpdate.Status = FinancialGoalStatus.ACTIVE;
+            goalToUpdate.ApprovalStatus = ApprovalStatus.APPROVED;
 
             _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToUpdate);
             await _unitOfWork.SaveAsync();
@@ -257,7 +243,7 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = "Financial goal updated successfully."
+                Message = "Cập nhật mục tiêu tài chính thành công."
             };
         }
         public async Task<BaseResultModel> DeletePersonalFinancialGoalAsync(DeleteFinancialGoalModel model)
@@ -266,38 +252,35 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.Id == model.Id && fg.UserId == user.Id && fg.GroupId == null
+            var goal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.Id == model.Id
+                            && fg.UserId == user.Id
+                            && fg.GroupId == null
+                            && !fg.IsDeleted
             );
 
-            if (!financialGoal.Any())
+            if (!goal.Any())
             {
                 throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
-            var goalToDelete = financialGoal.First();
+            var financialGoal = goal.First();
 
-            if (goalToDelete.TargetAmount > goalToDelete.CurrentAmount || goalToDelete.Deadline > CommonUtils.GetCurrentTime())
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.FINANCIAL_GOAL_CANNOT_BE_DELETED,
-                    Message = "Cannot delete a financial goal that is not yet completed or past its deadline."
-                };
-            }
+            // Xóa mềm với trạng thái và approval mặc định
+            financialGoal.IsDeleted = true;
+            financialGoal.Status = FinancialGoalStatus.ARCHIVED;
+            financialGoal.ApprovalStatus = ApprovalStatus.APPROVED;  // Đặt mặc định theo yêu cầu
+            financialGoal.UpdatedDate = CommonUtils.GetCurrentTime();
 
-            _unitOfWork.FinancialGoalRepository.SoftDeleteAsync(goalToDelete);
+            _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = "Financial goal deleted successfully."
+                Message = "Personal financial goal deleted successfully."
             };
         }
-
-
         #endregion Personal
 
         #region Group
@@ -307,10 +290,8 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            // User có trong nhóm không và có phải Leader/Mod không
             var groupMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
-                filter: gm => gm.GroupId == model.GroupId && gm.UserId == user.Id
-            );
+                filter: gm => gm.GroupId == model.GroupId && gm.UserId == user.Id);
 
             if (!groupMember.Any())
             {
@@ -318,38 +299,33 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status403Forbidden,
                     ErrorCode = MessageConstants.USER_NOT_IN_GROUP,
-                    Message = "User is not a member of this group."
+                    Message = "Bạn không phải là thành viên của nhóm này."
                 };
             }
 
             var userRole = groupMember.First().Role;
-            if (userRole != RoleGroup.LEADER && userRole != RoleGroup.MOD)
+
+            if (userRole == RoleGroup.MEMBER)
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status403Forbidden,
                     ErrorCode = MessageConstants.USER_NOT_AUTHORIZED,
-                    Message = "Only group leaders or moderators can create financial goals for the group."
+                    Message = "Chỉ có trưởng nhóm hoặc quản trị viên mới có quyền tạo mục tiêu tài chính cho nhóm."
                 };
             }
 
-            // Nhóm đã có Goal chưa
             var existingGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.GroupId == model.GroupId
-            );
+                filter: fg => fg.GroupId == model.GroupId && fg.Status == FinancialGoalStatus.ACTIVE);
 
             if (existingGoals.Any())
             {
-                var activeGoal = existingGoals.First();
-                if (activeGoal.Deadline > CommonUtils.GetCurrentTime() || activeGoal.CurrentAmount < activeGoal.TargetAmount)
+                return new BaseResultModel
                 {
-                    return new BaseResultModel
-                    {
-                        Status = StatusCodes.Status400BadRequest,
-                        ErrorCode = MessageConstants.GROUP_ALREADY_HAS_GOAL,
-                        Message = "The group already has an active financial goal that is not yet completed or past its deadline."
-                    };
-                }
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.GROUP_ALREADY_HAS_GOAL,
+                    Message = "Nhóm này đã có mục tiêu tài chính đang hoạt động."
+                };
             }
 
             var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(model.GroupId)
@@ -361,7 +337,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_TARGET_AMOUNT,
-                    Message = "Target amount must be greater than 0."
+                    Message = "Số tiền mục tiêu phải lớn hơn 0."
                 };
             }
 
@@ -371,20 +347,17 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_TARGET_AMOUNT,
-                    Message = "Target amount must be greater than current amount."
+                    Message = "Số tiền mục tiêu phải lớn hơn số tiền hiện tại."
                 };
             }
 
-            // Lấy `CurrentBalance` từ `GroupFund`
-            decimal currentBalance = groupFund.CurrentBalance;
-
-            if (model.CurrentAmount > currentBalance)
+            if (model.CurrentAmount > groupFund.CurrentBalance)
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INSUFFICIENT_GROUP_FUNDS,
-                    Message = "The group's current balance is insufficient for this financial goal."
+                    Message = "Số dư hiện tại của nhóm không đủ để khởi tạo mục tiêu này."
                 };
             }
 
@@ -394,7 +367,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_DEADLINE,
-                    Message = "Deadline must be a future date."
+                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai."
                 };
             }
 
@@ -405,10 +378,25 @@ namespace MoneyEz.Services.Services.Implements
                 Name = model.Name,
                 NameUnsign = StringUtils.ConvertToUnSign(model.Name),
                 TargetAmount = model.TargetAmount,
-                CurrentAmount = model.CurrentAmount > 0 ? model.CurrentAmount : currentBalance, // Nếu CurrentAmount không được truyền, lấy từ CurrentBalance
+                CurrentAmount = model.CurrentAmount > 0 ? model.CurrentAmount : groupFund.CurrentBalance,
                 Deadline = model.Deadline,
-                CreatedDate = CommonUtils.GetCurrentTime()
+                CreatedDate = CommonUtils.GetCurrentTime(),
             };
+
+            if (userRole == RoleGroup.LEADER)
+            {
+                financialGoal.Status = FinancialGoalStatus.ACTIVE;
+                financialGoal.ApprovalStatus = ApprovalStatus.APPROVED;
+
+                await NotifyGroupMembers(financialGoal, user, "created");
+            }
+            else if (userRole == RoleGroup.MOD)
+            {
+                financialGoal.Status = FinancialGoalStatus.PENDING;
+                financialGoal.ApprovalStatus = ApprovalStatus.PENDING;
+
+                await NotifyGroupLeaderApprovalRequest(financialGoal, user, "create", "CREATE");
+            }
 
             await _unitOfWork.FinancialGoalRepository.AddAsync(financialGoal);
             await _unitOfWork.SaveAsync();
@@ -416,7 +404,9 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status201Created,
-                Message = "Financial goal created successfully for the group."
+                Message = (userRole == RoleGroup.LEADER)
+                    ? "Tạo mục tiêu tài chính thành công."
+                    : "Tạo mục tiêu tài chính thành công và đang chờ trưởng nhóm phê duyệt."
             };
         }
         public async Task<BaseResultModel> GetGroupFinancialGoalsAsync(GetGroupFinancialGoalsModel model)
@@ -425,7 +415,6 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            // Kiểm tra xem user có trong nhóm không
             var groupMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
                 filter: gm => gm.GroupId == model.GroupId && gm.UserId == user.Id
             );
@@ -436,42 +425,44 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status403Forbidden,
                     ErrorCode = MessageConstants.USER_NOT_IN_GROUP,
-                    Message = "User is not a member of this group."
+                    Message = "Bạn không phải là thành viên của nhóm này."
                 };
             }
 
-            var financialGoals = await _unitOfWork.FinancialGoalRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = 10, PageIndex = 1 }, // Hoặc có thể điều chỉnh phân trang
-                filter: fg => fg.GroupId == model.GroupId
+            var userRole = groupMember.First().Role;
+
+            var allowedStatuses = new List<FinancialGoalStatus>();
+
+            if (userRole == RoleGroup.LEADER || userRole == RoleGroup.MOD)
+            {
+                // Leader và MOD thấy tất cả
+                allowedStatuses.AddRange(new[]
+                {
+                    FinancialGoalStatus.PENDING,
+                    FinancialGoalStatus.ACTIVE,
+                    FinancialGoalStatus.ARCHIVED
+                });
+            }
+            else
+            {
+                // Member chỉ thấy mục tiêu đã duyệt hoặc đã lưu trữ
+                allowedStatuses.AddRange(new[]
+                {
+                    FinancialGoalStatus.ACTIVE,
+                    FinancialGoalStatus.ARCHIVED
+                });
+            }
+
+            var financialGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.GroupId == model.GroupId && allowedStatuses.Contains(fg.Status)
             );
 
             var mappedGoals = _mapper.Map<List<GroupFinancialGoalModel>>(financialGoals);
 
-            var paginatedResult = new Pagination<GroupFinancialGoalModel>(
-                mappedGoals,
-                financialGoals.TotalCount,
-                financialGoals.CurrentPage,
-                financialGoals.PageSize
-            );
-
-            var metaData = new
-            {
-                financialGoals.TotalCount,
-                financialGoals.PageSize,
-                financialGoals.CurrentPage,
-                financialGoals.TotalPages,
-                financialGoals.HasNext,
-                financialGoals.HasPrevious
-            };
-
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = new
-                {
-                    Data = paginatedResult,
-                    MetaData = metaData
-                }
+                Data = mappedGoals
             };
         }
         public async Task<BaseResultModel> UpdateGroupFinancialGoalAsync(UpdateGroupFinancialGoalModel model)
@@ -481,8 +472,9 @@ namespace MoneyEz.Services.Services.Implements
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
             var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.Id == model.Id && fg.GroupId == model.GroupId
-            );
+                filter: fg => fg.Id == model.Id
+                            && fg.GroupId == model.GroupId
+                            && !fg.IsDeleted);
 
             if (!financialGoal.Any())
             {
@@ -491,10 +483,8 @@ namespace MoneyEz.Services.Services.Implements
 
             var goalToUpdate = financialGoal.First();
 
-            // User có trong nhóm không và có phải Leader/Mod không
             var groupMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
-                filter: gm => gm.GroupId == model.GroupId && gm.UserId == user.Id
-            );
+                filter: gm => gm.GroupId == model.GroupId && gm.UserId == user.Id);
 
             if (!groupMember.Any())
             {
@@ -502,18 +492,19 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status403Forbidden,
                     ErrorCode = MessageConstants.USER_NOT_IN_GROUP,
-                    Message = "User is not a member of this group."
+                    Message = "Bạn không phải là thành viên của nhóm này."
                 };
             }
 
             var userRole = groupMember.First().Role;
-            if (userRole != RoleGroup.LEADER && userRole != RoleGroup.MOD)
+
+            if (userRole == RoleGroup.MEMBER)
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status403Forbidden,
                     ErrorCode = MessageConstants.USER_NOT_AUTHORIZED,
-                    Message = "Only group leaders or moderators can update financial goals."
+                    Message = "Chỉ có trưởng nhóm hoặc quản trị viên mới có quyền cập nhật mục tiêu tài chính."
                 };
             }
 
@@ -523,7 +514,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_TARGET_AMOUNT,
-                    Message = "Target amount must be greater than 0."
+                    Message = "Số tiền mục tiêu phải lớn hơn 0."
                 };
             }
 
@@ -533,7 +524,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_TARGET_AMOUNT,
-                    Message = "Target amount cannot be less than the current amount."
+                    Message = "Số tiền mục tiêu không được nhỏ hơn số tiền hiện tại."
                 };
             }
 
@@ -543,7 +534,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_DEADLINE,
-                    Message = "Deadline must be a future date."
+                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai."
                 };
             }
 
@@ -553,13 +544,32 @@ namespace MoneyEz.Services.Services.Implements
             goalToUpdate.Deadline = model.Deadline;
             goalToUpdate.UpdatedDate = CommonUtils.GetCurrentTime();
 
+            if (userRole == RoleGroup.LEADER)
+            {
+                // Leader update -> duyệt ngay
+                goalToUpdate.Status = FinancialGoalStatus.ACTIVE;
+                goalToUpdate.ApprovalStatus = ApprovalStatus.APPROVED;
+
+                await NotifyGroupMembers(goalToUpdate, user, "updated");
+            }
+            else if (userRole == RoleGroup.MOD)
+            {
+                // MOD update -> cần duyệt lại
+                goalToUpdate.Status = FinancialGoalStatus.PENDING;
+                goalToUpdate.ApprovalStatus = ApprovalStatus.PENDING;
+
+                await NotifyGroupLeaderApprovalRequest(goalToUpdate, user, "update", "UPDATE");
+            }
+
             _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToUpdate);
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = "Financial goal updated successfully."
+                Message = (userRole == RoleGroup.LEADER)
+                    ? "Cập nhật mục tiêu tài chính thành công."
+                    : "Cập nhật thành công và đang chờ trưởng nhóm phê duyệt."
             };
         }
         public async Task<BaseResultModel> DeleteGroupFinancialGoalAsync(DeleteFinancialGoalModel model)
@@ -569,8 +579,9 @@ namespace MoneyEz.Services.Services.Implements
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
             var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.Id == model.Id && fg.GroupId != null
-            );
+                filter: fg => fg.Id == model.Id
+                            && fg.GroupId != null
+                            && !fg.IsDeleted);
 
             if (!financialGoal.Any())
             {
@@ -580,56 +591,145 @@ namespace MoneyEz.Services.Services.Implements
             var goalToDelete = financialGoal.First();
 
             var groupMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
-                filter: gm => gm.GroupId == goalToDelete.GroupId && gm.UserId == user.Id
-            );
+                filter: gm => gm.GroupId == goalToDelete.GroupId
+                            && gm.UserId == user.Id
+                            && gm.Status == GroupMemberStatus.ACTIVE);
 
             if (!groupMember.Any())
             {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status403Forbidden,
-                    ErrorCode = MessageConstants.USER_NOT_IN_GROUP,
-                    Message = "User is not a member of this group."
-                };
+                throw new DefaultException("You are not a member of this group.", MessageConstants.USER_NOT_IN_GROUP);
             }
 
             var userRole = groupMember.First().Role;
-            if (userRole != RoleGroup.LEADER)
+
+            if (userRole == RoleGroup.MEMBER)
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status403Forbidden,
                     ErrorCode = MessageConstants.USER_NOT_AUTHORIZED,
-                    Message = "Only group leaders can delete financial goals."
+                    Message = "Chỉ có trưởng nhóm hoặc quản trị viên mới có quyền xóa mục tiêu tài chính của nhóm."
                 };
             }
 
-            if (goalToDelete.TargetAmount > goalToDelete.CurrentAmount || goalToDelete.Deadline > CommonUtils.GetCurrentTime())
+            if (userRole == RoleGroup.LEADER)
             {
+                // Leader xóa trực tiếp
+                goalToDelete.IsDeleted = true;
+                goalToDelete.Status = FinancialGoalStatus.ARCHIVED;
+                goalToDelete.ApprovalStatus = ApprovalStatus.APPROVED;
+                goalToDelete.UpdatedDate = CommonUtils.GetCurrentTime();
+
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToDelete);
+                await _unitOfWork.SaveAsync();
+
+                await NotifyGroupMembers(goalToDelete, user, "deleted");
+
                 return new BaseResultModel
                 {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.FINANCIAL_GOAL_CANNOT_BE_DELETED,
-                    Message = "Cannot delete a financial goal that is not yet completed or past its deadline."
+                    Status = StatusCodes.Status200OK,
+                    Message = "Group financial goal has been deleted successfully."
                 };
             }
+            else if (userRole == RoleGroup.MOD)
+            {
+                // MOD gửi yêu cầu xóa
+                goalToDelete.Status = FinancialGoalStatus.PENDING;
+                goalToDelete.ApprovalStatus = ApprovalStatus.PENDING;
+                goalToDelete.UpdatedDate = CommonUtils.GetCurrentTime();
 
-            _unitOfWork.FinancialGoalRepository.SoftDeleteAsync(goalToDelete);
-            await _unitOfWork.SaveAsync();
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToDelete);
+                await _unitOfWork.SaveAsync();
+
+                await NotifyGroupLeaderApprovalRequest(goalToDelete, user, "delete", "DELETE");
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = "Delete request for this financial goal has been sent to the group leader for approval."
+                };
+            }
 
             return new BaseResultModel
             {
-                Status = StatusCodes.Status200OK,
-                Message = "Financial goal deleted successfully."
+                Status = StatusCodes.Status403Forbidden,
+                Message = "You are not authorized to delete this goal."
             };
         }
+
+        private async Task NotifyGroupMembers(FinancialGoal goal, User actionUser, string actionType, string? customMessage = null)
+        {
+            var groupMembers = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == goal.GroupId && gm.Status == GroupMemberStatus.ACTIVE);
+
+            string actionMessage = actionType switch
+            {
+                "created" => "đã tạo",
+                "updated" => "đã cập nhật",
+                "deleted" => "đã xóa",
+                "archived" => "đã lưu trữ",
+                "approved" => "đã phê duyệt",
+                "rejected" => "đã từ chối",
+                _ => "đã cập nhật"
+            };
+
+            string message = customMessage ?? $"Mục tiêu tài chính '{goal.Name}' {actionMessage} bởi {actionUser.FullName}.";
+
+            var notification = new Notification
+            {
+                Title = "Cập nhật mục tiêu tài chính nhóm",
+                Message = message,
+                Type = NotificationType.GROUP,
+                EntityId = goal.Id,
+                CreatedDate = CommonUtils.GetCurrentTime()
+            };
+
+            await _notificationService.AddNotificationByListUser(
+                groupMembers.Select(gm => gm.UserId).ToList(),
+                notification);
+        }
+        private async Task NotifyGroupLeaderApprovalRequest(FinancialGoal goal, User actionUser, string actionType, string actionKey)
+        {
+            var leaders = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == goal.GroupId
+                            && gm.Role == RoleGroup.LEADER
+                            && gm.Status == GroupMemberStatus.ACTIVE);
+
+            if (!leaders.Any())
+            {
+                return;
+            }
+
+            string actionMessage = actionType switch
+            {
+                "create" => "tạo mới",
+                "update" => "cập nhật",
+                "delete" => "xóa",
+                _ => "thay đổi"
+            };
+
+            var notification = new Notification
+            {
+                Title = "Yêu cầu phê duyệt mục tiêu tài chính",
+                Message = $"Quản trị viên {actionUser.FullName} vừa yêu cầu {actionMessage} mục tiêu tài chính '{goal.Name}'.",
+                Type = NotificationType.GROUP,
+                EntityId = goal.Id,
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                Href = $"/group-goals/{goal.GroupId}/{goal.Id}?action={actionKey}" // kèm action để UI xử lý đẹp
+            };
+
+            await _notificationService.AddNotificationByListUser(
+                leaders.Select(l => l.UserId).ToList(),
+                notification);
+        }
+
+
         public async Task<BaseResultModel> GetGroupFinancialGoalByIdAsync(GetGroupFinancialGoalDetailModel model)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            // user có trong nhóm không
             var groupMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
                 filter: gm => gm.GroupId == model.GroupId && gm.UserId == user.Id
             );
@@ -640,13 +740,36 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status403Forbidden,
                     ErrorCode = MessageConstants.USER_NOT_IN_GROUP,
-                    Message = "User is not a member of this group."
+                    Message = "Bạn không phải là thành viên của nhóm này."
                 };
             }
 
-            // chỉ lấy Goal thuộc nhóm
+            var userRole = groupMember.First().Role;
+
+            var allowedStatuses = new List<FinancialGoalStatus>();
+
+            if (userRole == RoleGroup.LEADER || userRole == RoleGroup.MOD)
+            {
+                allowedStatuses.AddRange(new[]
+                {
+            FinancialGoalStatus.PENDING,
+            FinancialGoalStatus.ACTIVE,
+            FinancialGoalStatus.ARCHIVED
+        });
+            }
+            else
+            {
+                allowedStatuses.AddRange(new[]
+                {
+            FinancialGoalStatus.ACTIVE,
+            FinancialGoalStatus.ARCHIVED
+        });
+            }
+
             var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.Id == model.GoalId && fg.GroupId == model.GroupId
+                filter: fg => fg.Id == model.GoalId
+                            && fg.GroupId == model.GroupId
+                            && allowedStatuses.Contains(fg.Status)
             );
 
             if (!financialGoal.Any())
@@ -662,6 +785,127 @@ namespace MoneyEz.Services.Services.Implements
                 Data = mappedGoal
             };
         }
+
+        public async Task<BaseResultModel> ApproveGroupFinancialGoalAsync(ApproveGroupFinancialGoalRequestModel model)
+        {
+            string userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
+            var groupMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == model.GroupId
+                            && gm.UserId == user.Id
+                            && gm.Status == GroupMemberStatus.ACTIVE);
+
+            if (!groupMember.Any() || groupMember.First().Role != RoleGroup.LEADER)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    ErrorCode = MessageConstants.USER_NOT_AUTHORIZED,
+                    Message = "Chỉ trưởng nhóm mới có quyền phê duyệt mục tiêu tài chính."
+                };
+            }
+
+            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.Id == model.GoalId
+                            && fg.GroupId == model.GroupId
+                            && fg.Status == FinancialGoalStatus.PENDING);
+
+            if (!financialGoal.Any())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.FINANCIAL_GOAL_NOT_FOUND,
+                    Message = "Mục tiêu tài chính không tìm thấy hoặc không cần phê duyệt."
+                };
+            }
+
+            var goalToApprove = financialGoal.First();
+
+            if (model.IsApproved)
+            {
+                // Approve - cập nhật trạng thái và bắn thông báo theo actionType
+                switch (model.ActionType.ToUpper())
+                {
+                    case "CREATE":
+                        goalToApprove.Status = FinancialGoalStatus.ACTIVE;
+                        goalToApprove.ApprovalStatus = ApprovalStatus.APPROVED;
+                        await NotifyGroupMembers(goalToApprove, user, "approved", "Mục tiêu tài chính mới đã được duyệt.");
+                        break;
+
+                    case "UPDATE":
+                        goalToApprove.Status = FinancialGoalStatus.ACTIVE;
+                        goalToApprove.ApprovalStatus = ApprovalStatus.APPROVED;
+                        await NotifyGroupMembers(goalToApprove, user, "approved", "Mục tiêu tài chính đã được cập nhật và duyệt.");
+                        break;
+
+                    case "DELETE":
+                        goalToApprove.IsDeleted = true;
+                        goalToApprove.Status = FinancialGoalStatus.ARCHIVED;
+                        goalToApprove.ApprovalStatus = ApprovalStatus.APPROVED;
+                        await NotifyGroupMembers(goalToApprove, user, "deleted", "Mục tiêu tài chính đã được duyệt xóa.");
+                        break;
+
+                    default:
+                        return new BaseResultModel
+                        {
+                            Status = StatusCodes.Status400BadRequest,
+                            Message = "ActionType không hợp lệ."
+                        };
+                }
+            }
+            else
+            {
+                // Reject - cập nhật trạng thái và bắn thông báo theo actionType
+                string reason = string.IsNullOrWhiteSpace(model.RejectionReason)
+                    ? "Không có lý do cụ thể."
+                    : model.RejectionReason;
+
+                switch (model.ActionType.ToUpper())
+                {
+                    case "CREATE":
+                        goalToApprove.IsDeleted = true;
+                        goalToApprove.Status = FinancialGoalStatus.ARCHIVED;
+                        goalToApprove.ApprovalStatus = ApprovalStatus.REJECTED;
+                        await NotifyGroupMembers(goalToApprove, user, "rejected", $"Mục tiêu tài chính mới bị từ chối. Lý do: {reason}");
+                        break;
+
+                    case "UPDATE":
+                        goalToApprove.Status = FinancialGoalStatus.ACTIVE;
+                        goalToApprove.ApprovalStatus = ApprovalStatus.REJECTED;
+                        await NotifyGroupMembers(goalToApprove, user, "rejected", $"Cập nhật mục tiêu tài chính bị từ chối. Lý do: {reason}");
+                        break;
+
+                    case "DELETE":
+                        goalToApprove.Status = FinancialGoalStatus.ACTIVE;
+                        goalToApprove.ApprovalStatus = ApprovalStatus.REJECTED;
+                        await NotifyGroupMembers(goalToApprove, user, "rejected", $"Yêu cầu xóa mục tiêu tài chính bị từ chối. Lý do: {reason}");
+                        break;
+
+                    default:
+                        return new BaseResultModel
+                        {
+                            Status = StatusCodes.Status400BadRequest,
+                            Message = "ActionType không hợp lệ."
+                        };
+                }
+            }
+
+
+            goalToApprove.UpdatedDate = CommonUtils.GetCurrentTime();
+
+            _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToApprove);
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = model.IsApproved ? "Phê duyệt thành công." : "Từ chối thành công."
+            };
+        }
+
         #endregion Group
     }
 }
