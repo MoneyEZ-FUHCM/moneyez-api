@@ -23,6 +23,7 @@ using MoneyEz.Services.BusinessModels.GroupFund.GroupInvite;
 using MoneyEz.Services.BusinessModels.BankAccountModels;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Services.BusinessModels.TransactionModels;
+using MoneyEz.Services.BusinessModels.ImageModels;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -100,19 +101,37 @@ namespace MoneyEz.Services.Services.Implements
             // Add the groupFund to the repository and save changes again
             await _unitOfWork.GroupFundRepository.AddAsync(groupFund);
             _unitOfWork.Save();
+
+            // add image
+
+            Image newImage = null;
+
+            if (model.Image != null)
+            {
+                newImage = new Image
+                {
+                    EntityId = groupFund.Id,
+                    EntityName = EntityName.GROUP.ToString(),
+                    ImageUrl = model.Image,
+                    CreatedBy = user.Email
+                };
+
+                await _unitOfWork.ImageRepository.AddAsync(newImage);
+                _unitOfWork.Save();
+            }
+
+            var result = _mapper.Map<GroupFundModel>(groupFund);
+            result.GroupMembers = new List<GroupMemberModel>();
+            result.Images = new List<ImageModel>
+            {
+                _mapper.Map<ImageModel>(newImage)
+            };
+
             // Return a success result with the created groupFund
             return new BaseResultModel
             {
                 Status = StatusCodes.Status201Created,
-                Data = new GroupFund
-                {
-                    Name = groupFund.Name,
-                    NameUnsign = StringUtils.ConvertToUnSign(groupFund.Name),
-                    Description = groupFund.Description,
-                    CurrentBalance = groupFund.CurrentBalance,
-                    Status = CommonsStatus.ACTIVE,
-                    Visibility = VisibilityEnum.PRIVATE,
-                },
+                Data = result,
                 Message = MessageConstants.GROUP_CREATE_SUCCESS_MESSAGE
             };
         }
@@ -131,6 +150,14 @@ namespace MoneyEz.Services.Services.Implements
                 // Get all groupFunds
                 var groupFunds = await _unitOfWork.GroupFundRepository.ToPagination(paginationParameters);
                 var groupFundModels = _mapper.Map<List<GroupFundModel>>(groupFunds);
+
+                // Get and map images for each group fund
+                foreach (var groupFund in groupFundModels)
+                {
+                    var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(groupFund.Id, EntityName.GROUP.ToString());
+                    groupFund.Images = _mapper.Map<List<ImageModel>>(images) ?? new List<ImageModel>();
+                }
+
                 var groupPagingResult = PaginationHelper.GetPaginationResult(groupFunds, groupFundModels);
 
                 return new BaseResultModel
@@ -141,7 +168,7 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
-                // Get all group 's user
+                // Get all group's user
                 var groupFunds = await _unitOfWork.GroupFundRepository.ToPaginationIncludeAsync(
                     paginationParameters,
                     include: q => q
@@ -156,6 +183,13 @@ namespace MoneyEz.Services.Services.Implements
                 }
 
                 var groupFundModels = _mapper.Map<List<GroupFundModel>>(groupFunds);
+
+                // Get and map images for each group fund
+                foreach (var groupFund in groupFundModels)
+                {
+                    var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(groupFund.Id, EntityName.GROUP.ToString());
+                    groupFund.Images = _mapper.Map<List<ImageModel>>(images) ?? new List<ImageModel>();
+                }
 
                 var groupPagingResult = PaginationHelper.GetPaginationResult(groupFunds, groupFundModels);
 
@@ -317,7 +351,7 @@ namespace MoneyEz.Services.Services.Implements
                     Status = StatusCodes.Status200OK,
                     Message = MessageConstants.GROUP_REMOVE_MEMBER_SUCCESS_MESSAGE
                 };
-            } 
+            }
             else
             {
                 memberToRemove.GroupMemberLogs.Add(new GroupMemberLog
@@ -393,7 +427,7 @@ namespace MoneyEz.Services.Services.Implements
 
             if (memberToUpdate.Role == setRoleGroupModel.RoleGroup)
             {
-                throw new DefaultException($"Member already '{setRoleGroupModel.RoleGroup.ToString()}' on group", 
+                throw new DefaultException($"Member already '{setRoleGroupModel.RoleGroup.ToString()}' on group",
                     MessageConstants.GROUP_MEMBER_ALREADY_ROLE);
             }
 
@@ -519,7 +553,7 @@ namespace MoneyEz.Services.Services.Implements
             if (memberExist != null && memberExist.Status == GroupMemberStatus.ACTIVE)
             {
                 throw new DefaultException("", MessageConstants.GROUP_MEMBER_EXIST);
-            } 
+            }
             else if (memberExist == null)
             {
                 // Add the member to the group with a pending status
@@ -655,7 +689,7 @@ namespace MoneyEz.Services.Services.Implements
                     Status = StatusCodes.Status200OK,
                     Message = MessageConstants.GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE
                 };
-            } 
+            }
             else
             {
                 return new BaseResultModel
@@ -676,10 +710,14 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
             }
 
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(groupFund.Id, EntityName.GROUP.ToString());
+            var groupFundModel = _mapper.Map<GroupFundModel>(groupFund);
+            groupFundModel.Images = _mapper.Map<List<ImageModel>>(images) ?? new List<ImageModel>();
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = _mapper.Map<GroupFundModel>(groupFund)
+                Data = groupFundModel
             };
         }
 
@@ -931,7 +969,7 @@ namespace MoneyEz.Services.Services.Implements
 
             if (!isLeader)
             {
-                throw new DefaultException("Only group leader can set contribution percentages", 
+                throw new DefaultException("Only group leader can set contribution percentages",
                     MessageConstants.GROUP_SET_CONTRIBUTION_FORBIDDEN);
             }
 
@@ -939,20 +977,20 @@ namespace MoneyEz.Services.Services.Implements
             var totalContribution = setGroupContributionModel.MemberContributions.Sum(x => x.Contribution);
             if (totalContribution != 100)
             {
-                throw new DefaultException("Total contribution percentage must equal 100%", 
+                throw new DefaultException("Total contribution percentage must equal 100%",
                     MessageConstants.GROUP_INVALID_TOTAL_CONTRIBUTION);
             }
 
             // Update contribution percentages for each member
             foreach (var memberContribution in setGroupContributionModel.MemberContributions)
             {
-                var groupMember = groupFund.GroupMembers.FirstOrDefault(m => 
-                    m.UserId == memberContribution.MemberId && 
+                var groupMember = groupFund.GroupMembers.FirstOrDefault(m =>
+                    m.UserId == memberContribution.MemberId &&
                     m.Status == GroupMemberStatus.ACTIVE);
 
                 if (groupMember == null)
                 {
-                    throw new NotExistException($"Member with ID {memberContribution.MemberId} not found in group", 
+                    throw new NotExistException($"Member with ID {memberContribution.MemberId} not found in group",
                         MessageConstants.GROUP_MEMBER_CONTRIBUTION_NOT_FOUND);
                 }
 
@@ -1007,8 +1045,8 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Verify user is a member of the group
-            var isMember = groupFund.GroupMembers.Any(member => 
-                member.UserId == currentUser.Id && 
+            var isMember = groupFund.GroupMembers.Any(member =>
+                member.UserId == currentUser.Id &&
                 member.Status == GroupMemberStatus.ACTIVE);
 
             if (!isMember)
@@ -1068,7 +1106,7 @@ namespace MoneyEz.Services.Services.Implements
 
             // Get group with members to verify leadership
             var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
-                updateGroupTransactionModel.GroupId, 
+                updateGroupTransactionModel.GroupId,
                 include: q => q.Include(g => g.GroupMembers)
             );
 
@@ -1078,8 +1116,8 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Verify user is leader of the group
-            var isLeader = groupFund.GroupMembers.Any(member => 
-                member.UserId == currentUser.Id && 
+            var isLeader = groupFund.GroupMembers.Any(member =>
+                member.UserId == currentUser.Id &&
                 member.Role == RoleGroup.LEADER || member.Role == RoleGroup.MOD &&
                 member.Status == GroupMemberStatus.ACTIVE);
 

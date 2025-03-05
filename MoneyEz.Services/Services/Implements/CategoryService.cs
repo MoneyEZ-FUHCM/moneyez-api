@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Services.BusinessModels.CategoryModels;
@@ -30,13 +31,9 @@ namespace MoneyEz.Services.Services.Implements
             _claimsService = claimsService;
         }
 
-        public async Task<BaseResultModel> GetCategoryPaginationAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetCategoryPaginationAsync(PaginationParameter paginationParameter, CategoryFilter categoryFilter)
         {
-            var categories = await _unitOfWork.CategoriesRepository.ToPaginationIncludeAsync(
-                paginationParameter,
-                include: query => query.Include(c => c.CategorySubcategories)
-                                       .ThenInclude(cs => cs.Subcategory)
-            );
+            var categories = await _unitOfWork.CategoriesRepository.GetCategoriesByFilter(paginationParameter, categoryFilter);
 
             var categoryModels = _mapper.Map<Pagination<CategoryModel>>(categories);
             var result = PaginationHelper.GetPaginationResult(categoryModels, categoryModels);

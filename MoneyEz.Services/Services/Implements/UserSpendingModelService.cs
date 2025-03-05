@@ -9,6 +9,7 @@ using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.ChartModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.SpendingModelModels;
+using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
@@ -531,5 +532,59 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, Guid userSpendingModelId)
+        {
+            string userEmail = _claimsService.GetCurrentUserEmail;
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
+                    Message = "Unauthorized: Cannot retrieve user email."
+                };
+            }
+
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetByIdAsync(userSpendingModelId);
+            if (userSpendingModel == null || userSpendingModel.UserId != user.Id)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.SPENDING_MODEL_NOT_FOUND,
+                    Message = "Spending model not found for the user."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+                paginationParameter,
+                include: query => query.Include(t => t.Subcategory),
+                filter: t => t.UserId == user.Id
+                             && t.TransactionDate >= userSpendingModel.StartDate
+                             && t.TransactionDate <= userSpendingModel.EndDate,
+                orderBy: t => t.OrderByDescending(t => t.CreatedDate)
+            );
+
+            var transactionModels = _mapper.Map<Pagination<TransactionModel>>(transactions);
+            var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.TRANSACTION_LIST_FETCHED_SUCCESS,
+                Data = result
+            };
+        }
     }
 }

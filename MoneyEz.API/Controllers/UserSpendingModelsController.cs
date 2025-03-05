@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.SpendingModelModels;
+using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -70,6 +71,13 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> GetUsedSpendingModels([FromQuery] PaginationParameter paginationParameter)
         {
             return ValidateAndExecute(() => _userSpendingModelService.GetUsedSpendingModelsPaginationAsync(paginationParameter));
+        }
+
+
+        [HttpGet("transactions/{id}")]
+        public Task<IActionResult> GetAllTransactionsBySpendingModel([FromQuery] PaginationParameter paginationParameter, Guid id)
+        {
+            return ValidateAndExecute(() => _userSpendingModelService.GetTransactionsByUserSpendingModelAsync(paginationParameter, id));
         }
     }
 }
