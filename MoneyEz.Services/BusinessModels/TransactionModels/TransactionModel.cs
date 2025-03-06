@@ -7,10 +7,10 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
 {
     public class TransactionModel : BaseEntity
     {
-        public Guid? GroupId { get; set; }
         public Guid? UserId { get; set; }
         public decimal Amount { get; set; }
         public string? Type { get; set; }
+        public Guid? UserSpendingModelId { get; set; }
         public Guid? SubcategoryId { get; set; }
         public DateTime TransactionDate { get; set; }
         public string? Description { get; set; }

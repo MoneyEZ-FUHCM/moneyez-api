@@ -34,6 +34,7 @@ namespace MoneyEz.Services.Services.Implements
                 UserId = user.Id,
                 Title = title,
                 Message = message,
+                EntityId = user.Id,
                 Type = NotificationType.USER,
                 CreatedDate = CommonUtils.GetCurrentTime()
             };
@@ -48,6 +49,7 @@ namespace MoneyEz.Services.Services.Implements
                 UserId = user.Id,
                 Title = "Chúc mừng hoàn thành mục tiêu!",
                 Message = $"Bạn đã hoàn thành mục tiêu: '{goal.Name}' với số tiền tích lũy {goal.CurrentAmount:N0} VNĐ.",
+                EntityId = user.Id,
                 Type = NotificationType.USER,
                 CreatedDate = CommonUtils.GetCurrentTime()
             };
@@ -62,6 +64,7 @@ namespace MoneyEz.Services.Services.Implements
                 UserId = user.Id,
                 Title = "Tiến độ mục tiêu tài chính",
                 Message = $"Mục tiêu '{goal.Name}' còn thiếu {remaining:N0} VNĐ để hoàn thành.",
+                EntityId = user.Id,
                 Type = NotificationType.USER,
                 CreatedDate = CommonUtils.GetCurrentTime()
             };
