@@ -148,10 +148,14 @@ namespace MoneyEz.Services.Services.Implements
             var category = await _unitOfWork.CategorySubcategoryRepository.GetCategoryBySubcategoryId(subcategory.Id)
                 ?? throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
 
+            var currentSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id)
+                ?? throw new DefaultException("Không tìm thấy UserSpendingModel đang hoạt động.", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+
             var transaction = _mapper.Map<Transaction>(model);
             transaction.UserId = user.Id;
             transaction.Status = TransactionStatus.APPROVED;
             transaction.Type = category.Type ?? throw new DefaultException("Danh mục không có TransactionType hợp lệ.", MessageConstants.CATEGORY_TYPE_INVALID);
+            transaction.UserSpendingModelId = currentSpendingModel.Id;
 
             await CheckAndNotifyCategorySpendingLimit(transaction, user);
 
@@ -202,7 +206,11 @@ namespace MoneyEz.Services.Services.Implements
             var category = await _unitOfWork.CategorySubcategoryRepository.GetCategoryBySubcategoryId(subcategory.Id)
                 ?? throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
 
+            var currentSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id)
+                ?? throw new DefaultException("Không tìm thấy UserSpendingModel đang hoạt động.", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+
             transaction.Type = category.Type ?? throw new DefaultException("Danh mục không có TransactionType hợp lệ.", MessageConstants.CATEGORY_TYPE_INVALID);
+            transaction.UserSpendingModelId = currentSpendingModel.Id;
 
             await CheckAndNotifyCategorySpendingLimit(transaction, user);
 

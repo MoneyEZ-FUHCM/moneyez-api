@@ -12,16 +12,18 @@ namespace MoneyEz.Services.Mappers
         partial void TransactionMapperConfig()
         {
             CreateMap<Transaction, TransactionModel>()
-            .ForMember(dest => dest.Images, opt => opt.Ignore())
-            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.Images, opt => opt.Ignore());
 
             CreateMap<CreateTransactionModel, Transaction>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => TransactionStatus.APPROVED))
-                .ForMember(dest => dest.Type, opt => opt.Ignore());
+                .ForMember(dest => dest.Type, opt => opt.Ignore())
+                .ForMember(dest => dest.UserSpendingModelId, opt => opt.Ignore());
 
             CreateMap<UpdateTransactionModel, Transaction>()
-                .ForMember(dest => dest.Type, opt => opt.Ignore());
+                .ForMember(dest => dest.Type, opt => opt.Ignore())
+                .ForMember(dest => dest.UserSpendingModelId, opt => opt.Ignore());
 
             CreateMap<Pagination<Transaction>, Pagination<TransactionModel>>()
                 .ConvertUsing<PaginationConverter<Transaction, TransactionModel>>();
