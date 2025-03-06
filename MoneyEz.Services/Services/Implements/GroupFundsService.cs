@@ -34,14 +34,21 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IClaimsService _claimsService;
         private readonly IRedisService _redisService;
         private readonly IMailService _mailService;
+        private readonly INotificationService _notificationService;
 
-        public GroupFundsService(IMapper mapper, IUnitOfWork unitOfWork, IClaimsService claimsService, IRedisService redisService, IMailService mailService)
+        public GroupFundsService(IMapper mapper,
+            IUnitOfWork unitOfWork,
+            IClaimsService claimsService,
+            IRedisService redisService,
+            IMailService mailService,
+            INotificationService notificationService)
         {
             _mapper = mapper;
             _unitOfWork = unitOfWork;
             _claimsService = claimsService;
             _redisService = redisService;
             _mailService = mailService;
+            _notificationService = notificationService;
         }
 
         public async Task<BaseResultModel> CreateGroupFundsAsync(CreateGroupModel model)
@@ -369,6 +376,18 @@ namespace MoneyEz.Services.Services.Implements
                 // Save the changes to the repository
                 await _unitOfWork.SaveAsync();
 
+                // send notification to member
+                var newNotification = new Notification
+                {
+                    UserId = memberId,
+                    Title = $"Rời khỏi nhóm {groupFund.Name}",
+                    Message = $"Bạn đã bị {currentUser.FullName} xóa khỏi nhóm '{groupFund.Name}'. Ấn vào thông báo để xem chi tiết.",
+                    EntityId = groupFund.Id,
+                    Type = NotificationType.GROUP,
+                };
+
+                await _notificationService.AddNotificationByUserId(memberId, newNotification);
+
                 // Return a success result
                 return new BaseResultModel
                 {
@@ -452,6 +471,18 @@ namespace MoneyEz.Services.Services.Implements
             // Save the changes to the repository
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
+
+            // send notification to member
+            var newNotification = new Notification
+            {
+                UserId = memberToUpdate.UserId,
+                Title = $"Thay đổi vai trò trong nhóm {groupFund.Name}",
+                Message = $"Vai trò của bạn trong nhóm '{groupFund.Name}' đã được thay đổi thành '{setRoleGroupModel.RoleGroup.ToString()}'. Ấn vào thông báo để xem chi tiết.",
+                EntityId = groupFund.Id,
+                Type = NotificationType.GROUP,
+            };
+
+            await _notificationService.AddNotificationByUserId(memberToUpdate.UserId, newNotification);
 
             // Return a success result
             return new BaseResultModel
@@ -593,7 +624,7 @@ namespace MoneyEz.Services.Services.Implements
             {
                 ToEmail = inviteMemberModel.Email,
                 Subject = $"[MoneyEz] Lời mời tham gia nhóm {groupFund.Name}",
-                Body = $"Bạn đã được {currentUser.FullName} mời vào nhóm {groupFund.Name}. Ấn vào link để tham gia: {invitationLink}"
+                Body = $"Bạn đã được '{currentUser.FullName}' mời vào nhóm '{groupFund.Name}'. Ấn vào link để tham gia: {invitationLink}"
             };
 
             // send mail
@@ -612,6 +643,21 @@ namespace MoneyEz.Services.Services.Implements
             groupFund.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
+
+            // send notification to member
+            var newNotification = new Notification
+            {
+                UserId = inviteUser.Id,
+                Title = $"Lời mời tham gia nhóm {groupFund.Name}",
+                Message = $"Bạn đã được '{currentUser.FullName}' mời vào nhóm '{groupFund.Name}'. Ấn vào thông báo để xem chi tiết.",
+                EntityId = groupFund.Id,
+                Href = invitationLink,
+                Type = NotificationType.GROUP_INVITE,
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
+            };
+
+            await _notificationService.AddNotificationByUserId(inviteUser.Id, newNotification);
 
             // Return a success result
             return new BaseResultModel
@@ -1012,6 +1058,21 @@ namespace MoneyEz.Services.Services.Implements
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
 
+            // send notification to members
+
+            var newNotification = new Notification
+            {
+                Title = $"Cập nhật tỷ lệ đóng góp nhóm {groupFund.Name}",
+                Message = $"Tỷ lệ đóng góp của bạn trong nhóm '{groupFund.Name}' đã được cập nhật. Ấn vào thông báo để xem chi tiết.",
+                EntityId = groupFund.Id,
+                Type = NotificationType.GROUP,
+            };
+
+            var listUserId = groupFund.GroupMembers.Select(x => x.UserId).ToList();
+
+            await _notificationService.AddNotificationByListUser(listUserId, newNotification);
+
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -1185,6 +1246,56 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.TRANSACTION_RESPONSE_SUCCESS,
                 Data = _mapper.Map<TransactionModel>(transaction)
             };
+        }
+
+        public async Task<GroupMember> GetGroupLeader(Guid groupId)
+        {
+            // Get group with members
+            var groupFund = await _unitOfWork.GroupFundRepository
+                .GetByIdIncludeAsync(groupId, include: q => q
+                    .Include(g => g.GroupMembers)
+                    .ThenInclude(gm => gm.User));
+
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // Find leader member
+            var leader = groupFund.GroupMembers.FirstOrDefault(member =>
+                member.Role == RoleGroup.LEADER &&
+                member.Status == GroupMemberStatus.ACTIVE &&
+                !member.IsDeleted);
+
+            if (leader == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_LEADER_NOT_FOUND);
+            }
+
+            return leader;
+        }
+
+        public async Task<List<GroupMember>> GetGroupMembers(Guid groupId)
+        {
+            // Get group with members
+            var groupFund = await _unitOfWork.GroupFundRepository
+                .GetByIdIncludeAsync(groupId, include: q => q
+                    .Include(g => g.GroupMembers)
+                    .ThenInclude(gm => gm.User));
+
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // Get all active members
+            var members = groupFund.GroupMembers
+                .Where(member =>
+                    member.Status == GroupMemberStatus.ACTIVE &&
+                    !member.IsDeleted)
+                .ToList();
+
+            return members;
         }
     }
 }
