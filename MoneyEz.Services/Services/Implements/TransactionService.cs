@@ -145,6 +145,7 @@ namespace MoneyEz.Services.Services.Implements
             var transaction = _mapper.Map<Transaction>(model);
             transaction.UserId = user.Id;
             transaction.Status = TransactionStatus.APPROVED;
+            transaction.CreatedBy = user.Email;
 
             await CheckAndNotifyCategorySpendingLimit(transaction, user);
 
@@ -187,6 +188,7 @@ namespace MoneyEz.Services.Services.Implements
             await UpdateFinancialGoalProgress(transaction, user, isRollback: true);
 
             _mapper.Map(model, transaction);
+            transaction.UpdatedBy = user.Email;
 
             await ValidateSubcategoryInCurrentSpendingModel(transaction.SubcategoryId.Value, user.Id);
 
