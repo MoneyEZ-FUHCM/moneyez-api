@@ -10,6 +10,7 @@ namespace MoneyEz.Repositories.Enums
     {
         SYSTEM,
         USER,
-        GROUP
+        GROUP,
+        GROUP_INVITE,
     }
 }

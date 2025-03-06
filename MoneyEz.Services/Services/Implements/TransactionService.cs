@@ -156,6 +156,7 @@ namespace MoneyEz.Services.Services.Implements
             transaction.Status = TransactionStatus.APPROVED;
             transaction.Type = category.Type ?? throw new DefaultException("Danh mục không có TransactionType hợp lệ.", MessageConstants.CATEGORY_TYPE_INVALID);
             transaction.UserSpendingModelId = currentSpendingModel.Id;
+            transaction.CreatedBy = user.Email;
 
             await CheckAndNotifyCategorySpendingLimit(transaction, user);
 
@@ -197,6 +198,7 @@ namespace MoneyEz.Services.Services.Implements
             await UpdateFinancialGoalProgress(transaction, user, isRollback: true);
 
             _mapper.Map(model, transaction);
+            transaction.UpdatedBy = user.Email;
 
             await ValidateSubcategoryInCurrentSpendingModel(transaction.SubcategoryId.Value, user.Id);
 

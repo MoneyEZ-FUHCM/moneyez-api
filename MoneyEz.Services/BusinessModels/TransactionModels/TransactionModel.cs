@@ -15,6 +15,8 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
         public DateTime TransactionDate { get; set; }
         public string? Description { get; set; }
         public string? Status { get; set; }
+        public string? SubcategoryName { get; set; }
+        public string? SubcategoryIcon { get; set; }
         public List<string>? Images { get; set; }
     }
 }
