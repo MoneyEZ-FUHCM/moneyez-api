@@ -135,6 +135,7 @@ namespace MoneyEz.Services.Constants
         public const string CATEGORY_UPDATED_SUCCESS = "CategoryUpdatedSuccessfully";
         public const string CATEGORY_DELETED_SUCCESS = "CategoryDeletedSuccessfully";
         public const string CATEGORY_HAS_DEPENDENCIES = "CategoryHasDependencies";
+        public const string CATEGORY_TYPE_INVALID = "CATEGORY_TYPE_INVALID";
 
         // subcategory
         public const string SUBCATEGORY_LIST_FETCHED_SUCCESS = "SubcategoryListFetched";
@@ -210,6 +211,7 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_CAN_NOT_REMOVE_LEADER = "YouAreTheLeader";
         public const string GROUP_LEAVE_SUCCESS_MESSAGE = "You have left the group successfully.";
         public const string GROUP_MEMBER_ALREADY_ROLE = "MemberAlreadyRole";
+        public const string GROUP_LEADER_NOT_FOUND = "GroupLeaderNotFound";
 
         // fundraising request
         public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";

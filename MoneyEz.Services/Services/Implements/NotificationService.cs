@@ -69,7 +69,6 @@ namespace MoneyEz.Services.Services.Implements
                     var newNoti = new Notification
                     {
                         UserId = userId,
-                        Type = NotificationType.SYSTEM,
                         Title = notification.Title,
                         Message = notification.Message,
                     };
@@ -93,11 +92,6 @@ namespace MoneyEz.Services.Services.Implements
         }
 
         public Task<BaseResultModel> AddNotificationByRoleAsync(RolesEnum roleEnums, Notification notificationModel)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<BaseResultModel> AddNotificationByUserId(int userId, Notification notificationModel)
         {
             throw new NotImplementedException();
         }
