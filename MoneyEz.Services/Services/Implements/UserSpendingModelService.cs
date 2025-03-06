@@ -462,9 +462,11 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var currentModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = 1, PageIndex = 1 },
-                filter: usm => usm.UserId == user.Id && usm.Status == UserSpendingModelStatus.ACTIVE && !usm.IsDeleted,
+            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == user.Id
+                    && usm.EndDate > CommonUtils.GetCurrentTime()
+                    && usm.Status == UserSpendingModelStatus.ACTIVE 
+                    && !usm.IsDeleted,
                 include: query => query
                     .Include(usm => usm.SpendingModel)
                     .ThenInclude(sm => sm.SpendingModelCategories)
@@ -546,6 +548,93 @@ namespace MoneyEz.Services.Services.Implements
                     TotalSpent = totalSpent,
                     StartDate = currentModel.StartDate,
                     EndDate = currentModel.EndDate
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetChartSpendingModelAsync(Guid spendingModelId)
+        {
+            var spendingModel = await _unitOfWork.UserSpendingModelRepository.GetByIdIncludeAsync(
+                spendingModelId,
+                include: query => query
+                    .Include(usm => usm.SpendingModel)
+                    .ThenInclude(sm => sm.SpendingModelCategories)
+                    .ThenInclude(smc => smc.Category)
+            );
+
+            if (spendingModel == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.SPENDING_MODEL_NOT_FOUND,
+                    Message = "No spending model found"
+                };
+            }
+
+            if (!spendingModel.SpendingModel.SpendingModelCategories.Any())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.SPENDING_MODEL_HAS_NO_CATEGORIES,
+                    Message = "Current spending model has no categories"
+                };
+            }
+
+            var chartData = new List<ChartSpendingCategoryModel>();
+            decimal totalSpent = 0;
+
+            // Get all transactions within the model's time period
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == null &&
+                            t.TransactionDate >= spendingModel.StartDate &&
+                            t.TransactionDate <= spendingModel.EndDate &&
+                            t.Status == TransactionStatus.APPROVED,
+                include: query => query
+                    .Include(t => t.Subcategory)
+                    .ThenInclude(s => s.CategorySubcategories)
+                    .ThenInclude(cs => cs.Category)
+            );
+
+            // Group transactions by category and calculate totals
+            foreach (var spendingModelCategory in spendingModel.SpendingModel.SpendingModelCategories)
+            {
+                var categoryTransactions = transactions.Where(t =>
+                    t.Subcategory != null &&
+                    t.Subcategory.CategorySubcategories.Any(cs =>
+                        cs.CategoryId == spendingModelCategory.CategoryId));
+
+                var categoryTotal = categoryTransactions.Sum(t => t.Amount);
+                totalSpent += categoryTotal;
+
+                chartData.Add(new ChartSpendingCategoryModel
+                {
+                    CategoryName = spendingModelCategory.Category.Name,
+                    TotalSpent = categoryTotal,
+                    PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
+                    ActualPercentage = 0 // Will be calculated after we have the total
+                });
+            }
+
+            // Calculate actual percentages
+            if (totalSpent > 0)
+            {
+                foreach (var category in chartData)
+                {
+                    category.ActualPercentage = Math.Round((category.TotalSpent / totalSpent) * 100, 2);
+                }
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new
+                {
+                    Categories = chartData,
+                    TotalSpent = totalSpent,
+                    StartDate = spendingModel.StartDate,
+                    EndDate = spendingModel.EndDate
                 }
             };
         }
