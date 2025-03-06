@@ -1,4 +1,5 @@
-﻿using MoneyEz.Services.Utils;
+﻿using MoneyEz.Repositories.Enums;
+using MoneyEz.Services.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -21,6 +22,7 @@ namespace MoneyEz.Services.BusinessModels.CategoryModels
         public required string Code { get; set; }
         public required string Icon { get; set; }
         public string? Description { get; set; }
+        public TransactionType Type { get; set; }
 
         public string NameUnsign => StringUtils.ConvertToUnSign(Name);
     }
