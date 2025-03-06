@@ -12,9 +12,6 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
 
         public decimal? Amount { get; set; }
 
-        [Required(ErrorMessage = "Transaction type is required.")]
-        public TransactionType Type { get; set; }
-
         [Required(ErrorMessage = "Subcategory ID is required.")]
         public Guid SubcategoryId { get; set; }
 

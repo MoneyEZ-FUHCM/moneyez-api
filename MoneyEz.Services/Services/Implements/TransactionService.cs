@@ -142,9 +142,16 @@ namespace MoneyEz.Services.Services.Implements
             var user = await GetCurrentUserAsync();
             await ValidateSubcategoryInCurrentSpendingModel(model.SubcategoryId, user.Id);
 
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId)
+                ?? throw new NotExistException(MessageConstants.SUBCATEGORY_NOT_FOUND);
+
+            var category = await _unitOfWork.CategorySubcategoryRepository.GetCategoryBySubcategoryId(subcategory.Id)
+                ?? throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
+
             var transaction = _mapper.Map<Transaction>(model);
             transaction.UserId = user.Id;
             transaction.Status = TransactionStatus.APPROVED;
+            transaction.Type = category.Type ?? throw new DefaultException("Danh mục không có TransactionType hợp lệ.", MessageConstants.CATEGORY_TYPE_INVALID);
 
             await CheckAndNotifyCategorySpendingLimit(transaction, user);
 
@@ -171,7 +178,6 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.TRANSACTION_CREATED_SUCCESS
             };
         }
-
         public async Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model)
         {
             var user = await GetCurrentUserAsync();
@@ -189,6 +195,14 @@ namespace MoneyEz.Services.Services.Implements
             _mapper.Map(model, transaction);
 
             await ValidateSubcategoryInCurrentSpendingModel(transaction.SubcategoryId.Value, user.Id);
+
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(transaction.SubcategoryId.Value)
+                ?? throw new NotExistException(MessageConstants.SUBCATEGORY_NOT_FOUND);
+
+            var category = await _unitOfWork.CategorySubcategoryRepository.GetCategoryBySubcategoryId(subcategory.Id)
+                ?? throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
+
+            transaction.Type = category.Type ?? throw new DefaultException("Danh mục không có TransactionType hợp lệ.", MessageConstants.CATEGORY_TYPE_INVALID);
 
             await CheckAndNotifyCategorySpendingLimit(transaction, user);
 
