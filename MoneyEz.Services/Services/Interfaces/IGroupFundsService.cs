@@ -30,6 +30,10 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> SetGroupContribution(SetGroupContributionModel setGroupContributionModel);
         Task<BaseResultModel> CreateFundraisingRequest(CreateFundraisingModel createFundraisingModel);
         Task<BaseResultModel> ResponsePendingTransaction(UpdateGroupTransactionModel updateGroupTransactionModel);
+        
+        // utils
+        Task<GroupMember> GetGroupLeader(Guid groupId);
+        Task<List<GroupMember>> GetGroupMembers(Guid groupId);
 
     }
 }
