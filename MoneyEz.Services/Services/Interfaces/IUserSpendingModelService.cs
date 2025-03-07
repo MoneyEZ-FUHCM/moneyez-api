@@ -1,4 +1,5 @@
 ﻿using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.SpendingModelModels;
 using System;
@@ -15,6 +16,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetUsedSpendingModelByIdAsync(Guid id);
         Task<BaseResultModel> GetUsedSpendingModelsPaginationAsync(PaginationParameter paginationParameter);
         Task<BaseResultModel> GetChartCurrentSpendingModelAsync();
-        Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, Guid userSpendingModelId);
+        Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter, Guid userSpendingModelId);
+        Task<BaseResultModel> UpdateExpiredSpendingModelsAsync();
     }
 }

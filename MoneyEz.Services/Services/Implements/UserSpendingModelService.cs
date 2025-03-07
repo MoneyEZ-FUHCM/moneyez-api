@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
@@ -550,19 +551,11 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, Guid userSpendingModelId)
+        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, 
+                                                                                    TransactionFilter transactionFilter, 
+                                                                                    Guid userSpendingModelId)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
-                    Message = "Unauthorized: Cannot retrieve user email."
-                };
-            }
-
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
             if (user == null)
             {
@@ -585,13 +578,14 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+            transactionFilter.FromDate = userSpendingModel.StartDate;
+            transactionFilter.ToDate = userSpendingModel.EndDate;
+            transactionFilter.UserId = user.Id;
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
-                include: query => query.Include(t => t.Subcategory),
-                filter: t => t.UserId == user.Id
-                             && t.TransactionDate >= userSpendingModel.StartDate
-                             && t.TransactionDate <= userSpendingModel.EndDate,
-                orderBy: t => t.OrderByDescending(t => t.CreatedDate)
+                transactionFilter,
+                include: query => query.Include(t => t.Subcategory)
             );
 
             var transactionModels = _mapper.Map<Pagination<TransactionModel>>(transactions);
@@ -605,7 +599,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        private async Task<BaseResultModel> UpdateExpiredSpendingModelsAsync()
+        public async Task<BaseResultModel> UpdateExpiredSpendingModelsAsync()
         {
             var currentTime = CommonUtils.GetCurrentTime();
 

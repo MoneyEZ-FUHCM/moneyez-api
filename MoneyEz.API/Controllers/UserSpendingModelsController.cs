@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.SpendingModelModels;
 using MoneyEz.Services.Services.Implements;
@@ -14,7 +15,6 @@ namespace MoneyEz.API.Controllers
 {
     [Route("api/v1/user-spending-models")]
     [ApiController]
-    [Authorize]
     public class UserSpendingModelsController : BaseController
     {
         private readonly IUserSpendingModelService _userSpendingModelService;
@@ -75,9 +75,16 @@ namespace MoneyEz.API.Controllers
 
 
         [HttpGet("transactions/{id}")]
-        public Task<IActionResult> GetAllTransactionsBySpendingModel([FromQuery] PaginationParameter paginationParameter, Guid id)
+        [Authorize]
+        public Task<IActionResult> GetAllTransactionsBySpendingModel([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter transactionFilter, Guid id)
         {
-            return ValidateAndExecute(() => _userSpendingModelService.GetTransactionsByUserSpendingModelAsync(paginationParameter, id));
+            return ValidateAndExecute(() => _userSpendingModelService.GetTransactionsByUserSpendingModelAsync(paginationParameter, transactionFilter, id));
+        }
+
+        [HttpGet("scan")]
+        public Task<IActionResult> ScanUserSpendingModelTimeExpried()
+        {
+            return ValidateAndExecute(() => _userSpendingModelService.UpdateExpiredSpendingModelsAsync());
         }
     }
 }

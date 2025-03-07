@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using MoneyEz.Repositories.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,10 +15,17 @@ namespace MoneyEz.Repositories.Commons.Filters
 
         [FromQuery(Name = "user_id")]
         public Guid? UserId { get; set; }
-        //public Guid? SubcategoryId { get; set; }
-        //public string? Type { get; set; }
-        //public string? Status { get; set; }
-        //public DateTime? FromDate { get; set; }
-        //public DateTime? ToDate { get; set; }
+
+        [FromQuery(Name = "category_id")]
+        public Guid? SubcategoryId { get; set; }
+
+        [FromQuery(Name = "type")]
+        public TransactionType? Type { get; set; }
+
+        [FromQuery(Name = "from_date")]
+        public DateTime? FromDate { get; set; }
+
+        [FromQuery(Name = "to_date")]
+        public DateTime? ToDate { get; set; }
     }
 }
