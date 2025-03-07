@@ -60,7 +60,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
 
-            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync("Transaction");
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
                 var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
@@ -293,7 +293,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var transactionModels = _mapper.Map<Pagination<TransactionModel>>(transactions);
 
-            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync("Transaction");
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
                 var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
@@ -427,7 +427,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var transactionModels = _mapper.Map<Pagination<TransactionModel>>(transactions);
 
-            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync("Transaction");
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
                 var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
@@ -488,7 +488,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
 
-            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync("Transaction");
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
                 var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();

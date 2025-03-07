@@ -278,12 +278,6 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            //var currentModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
-            //    new PaginationParameter { PageSize = 1, PageIndex = 1 },
-            //    filter: usm => usm.UserId == user.Id && usm.EndDate > CommonUtils.GetCurrentTime() && !usm.IsDeleted,
-            //    include: query => query.Include(usm => usm.SpendingModel)
-            //);
-
             var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
                 filter: usm => usm.Status == UserSpendingModelStatus.ACTIVE
                                 && usm.UserId == user.Id
@@ -640,7 +634,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, Guid userSpendingModelId)
+        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter, Guid userSpendingModelId)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
