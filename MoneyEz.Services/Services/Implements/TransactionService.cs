@@ -356,7 +356,12 @@ namespace MoneyEz.Services.Services.Implements
                 transaction.UserId.Value, null, currentSpendingModel.StartDate.Value, currentSpendingModel.EndDate.Value);
 
             var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(transaction.SubcategoryId.Value);
-            var category = await _unitOfWork.CategorySubcategoryRepository.GetCategoryBySubcategoryId(subcategory.Id);
+            var category = await _unitOfWork.CategorySubcategoryRepository
+                .GetCategoryInCurrentSpendingModel(subcategory.Id, currentSpendingModel.SpendingModelId.Value)
+                ?? throw new DefaultException(
+                    "Subcategory này không thuộc danh mục nào trong mô hình chi tiêu hiện tại.",
+                    MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL
+                );
             var spendingModelCategory = await _unitOfWork.SpendingModelCategoryRepository.GetByModelAndCategory(
                 currentSpendingModel.SpendingModelId.Value, category.Id);
 

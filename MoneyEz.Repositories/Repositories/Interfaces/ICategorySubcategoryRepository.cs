@@ -6,6 +6,8 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
     {
         Task<List<Subcategory>> GetSubcategoriesBySpendingModelId(Guid spendingModelId);
         Task<Category?> GetCategoryBySubcategoryId(Guid subcategoryId);
+        Task<Category?> GetCategoryInCurrentSpendingModel(Guid subcategoryId, Guid spendingModelId);
+
     }
 
 }
