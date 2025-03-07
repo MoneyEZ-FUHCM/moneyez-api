@@ -36,20 +36,9 @@ namespace MoneyEz.Services.Services.Implements
         }
 
         #region single user
-        public async Task<BaseResultModel> GetAllTransactionsForUserAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetAllTransactionsForUserAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
-
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
-                    Message = "Unauthorized: Cannot retrieve user email."
-                };
-            }
-
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
             if (user == null)
             {
@@ -61,18 +50,20 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+            transactionFilter.UserId = user.Id;
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
-                include: query => query.Include(t => t.Subcategory),
-                filter: t => t.UserId == user.Id,
-                orderBy: t => t.OrderByDescending(t => t.CreatedDate)
+                transactionFilter,
+                include: query => query.Include(t => t.Subcategory)
             );
 
             var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
 
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
-                var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transactionModel.Id, "Transaction");
+                var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
                 transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
             }
 
@@ -88,17 +79,6 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> GetTransactionByIdAsync(Guid transactionId)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
-
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
-                    Message = "Unauthorized: Cannot retrieve user email."
-                };
-            }
-
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
             if (user == null)
             {
@@ -127,7 +107,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var transactionModel = _mapper.Map<TransactionModel>(transaction);
 
-            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, "Transaction");
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
 
             return new BaseResultModel
@@ -168,7 +148,7 @@ namespace MoneyEz.Services.Services.Implements
                 var images = model.Images.Select(url => new Image
                 {
                     EntityId = transaction.Id,
-                    EntityName = "Transaction",
+                    EntityName = EntityName.TRANSACTION.ToString(),
                     ImageUrl = url
                 }).ToList();
 
@@ -220,7 +200,7 @@ namespace MoneyEz.Services.Services.Implements
 
             await UpdateFinancialGoalProgress(transaction, user);
 
-            var oldImages = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, "Transaction");
+            var oldImages = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             _unitOfWork.ImageRepository.PermanentDeletedListAsync(oldImages);
 
             if (model.Images != null && model.Images.Any())
@@ -228,7 +208,7 @@ namespace MoneyEz.Services.Services.Implements
                 var images = model.Images.Select(url => new Image
                 {
                     EntityId = transaction.Id,
-                    EntityName = "Transaction",
+                    EntityName = EntityName.TRANSACTION.ToString(),
                     ImageUrl = url
                 }).ToList();
 
@@ -258,7 +238,7 @@ namespace MoneyEz.Services.Services.Implements
 
             await UpdateFinancialGoalProgress(transaction, user, isRollback: true);
 
-            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, "Transaction");
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             if (images.Any())
             {
                 _unitOfWork.ImageRepository.PermanentDeletedListAsync(images);
@@ -274,19 +254,11 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.TRANSACTION_DELETED_SUCCESS
             };
         }
-        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, Guid userSpendingModelId)
+        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, 
+                                                                                    Guid userSpendingModelId, 
+                                                                                    TransactionFilter transactionFilter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
-                    Message = "Unauthorized: Cannot retrieve user email."
-                };
-            }
-
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
             if (user == null)
             {
@@ -309,16 +281,25 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+            transactionFilter.UserId = user.Id;
+            transactionFilter.FromDate = userSpendingModel.StartDate;
+            transactionFilter.ToDate = userSpendingModel.EndDate;
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
-                include: query => query.Include(t => t.Subcategory),
-                filter: t => t.UserId == user.Id
-                             && t.TransactionDate >= userSpendingModel.StartDate
-                             && t.TransactionDate <= userSpendingModel.EndDate,
-                orderBy: t => t.OrderByDescending(t => t.CreatedDate)
+                transactionFilter,
+                include: query => query.Include(t => t.Subcategory)
             );
 
             var transactionModels = _mapper.Map<Pagination<TransactionModel>>(transactions);
+
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
+            foreach (var transactionModel in transactionModels)
+            {
+                var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
+                transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+            }
+
             var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
 
             return new BaseResultModel
@@ -356,7 +337,12 @@ namespace MoneyEz.Services.Services.Implements
                 transaction.UserId.Value, null, currentSpendingModel.StartDate.Value, currentSpendingModel.EndDate.Value);
 
             var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(transaction.SubcategoryId.Value);
-            var category = await _unitOfWork.CategorySubcategoryRepository.GetCategoryBySubcategoryId(subcategory.Id);
+            var category = await _unitOfWork.CategorySubcategoryRepository
+                .GetCategoryInCurrentSpendingModel(subcategory.Id, currentSpendingModel.SpendingModelId.Value)
+                ?? throw new DefaultException(
+                    "Subcategory này không thuộc danh mục nào trong mô hình chi tiêu hiện tại.",
+                    MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL
+                );
             var spendingModelCategory = await _unitOfWork.SpendingModelCategoryRepository.GetByModelAndCategory(
                 currentSpendingModel.SpendingModelId.Value, category.Id);
 
@@ -409,19 +395,9 @@ namespace MoneyEz.Services.Services.Implements
 
 
         //admin
-        public async Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.TRANSACTION_ACCESS_DENIED,
-                    Message = "Unauthorized: Cannot retrieve user email."
-                };
-            }
-
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
             if (user == null)
             {
@@ -443,30 +419,28 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+            var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
+                transactionFilter,
                 include: query => query.Include(t => t.Subcategory).Include(t => t.User)
             );
 
-            var result = _mapper.Map<Pagination<TransactionModel>>(transactions);
+            var transactionModels = _mapper.Map<Pagination<TransactionModel>>(transactions);
+
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
+            foreach (var transactionModel in transactionModels)
+            {
+                var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
+                transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+            }
+
+            var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.TRANSACTION_LIST_FETCHED_SUCCESS,
-                Data = new ModelPaging
-                {
-                    Data = result,
-                    MetaData = new
-                    {
-                        result.TotalCount,
-                        result.PageSize,
-                        result.CurrentPage,
-                        result.TotalPages,
-                        result.HasNext,
-                        result.HasPrevious
-                    }
-                }
+                Data = result
             };
         }
 
@@ -506,18 +480,21 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
             }
 
-            var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+            var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
-                include: query => query
-                    .Include(t => t.Subcategory)
-                    .Include(t => t.User),
-                filter: t =>
-                    (!transactionFilter.GroupId.HasValue || t.GroupId == transactionFilter.GroupId.Value) &&
-                    (!transactionFilter.UserId.HasValue || t.UserId == transactionFilter.UserId.Value),
-                orderBy: t => t.OrderByDescending(t => t.TransactionDate)
+                transactionFilter,
+                include: query => query.Include(t => t.Subcategory).Include(t => t.User)
             );
 
             var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
+
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
+            foreach (var transactionModel in transactionModels)
+            {
+                var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
+                transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+            }
+
             var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
 
             return new BaseResultModel

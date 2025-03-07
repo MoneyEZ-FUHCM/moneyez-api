@@ -1,4 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
+using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.Repositories.Interfaces;
@@ -69,5 +72,85 @@ namespace MoneyEz.Repositories.Repositories.Implements
                 .SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
 
+        public async Task<Pagination<Transaction>> GetTransactionsFilterAsync(PaginationParameter paginationParameter, 
+                        TransactionFilter transactionFilter,
+                        Func<IQueryable<Transaction>, IIncludableQueryable<Transaction, object>>? include = null)
+        {
+            var query = _context.Transactions.AsQueryable();
+
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            // apply filter
+            query = ApplyTransactionFiltering(query, transactionFilter);
+
+            var itemCount = await query.CountAsync();
+            var items = await query.Skip((paginationParameter.PageIndex - 1) * paginationParameter.PageSize)
+                                    .Take(paginationParameter.PageSize)
+                                    .AsNoTracking()
+                                    .ToListAsync();
+            var result = new Pagination<Transaction>(items, itemCount, paginationParameter.PageIndex, paginationParameter.PageSize);
+            return result;
+        }
+
+        private IQueryable<Transaction> ApplyTransactionFiltering(IQueryable<Transaction> query, TransactionFilter filter)
+        {
+            if (filter == null) return query;
+
+            // Apply IsDeleted filter
+            query = query.Where(u => u.IsDeleted == filter.IsDeleted);
+
+            if (filter.GroupId.HasValue)
+            {
+                query = query.Where(t => t.GroupId == filter.GroupId.Value);
+            }
+
+            if (filter.UserId.HasValue)
+            {
+                query = query.Where(t => t.UserId == filter.UserId.Value);
+            }
+
+            if (filter.SubcategoryId.HasValue)
+            {
+                query = query.Where(t => t.SubcategoryId == filter.SubcategoryId.Value);
+            }
+
+            if (filter.Type.HasValue)
+            {
+                query = query.Where(t => t.Type == filter.Type.Value);
+            }
+
+            if (filter.FromDate.HasValue)
+            {
+                query = query.Where(t => t.TransactionDate >= filter.FromDate.Value);
+            }
+
+            if (filter.ToDate.HasValue)
+            {
+                query = query.Where(t => t.TransactionDate <= filter.ToDate.Value);
+            }
+
+            // Apply sorting
+            if (!string.IsNullOrEmpty(filter.SortBy))
+            {
+                var isAscending = string.IsNullOrEmpty(filter.Dir) || filter.Dir.ToLower() == "asc";
+
+                query = filter.SortBy.ToLower() switch
+                {
+                    "amount" => isAscending ? query.OrderBy(t => t.Amount) : query.OrderByDescending(t => t.Amount),
+                    "date" => isAscending ? query.OrderBy(t => t.TransactionDate) : query.OrderByDescending(t => t.TransactionDate),
+                    _ => query.OrderByDescending(t => t.TransactionDate) // Default sort by date desc
+                };
+            }
+            else
+            {
+                // Default sorting by transaction date descending if no sort specified
+                query = query.OrderByDescending(t => t.TransactionDate);
+            }
+
+            return query;
+        }
     }
 }

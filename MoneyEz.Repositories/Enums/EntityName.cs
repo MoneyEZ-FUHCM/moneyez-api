@@ -8,6 +8,7 @@ namespace MoneyEz.Repositories.Enums
 {
     public enum EntityName
     {
-        GROUP
+        GROUP,
+        TRANSACTION
     }
 }

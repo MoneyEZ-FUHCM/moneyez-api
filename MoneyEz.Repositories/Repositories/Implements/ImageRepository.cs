@@ -23,5 +23,12 @@ namespace MoneyEz.Repositories.Repositories.Implements
                                  .Where(i => i.EntityId == entityId && i.EntityName == entityName && !i.IsDeleted)
                                  .ToListAsync();
         }
+
+        public async Task<List<Image>> GetImagesByEntityNameAsync(string entityName)
+        {
+            return await _context.Images
+                                 .Where(i => i.EntityName == entityName && !i.IsDeleted)
+                                 .ToListAsync();
+        }
     }
 }
