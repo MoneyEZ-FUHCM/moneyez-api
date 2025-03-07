@@ -107,7 +107,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var transactionModel = _mapper.Map<TransactionModel>(transaction);
 
-            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, "Transaction");
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
 
             return new BaseResultModel
@@ -148,7 +148,7 @@ namespace MoneyEz.Services.Services.Implements
                 var images = model.Images.Select(url => new Image
                 {
                     EntityId = transaction.Id,
-                    EntityName = "Transaction",
+                    EntityName = EntityName.TRANSACTION.ToString(),
                     ImageUrl = url
                 }).ToList();
 
@@ -200,7 +200,7 @@ namespace MoneyEz.Services.Services.Implements
 
             await UpdateFinancialGoalProgress(transaction, user);
 
-            var oldImages = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, "Transaction");
+            var oldImages = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             _unitOfWork.ImageRepository.PermanentDeletedListAsync(oldImages);
 
             if (model.Images != null && model.Images.Any())
@@ -208,7 +208,7 @@ namespace MoneyEz.Services.Services.Implements
                 var images = model.Images.Select(url => new Image
                 {
                     EntityId = transaction.Id,
-                    EntityName = "Transaction",
+                    EntityName = EntityName.TRANSACTION.ToString(),
                     ImageUrl = url
                 }).ToList();
 
@@ -238,7 +238,7 @@ namespace MoneyEz.Services.Services.Implements
 
             await UpdateFinancialGoalProgress(transaction, user, isRollback: true);
 
-            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, "Transaction");
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             if (images.Any())
             {
                 _unitOfWork.ImageRepository.PermanentDeletedListAsync(images);

@@ -656,74 +656,6 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "You are not authorized to delete this goal."
             };
         }
-
-        private async Task NotifyGroupMembers(FinancialGoal goal, User actionUser, string actionType, string? customMessage = null)
-        {
-            var groupMembers = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
-                filter: gm => gm.GroupId == goal.GroupId && gm.Status == GroupMemberStatus.ACTIVE);
-
-            string actionMessage = actionType switch
-            {
-                "created" => "đã tạo",
-                "updated" => "đã cập nhật",
-                "deleted" => "đã xóa",
-                "archived" => "đã lưu trữ",
-                "approved" => "đã phê duyệt",
-                "rejected" => "đã từ chối",
-                _ => "đã cập nhật"
-            };
-
-            string message = customMessage ?? $"Mục tiêu tài chính '{goal.Name}' {actionMessage} bởi {actionUser.FullName}.";
-
-            var notification = new Notification
-            {
-                Title = "Cập nhật mục tiêu tài chính nhóm",
-                Message = message,
-                Type = NotificationType.GROUP,
-                EntityId = goal.Id,
-                CreatedDate = CommonUtils.GetCurrentTime()
-            };
-
-            await _notificationService.AddNotificationByListUser(
-                groupMembers.Select(gm => gm.UserId).ToList(),
-                notification);
-        }
-        private async Task NotifyGroupLeaderApprovalRequest(FinancialGoal goal, User actionUser, string actionType, string actionKey)
-        {
-            var leaders = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
-                filter: gm => gm.GroupId == goal.GroupId
-                            && gm.Role == RoleGroup.LEADER
-                            && gm.Status == GroupMemberStatus.ACTIVE);
-
-            if (!leaders.Any())
-            {
-                return;
-            }
-
-            string actionMessage = actionType switch
-            {
-                "create" => "tạo mới",
-                "update" => "cập nhật",
-                "delete" => "xóa",
-                _ => "thay đổi"
-            };
-
-            var notification = new Notification
-            {
-                Title = "Yêu cầu phê duyệt mục tiêu tài chính",
-                Message = $"Quản trị viên {actionUser.FullName} vừa yêu cầu {actionMessage} mục tiêu tài chính '{goal.Name}'.",
-                Type = NotificationType.GROUP,
-                EntityId = goal.Id,
-                CreatedDate = CommonUtils.GetCurrentTime(),
-                Href = $"/group-goals/{goal.GroupId}/{goal.Id}?action={actionKey}" // kèm action để UI xử lý đẹp
-            };
-
-            await _notificationService.AddNotificationByListUser(
-                leaders.Select(l => l.UserId).ToList(),
-                notification);
-        }
-
-
         public async Task<BaseResultModel> GetGroupFinancialGoalByIdAsync(GetGroupFinancialGoalDetailModel model)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -907,5 +839,73 @@ namespace MoneyEz.Services.Services.Implements
         }
 
         #endregion Group
+
+        #region notification
+        private async Task NotifyGroupMembers(FinancialGoal goal, User actionUser, string actionType, string? customMessage = null)
+        {
+            var groupMembers = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == goal.GroupId && gm.Status == GroupMemberStatus.ACTIVE);
+
+            string actionMessage = actionType switch
+            {
+                "created" => "đã tạo",
+                "updated" => "đã cập nhật",
+                "deleted" => "đã xóa",
+                "archived" => "đã lưu trữ",
+                "approved" => "đã phê duyệt",
+                "rejected" => "đã từ chối",
+                _ => "đã cập nhật"
+            };
+
+            string message = customMessage ?? $"Mục tiêu tài chính '{goal.Name}' {actionMessage} bởi {actionUser.FullName}.";
+
+            var notification = new Notification
+            {
+                Title = "Cập nhật mục tiêu tài chính nhóm",
+                Message = message,
+                Type = NotificationType.GROUP,
+                EntityId = goal.Id,
+                CreatedDate = CommonUtils.GetCurrentTime()
+            };
+
+            await _notificationService.AddNotificationByListUser(
+                groupMembers.Select(gm => gm.UserId).ToList(),
+                notification);
+        }
+        private async Task NotifyGroupLeaderApprovalRequest(FinancialGoal goal, User actionUser, string actionType, string actionKey)
+        {
+            var leaders = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == goal.GroupId
+                            && gm.Role == RoleGroup.LEADER
+                            && gm.Status == GroupMemberStatus.ACTIVE);
+
+            if (!leaders.Any())
+            {
+                return;
+            }
+
+            string actionMessage = actionType switch
+            {
+                "create" => "tạo mới",
+                "update" => "cập nhật",
+                "delete" => "xóa",
+                _ => "thay đổi"
+            };
+
+            var notification = new Notification
+            {
+                Title = "Yêu cầu phê duyệt mục tiêu tài chính",
+                Message = $"Quản trị viên {actionUser.FullName} vừa yêu cầu {actionMessage} mục tiêu tài chính '{goal.Name}'.",
+                Type = NotificationType.GROUP,
+                EntityId = goal.Id,
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                Href = $"/group-goals/{goal.GroupId}/{goal.Id}?action={actionKey}" // kèm action để UI xử lý đẹp
+            };
+
+            await _notificationService.AddNotificationByListUser(
+                leaders.Select(l => l.UserId).ToList(),
+                notification);
+        }
+        #endregion notification
     }
 }
