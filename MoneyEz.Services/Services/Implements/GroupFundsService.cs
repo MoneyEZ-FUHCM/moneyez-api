@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.BusinessModels.ImageModels;
 using MoneyEz.Repositories.Commons.Filters;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -130,7 +131,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var result = _mapper.Map<GroupFundModel>(groupFund);
             result.GroupMembers = new List<GroupMemberModel>();
-            result.ImageUrl = newImage.ImageUrl;
+            result.ImageUrl = newImage?.ImageUrl != null ? newImage.ImageUrl : null;
 
             // Return a success result with the created groupFund
             return new BaseResultModel
@@ -161,7 +162,7 @@ namespace MoneyEz.Services.Services.Implements
                 foreach (var groupFund in groupFundModels)
                 {
                     var image = images.FirstOrDefault(i => i.EntityId == groupFund.Id);
-                    groupFund.ImageUrl = image.ImageUrl;
+                    groupFund.ImageUrl = image?.ImageUrl != null ? image.ImageUrl : null;
                 }
 
                 var groupPagingResult = PaginationHelper.GetPaginationResult(groupFunds, groupFundModels);
@@ -198,7 +199,7 @@ namespace MoneyEz.Services.Services.Implements
                 foreach (var groupFund in groupFundModels)
                 {
                     var image = images.FirstOrDefault(i => i.EntityId == groupFund.Id);
-                    groupFund.ImageUrl = image.ImageUrl;
+                    groupFund.ImageUrl = image?.ImageUrl != null ? image.ImageUrl : null;
                 }
 
                 var groupPagingResult = PaginationHelper.GetPaginationResult(groupFunds, groupFundModels);
