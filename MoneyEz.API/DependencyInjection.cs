@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MoneyEz.API.RunSchedule.Setup;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Repositories.Implements;
 using MoneyEz.Repositories.Repositories.Interfaces;
@@ -10,6 +11,7 @@ using MoneyEz.Services.Mappers;
 using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Settings;
+using Quartz;
 using System.Text;
 
 namespace MoneyEz.API
@@ -119,6 +121,19 @@ namespace MoneyEz.API
 
             // config mail setting
             services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+
+            services.AddQuartz(option =>
+            {
+                option.UseMicrosoftDependencyInjectionJobFactory();
+            });
+
+            services.AddQuartzHostedService(option =>
+            {
+                option.WaitForJobsToComplete = true;
+            });
+
+            services.ConfigureOptions<SampleJobSetup>();
+            services.ConfigureOptions<ScanUserSpendingModelJobSetup>();
 
             return services;
         }

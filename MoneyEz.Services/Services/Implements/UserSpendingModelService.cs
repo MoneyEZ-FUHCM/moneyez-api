@@ -700,13 +700,17 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            var expiredModelUpdate = new List<UserSpendingModel>();
+
             // Update status to EXPIRED for all expired models
             foreach (var model in expiredModels)
             {
                 model.Status = UserSpendingModelStatus.EXPIRED;
                 model.UpdatedDate = currentTime;
+                expiredModelUpdate.Add(model);
             }
 
+            _unitOfWork.UserSpendingModelRepository.UpdateRangeAsync(expiredModelUpdate);
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
