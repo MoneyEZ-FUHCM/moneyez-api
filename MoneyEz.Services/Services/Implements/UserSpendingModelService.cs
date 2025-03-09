@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
@@ -276,12 +277,6 @@ namespace MoneyEz.Services.Services.Implements
             string userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
-
-            //var currentModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
-            //    new PaginationParameter { PageSize = 1, PageIndex = 1 },
-            //    filter: usm => usm.UserId == user.Id && usm.EndDate > CommonUtils.GetCurrentTime() && !usm.IsDeleted,
-            //    include: query => query.Include(usm => usm.SpendingModel)
-            //);
 
             var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
                 filter: usm => usm.Status == UserSpendingModelStatus.ACTIVE
@@ -639,19 +634,9 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, Guid userSpendingModelId)
+        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter, Guid userSpendingModelId)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    ErrorCode = MessageConstants.TOKEN_NOT_VALID,
-                    Message = "Unauthorized: Cannot retrieve user email."
-                };
-            }
-
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
             if (user == null)
             {
@@ -674,13 +659,14 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var transactions = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+            transactionFilter.FromDate = userSpendingModel.StartDate;
+            transactionFilter.ToDate = userSpendingModel.EndDate;
+            transactionFilter.UserId = user.Id;
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
-                include: query => query.Include(t => t.Subcategory),
-                filter: t => t.UserId == user.Id
-                             && t.TransactionDate >= userSpendingModel.StartDate
-                             && t.TransactionDate <= userSpendingModel.EndDate,
-                orderBy: t => t.OrderByDescending(t => t.CreatedDate)
+                transactionFilter,
+                include: query => query.Include(t => t.Subcategory)
             );
 
             var transactionModels = _mapper.Map<Pagination<TransactionModel>>(transactions);
@@ -694,7 +680,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        private async Task<BaseResultModel> UpdateExpiredSpendingModelsAsync()
+        public async Task<BaseResultModel> UpdateExpiredSpendingModelsAsync()
         {
             var currentTime = CommonUtils.GetCurrentTime();
 
@@ -714,13 +700,17 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            var expiredModelUpdate = new List<UserSpendingModel>();
+
             // Update status to EXPIRED for all expired models
             foreach (var model in expiredModels)
             {
                 model.Status = UserSpendingModelStatus.EXPIRED;
                 model.UpdatedDate = currentTime;
+                expiredModelUpdate.Add(model);
             }
 
+            _unitOfWork.UserSpendingModelRepository.UpdateRangeAsync(expiredModelUpdate);
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel

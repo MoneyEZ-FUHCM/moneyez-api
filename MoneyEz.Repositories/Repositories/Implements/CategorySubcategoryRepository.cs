@@ -33,6 +33,20 @@ namespace MoneyEz.Repositories.Repositories.Implements
                 .Select(cs => cs.Category)
                 .FirstOrDefaultAsync();
         }
+
+        public async Task<Category?> GetCategoryInCurrentSpendingModel(Guid subcategoryId, Guid spendingModelId)
+        {
+            var categoryIdsInSpendingModel = await _context.SpendingModelCategories
+                .Where(smc => smc.SpendingModelId == spendingModelId)
+                .Select(smc => smc.CategoryId)
+                .ToListAsync();
+
+            return await _context.CategorySubcategory
+                .Where(cs => cs.SubcategoryId == subcategoryId && categoryIdsInSpendingModel.Contains(cs.CategoryId))
+                .Select(cs => cs.Category)
+                .FirstOrDefaultAsync();
+        }
+
     }
 
 }

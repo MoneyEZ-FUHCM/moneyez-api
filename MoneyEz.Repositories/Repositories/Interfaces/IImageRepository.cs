@@ -8,5 +8,6 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
     public interface IImageRepository : IGenericRepository<Image>
     {
         Task<List<Image>> GetImagesByEntityAsync(Guid entityId, string entityName);
+        Task<List<Image>> GetImagesByEntityNameAsync(string entityName);
     }
 }

@@ -25,9 +25,9 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpGet("user")]
-        public Task<IActionResult> GetAllTransactions([FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetAllTransactions([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
         {
-            return ValidateAndExecute(() => _transactionService.GetAllTransactionsForUserAsync(paginationParameter));
+            return ValidateAndExecute(() => _transactionService.GetAllTransactionsForUserAsync(paginationParameter, filter));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
@@ -60,9 +60,9 @@ namespace MoneyEz.API.Controllers
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("admin")]
-        public Task<IActionResult> GetAllTransactionsForAdmin([FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetAllTransactionsForAdmin([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
         {
-            return ValidateAndExecute(() => _transactionService.GetAllTransactionsForAdminAsync(paginationParameter));
+            return ValidateAndExecute(() => _transactionService.GetAllTransactionsForAdminAsync(paginationParameter, filter));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
