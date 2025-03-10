@@ -549,7 +549,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetChartSpendingModelAsync(Guid spendingModelId)
         {
-            var spendingModel = await _unitOfWork.UserSpendingModelRepository.GetByIdIncludeAsync(
+            var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetByIdIncludeAsync(
                 spendingModelId,
                 include: query => query
                     .Include(usm => usm.SpendingModel)
@@ -557,7 +557,7 @@ namespace MoneyEz.Services.Services.Implements
                     .ThenInclude(smc => smc.Category)
             );
 
-            if (spendingModel == null)
+            if (userSpendingModel == null)
             {
                 return new BaseResultModel
                 {
@@ -567,7 +567,7 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            if (!spendingModel.SpendingModel.SpendingModelCategories.Any())
+            if (!userSpendingModel.SpendingModel.SpendingModelCategories.Any())
             {
                 return new BaseResultModel
                 {
@@ -582,9 +582,9 @@ namespace MoneyEz.Services.Services.Implements
 
             // Get all transactions within the model's time period
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.GroupId == null &&
-                            t.TransactionDate >= spendingModel.StartDate &&
-                            t.TransactionDate <= spendingModel.EndDate &&
+                filter: t => t.UserId == userSpendingModel.UserId && t.GroupId == null &&
+                            t.TransactionDate >= userSpendingModel.StartDate &&
+                            t.TransactionDate <= userSpendingModel.EndDate &&
                             t.Status == TransactionStatus.APPROVED,
                 include: query => query
                     .Include(t => t.Subcategory)
@@ -593,7 +593,7 @@ namespace MoneyEz.Services.Services.Implements
             );
 
             // Group transactions by category and calculate totals
-            foreach (var spendingModelCategory in spendingModel.SpendingModel.SpendingModelCategories)
+            foreach (var spendingModelCategory in userSpendingModel.SpendingModel.SpendingModelCategories)
             {
                 var categoryTransactions = transactions.Where(t =>
                     t.Subcategory != null &&
@@ -628,8 +628,8 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Categories = chartData,
                     TotalSpent = totalSpent,
-                    StartDate = spendingModel.StartDate,
-                    EndDate = spendingModel.EndDate
+                    StartDate = userSpendingModel.StartDate,
+                    EndDate = userSpendingModel.EndDate
                 }
             };
         }
