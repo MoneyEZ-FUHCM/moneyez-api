@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Services.BusinessModels.NotificationModels;
 using MoneyEz.Services.Services.Implements;
@@ -25,9 +26,9 @@ namespace MoneyEz.API.Controllers
 
         [HttpGet("user")]
         [Authorize]
-        public Task<IActionResult> GetNotificationsByUser([FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetNotificationsByUser([FromQuery] PaginationParameter paginationParameter, [FromQuery] NotificationFilter filter)
         {
-            return ValidateAndExecute(() => _notificationService.GetNotificationsByUser(paginationParameter));
+            return ValidateAndExecute(() => _notificationService.GetNotificationsByUser(paginationParameter, filter));
         }
 
         [HttpGet("{id}")]
@@ -56,13 +57,7 @@ namespace MoneyEz.API.Controllers
         [Authorize(Roles = "ADMIN")]
         public Task<IActionResult> AddNotificationForUsers(CreateNotificationModel createNotificationModel)
         {
-            var newNoti = new Notification
-            {
-                Title = createNotificationModel.Title,
-                Message = createNotificationModel.Message
-            };
-
-            return ValidateAndExecute(() => _notificationService.AddNotificationByListUser(createNotificationModel.UserIds, newNoti));
+            return ValidateAndExecute(() => _notificationService.AddNotificationByAdmin(createNotificationModel));
         }
     }
 }
