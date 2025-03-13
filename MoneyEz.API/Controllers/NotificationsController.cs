@@ -59,5 +59,12 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _notificationService.AddNotificationByAdmin(createNotificationModel));
         }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "USER")]
+        public Task<IActionResult> DeleteNotificationById(Guid id)
+        {
+            return ValidateAndExecute(() => _notificationService.DeleteNotificationById(id));
+        }
     }
 }
