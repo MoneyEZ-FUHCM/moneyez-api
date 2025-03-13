@@ -250,6 +250,7 @@ namespace MoneyEz.Services.Constants
         public const string NOTI_PUSH_FAILED = "CannotPushNotification";
         public const string NOTI_UNREAD_EMPTY = "NotificationUnreadEmpty";
         public const string NOTI_CANNOT_MARK_READ = "CannotMarkReadNotification";
+        public const string NOTI_USER_EMPTY = "NotificationUsersEmpty";
 
         // bank account
         public const string BANK_ACCOUNT_NOT_FOUND = "BankAccountNotFound";
