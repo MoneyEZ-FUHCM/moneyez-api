@@ -7,6 +7,7 @@ using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Repositories.Implements;
 using MoneyEz.Repositories.Repositories.Interfaces;
 using MoneyEz.Repositories.UnitOfWork;
+using MoneyEz.Services.Configuration;
 using MoneyEz.Services.Mappers;
 using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
@@ -113,15 +114,21 @@ namespace MoneyEz.API
             #endregion
 
             // config signalR
+            #region config signalR
             services.AddSignalR(options =>
             {
                 options.KeepAliveInterval = TimeSpan.FromSeconds(30);
                 options.ClientTimeoutInterval = TimeSpan.FromMinutes(2);
             });
+            #endregion
 
             // config mail setting
+            #region config mail setting
             services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+            #endregion
 
+            // config quartz
+            #region config quartz
             services.AddQuartz(option =>
             {
                 option.UseMicrosoftDependencyInjectionJobFactory();
@@ -134,6 +141,10 @@ namespace MoneyEz.API
 
             services.ConfigureOptions<SampleJobSetup>();
             services.ConfigureOptions<ScanUserSpendingModelJobSetup>();
+            #endregion
+
+            // config webhook setting
+            services.Configure<WebhookSettings>(builder.Configuration.GetSection("WebhookSettings"));
 
             return services;
         }
@@ -233,8 +244,10 @@ namespace MoneyEz.API
             services.AddScoped<IBankAccountRepository, BankAccountRepository>();
             services.AddScoped<IBankAccountService, BankAccountService>();
 
-            services.AddSignalR();
-
+            // config webhook service
+            services.AddHttpClient("WebhookClient");
+            services.AddScoped<IWebhookHttpClient, WebhookHttpClient>();
+            services.AddScoped<IWebhookService, WebhookService>();
             #endregion
 
             #region config database

@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Enums;
+using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
+using MoneyEz.Services.BusinessModels.WebhookModels;
 using MoneyEz.Services.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -14,7 +16,6 @@ namespace MoneyEz.API.Controllers
 {
     [Route("api/v1/transactions")]
     [ApiController]
-    [Authorize]
     public class TransactionsController : BaseController
     {
         private readonly ITransactionService _transactionService;
@@ -25,6 +26,7 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpGet("user")]
+        [Authorize]
         public Task<IActionResult> GetAllTransactions([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
         {
             return ValidateAndExecute(() => _transactionService.GetAllTransactionsForUserAsync(paginationParameter, filter));
@@ -71,6 +73,12 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> GetAllTransactionsForGroup([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
         {
             return ValidateAndExecute(() => _transactionService.GetTransactionByGroupIdAsync(paginationParameter, filter));
+        }
+
+        [HttpPost("webhook")]
+        public async Task<IActionResult> UpdateTransactionWebhook(WebhookPayload webhookPayload)
+        {
+            return Ok(new BaseResultModel { Status = StatusCodes.Status200OK, Data = webhookPayload });
         }
 
     }
