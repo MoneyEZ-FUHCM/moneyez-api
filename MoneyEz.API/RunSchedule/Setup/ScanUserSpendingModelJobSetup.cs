@@ -11,7 +11,8 @@ namespace MoneyEz.API.RunSchedule.Setup
             var jobkey = JobKey.Create(nameof(ScanUserSpendingModelJob));
             options.AddJob<ScanUserSpendingModelJob>(JobBuilder => JobBuilder.WithIdentity(jobkey))
             .AddTrigger(trigger =>
-                trigger.ForJob(jobkey).WithCronSchedule("0 0 0 * * ?")); // chạy mỗi 0:00 mỗi ngày
+                trigger.ForJob(jobkey).WithCronSchedule("0 0 0 * * ?", 
+                    x => x.InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")))); // chạy mỗi 0:00 mỗi ngày
                 //trigger.ForJob(jobkey).WithCronSchedule("0 * * * * ?")); // chạy mỗi phút 1 lần
         }
     }
