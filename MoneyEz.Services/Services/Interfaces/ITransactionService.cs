@@ -2,6 +2,7 @@
 using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
+using MoneyEz.Services.BusinessModels.WebhookModels;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -17,5 +18,6 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> DeleteTransactionAsync(Guid transactionId);
         Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter);
         Task<BaseResultModel> GetTransactionByGroupIdAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter);
+        Task<BaseResultModel> UpdateTransactionWebhook(WebhookPayload webhookPayload);
     }
 }

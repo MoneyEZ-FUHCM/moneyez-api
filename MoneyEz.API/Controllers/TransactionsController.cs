@@ -76,9 +76,9 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpPost("webhook")]
-        public async Task<IActionResult> UpdateTransactionWebhook(WebhookPayload webhookPayload)
+        public Task<IActionResult> UpdateTransactionWebhook(WebhookPayload webhookPayload)
         {
-            return Ok(new BaseResultModel { Status = StatusCodes.Status200OK, Data = webhookPayload });
+            return ValidateAndExecute(() => _transactionService.UpdateTransactionWebhook(webhookPayload));
         }
 
     }

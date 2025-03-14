@@ -186,6 +186,7 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_DATE_REQUIRED = "TransactionDateRequired";
         public const string TRANSACTION_ADMIN_ACCESS_DENIED = "TransactionAdminAccessDenied";
         public const string SPENDING_MODEL_OVER_LIMIT = "SpendingModelOverLimit";
+        public const string TRANSACTION_AMOUNT_INVALID = "TransactionAmountInvalid";
 
 
         // group
@@ -274,5 +275,6 @@ namespace MoneyEz.Services.Constants
         public const string WEBHOOK_INVALID_RESPONSE = "WebhookInvalidResponse";
         public const string WEBHOOK_SERVER_ERROR = "WebhookServerError";
         public const string WEBHOOK_NOT_SUPPORTED = "WebhookNotSupported";
+        public const string INVALID_WEBHOOK_SECRET = "InvalidWebhookSecret";
     }
 }
