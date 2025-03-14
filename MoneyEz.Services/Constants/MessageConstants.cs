@@ -186,6 +186,7 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_DATE_REQUIRED = "TransactionDateRequired";
         public const string TRANSACTION_ADMIN_ACCESS_DENIED = "TransactionAdminAccessDenied";
         public const string SPENDING_MODEL_OVER_LIMIT = "SpendingModelOverLimit";
+        public const string TRANSACTION_AMOUNT_INVALID = "TransactionAmountInvalid";
 
 
         // group
@@ -264,5 +265,16 @@ namespace MoneyEz.Services.Constants
         public const string BANK_ACCOUNT_CREATE_SUCCESS_MESSAGE = "Bank account created successfully";
         public const string BANK_ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Bank account updated successfully";
         public const string BANK_ACCOUNT_DELETE_SUCCESS_MESSAGE = "Bank account deleted successfully";
+
+        // webhook
+        public const string WEBHOOK_REGISTRATION_FAILED = "WebhookRegistrationFailed";
+        public const string WEBHOOK_URL_MISSING = "WebhookUrlMissing";
+        public const string WEBHOOK_REGISTRATION_SUCCESS = "WebhookRegistrationSuccess";
+        public const string WEBHOOK_REGISTRATION_SUCCESS_MESSAGE = "Webhook registered successfully";
+        public const string WEBHOOK_SECRET_UPDATE_FAILED = "WebhookSecretUpdateFailed";
+        public const string WEBHOOK_INVALID_RESPONSE = "WebhookInvalidResponse";
+        public const string WEBHOOK_SERVER_ERROR = "WebhookServerError";
+        public const string WEBHOOK_NOT_SUPPORTED = "WebhookNotSupported";
+        public const string INVALID_WEBHOOK_SECRET = "InvalidWebhookSecret";
     }
 }
