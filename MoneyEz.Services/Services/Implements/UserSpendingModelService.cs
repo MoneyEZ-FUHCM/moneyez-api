@@ -493,6 +493,14 @@ namespace MoneyEz.Services.Services.Implements
             var chartData = new List<ChartSpendingCategoryModel>();
             decimal totalSpent = 0;
 
+            // Get total income for the spending model period
+            decimal totalIncome = await _unitOfWork.TransactionsRepository.GetTotalIncomeAsync(
+                userId: user.Id,
+                groupId: null,
+                startDate: currentModel.StartDate.Value,
+                endDate: currentModel.EndDate.Value
+            );
+
             // Get all transactions within the model's time period
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
                 filter: t => t.UserId == user.Id && t.GroupId == null &&
@@ -516,10 +524,14 @@ namespace MoneyEz.Services.Services.Implements
                 var categoryTotal = categoryTransactions.Sum(t => t.Amount);
                 totalSpent += categoryTotal;
 
+                // Calculate planned spending amount based on percentage of total income
+                var planningSpent = (spendingModelCategory.PercentageAmount.Value / 100) * totalIncome;
+
                 chartData.Add(new ChartSpendingCategoryModel
                 {
                     CategoryName = spendingModelCategory.Category.Name,
                     TotalSpent = categoryTotal,
+                    PlanningSpent = planningSpent,
                     PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
                     ActualPercentage = 0 // Will be calculated after we have the total
                 });
@@ -541,6 +553,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Categories = chartData,
                     TotalSpent = totalSpent,
+                    TotalIncome = totalIncome,
                     StartDate = currentModel.StartDate,
                     EndDate = currentModel.EndDate
                 }
@@ -580,6 +593,14 @@ namespace MoneyEz.Services.Services.Implements
             var chartData = new List<ChartSpendingCategoryModel>();
             decimal totalSpent = 0;
 
+            // Get total income for the spending model period
+            decimal totalIncome = await _unitOfWork.TransactionsRepository.GetTotalIncomeAsync(
+                userId: userSpendingModel.UserId,
+                groupId: null,
+                startDate: userSpendingModel.StartDate.Value,
+                endDate: userSpendingModel.EndDate.Value
+            );
+
             // Get all transactions within the model's time period
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
                 filter: t => t.UserId == userSpendingModel.UserId && t.GroupId == null &&
@@ -603,10 +624,14 @@ namespace MoneyEz.Services.Services.Implements
                 var categoryTotal = categoryTransactions.Sum(t => t.Amount);
                 totalSpent += categoryTotal;
 
+                // Calculate planned spending amount based on percentage of total income
+                var planningSpent = (spendingModelCategory.PercentageAmount.Value / 100) * totalIncome;
+
                 chartData.Add(new ChartSpendingCategoryModel
                 {
                     CategoryName = spendingModelCategory.Category.Name,
                     TotalSpent = categoryTotal,
+                    PlanningSpent = planningSpent,
                     PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
                     ActualPercentage = 0 // Will be calculated after we have the total
                 });
@@ -628,6 +653,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Categories = chartData,
                     TotalSpent = totalSpent,
+                    TotalIncome = totalIncome,
                     StartDate = userSpendingModel.StartDate,
                     EndDate = userSpendingModel.EndDate
                 }
