@@ -10,6 +10,7 @@ namespace MoneyEz.Services.BusinessModels.ChartModels
     {
         public string? CategoryName { get; set; }
         public decimal TotalSpent { get; set; }
+        public decimal PlanningSpent { get; set; }
         public decimal PlannedPercentage { get; set; }
         public decimal ActualPercentage { get; set; }
     }
