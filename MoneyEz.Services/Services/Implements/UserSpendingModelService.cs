@@ -7,9 +7,11 @@ using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Repositories.Utils;
+using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Services.BusinessModels.ChartModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.SpendingModelModels;
+using MoneyEz.Services.BusinessModels.SubcategoryModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
@@ -760,6 +762,86 @@ namespace MoneyEz.Services.Services.Implements
                 Status = StatusCodes.Status200OK,
                 Message = $"Successfully updated {expiredModels.Count()} expired spending models.",
                 Data = expiredModels.Count()
+            };
+        }
+
+        public async Task<BaseResultModel> GetSubCategoriesCurrentSpendingModelAsync(CategoryCurrentSpendingModelFiter filter)
+        {
+            // Get current user
+            string userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+                ?? throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+
+            // Get current active spending model with related data
+            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == user.Id 
+                    && usm.EndDate > CommonUtils.GetCurrentTime()
+                    && usm.Status == UserSpendingModelStatus.ACTIVE
+                    && !usm.IsDeleted,
+                include: query => query
+                    .Include(usm => usm.SpendingModel)
+                    .ThenInclude(sm => sm.SpendingModelCategories)
+                    .ThenInclude(smc => smc.Category)
+                    .ThenInclude(c => c.CategorySubcategories)
+                    .ThenInclude(cs => cs.Subcategory)
+            );
+
+            var currentModel = currentModels.FirstOrDefault();
+            if (currentModel == null)
+            {
+                throw new NotExistException("No active spending model found", MessageConstants.SPENDING_MODEL_NOT_FOUND);
+            }
+
+            var subcategories = currentModel.SpendingModel.SpendingModelCategories
+                .Where(smc => smc.Category.Code != null && (string.IsNullOrEmpty(filter.Code) || smc.Category.Code == filter.Code)
+                    && (string.IsNullOrEmpty(filter.Type) || smc.Category.Type.ToString() == filter.Type.ToString().ToUpper()))
+                .SelectMany(smc => smc.Category.CategorySubcategories
+                    .Select(cs => cs.Subcategory))
+                .Where(s => s != null)
+                .ToList();
+
+            // If IsLastUsed is true, get and prioritize recently used subcategories
+            if (filter.IsLastUsed.HasValue && filter.IsLastUsed.Value)
+            {
+                // Get recent transactions for this user
+                var recentTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                    filter: t => t.UserId == user.Id 
+                        && t.GroupId == null 
+                        && t.Status == TransactionStatus.APPROVED
+                        && t.SubcategoryId != null,
+                    orderBy: query => query.OrderByDescending(t => t.TransactionDate)
+                );
+
+                // Get distinct subcategory IDs from recent transactions
+                var recentSubcategoryIds = recentTransactions
+                    .Select(t => t.SubcategoryId.Value)
+                    .Distinct()
+                    .Take(5)
+                    .ToList();
+
+                // Split subcategories into recent and others
+                var recentSubcategories = subcategories
+                    .Where(s => recentSubcategoryIds.Contains(s.Id))
+                    .OrderBy(s => recentSubcategoryIds.IndexOf(s.Id));
+
+                var otherSubcategories = subcategories
+                    .Where(s => !recentSubcategoryIds.Contains(s.Id))
+                    .OrderBy(s => s.Name);
+
+                // Combine the lists with recent subcategories first
+                subcategories = recentSubcategories.Concat(otherSubcategories).ToList();
+            }
+            else
+            {
+                // If not sorting by recent usage, sort by name
+                subcategories = subcategories.OrderBy(s => s.Name).ToList();
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Subcategories retrieved successfully",
+                Data = _mapper.Map<List<SubcategoryModel>>(subcategories)
             };
         }
     }
