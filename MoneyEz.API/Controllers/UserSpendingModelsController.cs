@@ -59,6 +59,13 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _userSpendingModelService.GetChartCurrentSpendingModelAsync());
         }
 
+        [HttpGet("current/sub-categories")]
+        [Authorize(Roles = nameof(RolesEnum.USER))]
+        public Task<IActionResult> GetSubCategoriesCurrentSpendingModel([FromQuery] CategoryCurrentSpendingModelFiter fiter)
+        {
+            return ValidateAndExecute(() => _userSpendingModelService.GetSubCategoriesCurrentSpendingModelAsync(fiter));
+        }
+
         [HttpGet("chart/{id}")]
         [Authorize]
         public Task<IActionResult> GetChartSpendingModel(Guid id)
