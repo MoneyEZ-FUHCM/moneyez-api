@@ -533,7 +533,8 @@ namespace MoneyEz.Services.Services.Implements
                     TotalSpent = categoryTotal,
                     PlanningSpent = planningSpent,
                     PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
-                    ActualPercentage = 0 // Will be calculated after we have the total
+                    ActualPercentage = 0, // Will be calculated after we have the total
+                    OverSpent = categoryTotal > planningSpent ? categoryTotal - planningSpent : 0 // Calculate overspent amount
                 });
             }
 
@@ -560,6 +561,7 @@ namespace MoneyEz.Services.Services.Implements
                     Categories = chartData,
                     TotalSpent = totalSpent,
                     TotalIncome = totalIncome,
+                    TotalOverspent = chartData.Sum(c => c.OverSpent), // Add total overspent
                     StartDate = currentModel.StartDate,
                     EndDate = currentModel.EndDate
                 }
@@ -639,7 +641,8 @@ namespace MoneyEz.Services.Services.Implements
                     TotalSpent = categoryTotal,
                     PlanningSpent = planningSpent,
                     PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
-                    ActualPercentage = 0 // Will be calculated after we have the total
+                    ActualPercentage = 0, // Will be calculated after we have the total
+                    OverSpent = categoryTotal > planningSpent ? categoryTotal - planningSpent : 0 // Calculate overspent amount
                 });
             }
 
@@ -666,6 +669,7 @@ namespace MoneyEz.Services.Services.Implements
                     Categories = chartData,
                     TotalSpent = totalSpent,
                     TotalIncome = totalIncome,
+                    TotalOverspent = chartData.Sum(c => c.OverSpent), // Add total overspent
                     StartDate = userSpendingModel.StartDate,
                     EndDate = userSpendingModel.EndDate
                 }
