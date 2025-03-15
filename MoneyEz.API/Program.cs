@@ -6,6 +6,8 @@ using MoneyEz.API;
 using MoneyEz.API.Middlewares;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.Hubs;
+using MoneyEz.Services.Settings;
+using Newtonsoft.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +40,17 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddWebAPIService(builder);
 builder.Services.AddInfractstructure(builder.Configuration);
+
+// config sendgrid
+using StreamReader reader = new("sendgrid-config.json");
+var json = reader.ReadToEnd();
+SendgridConfig sendgrid = JsonConvert.DeserializeObject<SendgridConfig>(json);
+builder.Services.Configure<SendgridConfig>(options =>
+{
+    options.ApiKey = sendgrid.ApiKey;
+    options.FromEmail = sendgrid.FromEmail;
+    options.FromName = sendgrid.FromName;
+});
 
 // config firebase
 FirebaseApp.Create(new AppOptions()

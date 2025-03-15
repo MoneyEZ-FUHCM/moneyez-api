@@ -19,9 +19,12 @@ namespace MoneyEz.Services.Services.Implements
     {
 
         private readonly Settings.MailSettings _mailSettings;
-        public MailService(IOptions<Settings.MailSettings> mailSettings)
+        private readonly SendgridConfig _sendgridConfigs;
+
+        public MailService(IOptions<Settings.MailSettings> mailSettings, IOptions<SendgridConfig> sendgridConfigs)
         {
             _mailSettings = mailSettings.Value;
+            _sendgridConfigs = sendgridConfigs.Value;
         }
         public async Task SendEmailAsync(MailRequest mailRequest)
         {
@@ -62,9 +65,9 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task SendEmailAsync_v2(MailRequest mailRequest)
         {
-            var apiKey = Environment.GetEnvironmentVariable("SEND_GRID_API");
+            var apiKey = _sendgridConfigs.ApiKey;
             var client = new SendGridClient(apiKey);
-            var from = new EmailAddress(_mailSettings.Mail, _mailSettings.DisplayName);
+            var from = new EmailAddress(_sendgridConfigs.FromEmail, _sendgridConfigs.FromName);
             var subject = mailRequest.Subject;
             var to = new EmailAddress(mailRequest.ToEmail);
             var plainTextContent = "";
