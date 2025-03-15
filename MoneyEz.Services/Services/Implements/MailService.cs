@@ -62,7 +62,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task SendEmailAsync_v2(MailRequest mailRequest)
         {
-            var apiKey = Environment.GetEnvironmentVariable("SendGridAPI");
+            var apiKey = Environment.GetEnvironmentVariable("SEND_GRID_API");
             var client = new SendGridClient(apiKey);
             var from = new EmailAddress(_mailSettings.Mail, _mailSettings.DisplayName);
             var subject = mailRequest.Subject;

@@ -632,7 +632,7 @@ namespace MoneyEz.Services.Services.Implements
             };
 
             // send mail
-            await _mailService.SendEmailAsync(newEmail);
+            await _mailService.SendEmailAsync_v2(newEmail);
 
             // Add a log entry for the invite member action
             groupFund.GroupFundLogs.Add(new GroupFundLog
