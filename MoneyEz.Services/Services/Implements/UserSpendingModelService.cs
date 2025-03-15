@@ -538,11 +538,17 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Calculate actual percentages
-            if (totalSpent > 0)
+            foreach (var category in chartData)
             {
-                foreach (var category in chartData)
+                // Calculate actual percentage based on percentage used of planned spending
+                if (category.PlanningSpent > 0)
                 {
-                    category.ActualPercentage = Math.Round((category.TotalSpent / totalSpent) * 100, 2);
+                    // (TotalSpent / PlanningSpent) * PlannedPercentage = % used of planned percentage
+                    category.ActualPercentage = Math.Round((category.TotalSpent / category.PlanningSpent) * category.PlannedPercentage, 2);
+                }
+                else
+                {
+                    category.ActualPercentage = 0;
                 }
             }
 
@@ -638,11 +644,17 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Calculate actual percentages
-            if (totalSpent > 0)
+            foreach (var category in chartData)
             {
-                foreach (var category in chartData)
+                // Calculate actual percentage based on percentage used of planned spending
+                if (category.PlanningSpent > 0)
                 {
-                    category.ActualPercentage = Math.Round((category.TotalSpent / totalSpent) * 100, 2);
+                    // (TotalSpent / PlanningSpent) * PlannedPercentage = % used of planned percentage
+                    category.ActualPercentage = Math.Round((category.TotalSpent / category.PlanningSpent) * category.PlannedPercentage, 2);
+                }
+                else
+                {
+                    category.ActualPercentage = 0;
                 }
             }
 
