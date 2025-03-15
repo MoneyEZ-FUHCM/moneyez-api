@@ -5,6 +5,8 @@ using MimeKit;
 using MoneyEz.Services.BusinessModels.EmailModels;
 using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Settings;
+using SendGrid.Helpers.Mail;
+using SendGrid;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,8 +18,8 @@ namespace MoneyEz.Services.Services.Implements
     public class MailService : IMailService
     {
 
-        private readonly MailSettings _mailSettings;
-        public MailService(IOptions<MailSettings> mailSettings)
+        private readonly Settings.MailSettings _mailSettings;
+        public MailService(IOptions<Settings.MailSettings> mailSettings)
         {
             _mailSettings = mailSettings.Value;
         }
@@ -56,6 +58,19 @@ namespace MoneyEz.Services.Services.Implements
             smtp.Authenticate(_mailSettings.Mail, _mailSettings.Password);
             await smtp.SendAsync(email);
             smtp.Disconnect(true);
+        }
+
+        public async Task SendEmailAsync_v2(MailRequest mailRequest)
+        {
+            var apiKey = Environment.GetEnvironmentVariable("SendGridAPI");
+            var client = new SendGridClient(apiKey);
+            var from = new EmailAddress(_mailSettings.Mail, _mailSettings.DisplayName);
+            var subject = mailRequest.Subject;
+            var to = new EmailAddress(mailRequest.ToEmail);
+            var plainTextContent = "";
+            var htmlContent = mailRequest.Body;
+            var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
+            var response = await client.SendEmailAsync(msg);
         }
     }
 }
