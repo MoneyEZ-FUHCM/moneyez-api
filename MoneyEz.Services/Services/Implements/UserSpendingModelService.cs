@@ -29,15 +29,18 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
+        private readonly ISpendingModelService _spendingModelService;
 
         public UserSpendingModelService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            IClaimsService claimsService)
+            IClaimsService claimsService,
+            ISpendingModelService spendingModelService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
+            _spendingModelService = spendingModelService;
         }
 
         public async Task<BaseResultModel> ChooseSpendingModelAsync(ChooseSpendingModelModel model)
@@ -842,6 +845,52 @@ namespace MoneyEz.Services.Services.Implements
                 Status = StatusCodes.Status200OK,
                 Message = "Subcategories retrieved successfully",
                 Data = _mapper.Map<List<SubcategoryModel>>(subcategories)
+            };
+        }
+
+        public async Task<BaseResultModel> GetCategoriesCurrentSpendingModelAsync()
+        {
+            // Get current user
+            string userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+                ?? throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+
+            // Get current active spending model with related data
+            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == user.Id
+                    && usm.EndDate > CommonUtils.GetCurrentTime()
+                    && usm.Status == UserSpendingModelStatus.ACTIVE
+                    && !usm.IsDeleted,
+                include: query => query
+                    .Include(usm => usm.SpendingModel)
+                    .ThenInclude(sm => sm.SpendingModelCategories)
+                    .ThenInclude(smc => smc.Category)
+                    .ThenInclude(c => c.CategorySubcategories)
+                    .ThenInclude(cs => cs.Subcategory)
+            );
+
+            var currentModel = currentModels.FirstOrDefault();
+            if (currentModel == null)
+            {
+                throw new NotExistException("No active spending model found", MessageConstants.SPENDING_MODEL_NOT_FOUND);
+            }
+
+            var spendingModel = await _spendingModelService.GetSpendingModelByIdAsync(currentModel.SpendingModelId.Value);
+            if (spendingModel == null)
+            {
+                throw new NotExistException("", MessageConstants.SPENDING_MODEL_NOT_FOUND);
+            }
+
+            var categories = currentModel.SpendingModel.SpendingModelCategories
+                .Select(smc => smc.Category)
+                .Where(s => s != null)
+                .ToList();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Categories retrieved successfully",
+                Data = _mapper.Map<List<CategoryModel>>(categories)
             };
         }
     }

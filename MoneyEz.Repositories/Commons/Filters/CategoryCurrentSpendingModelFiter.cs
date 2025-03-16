@@ -12,7 +12,7 @@ namespace MoneyEz.Repositories.Commons.Filters
         [FromQuery(Name = "type")]
         public string? Type { get; set; }
 
-        [FromQuery(Name = "code")]
+        [FromQuery(Name = "category_code")]
         public string? Code { get; set; }
 
         [FromQuery(Name = "last_used")]
