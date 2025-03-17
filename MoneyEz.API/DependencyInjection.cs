@@ -178,6 +178,8 @@ namespace MoneyEz.API
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<ITransactionNotificationService, TransactionNotificationService>();
 
+            // vote
+            services.AddScoped<ITransactionVoteRepository, TransactionVoteRepository>();
             // config image service
             services.AddScoped<IImageRepository, ImageRepository>();
 
