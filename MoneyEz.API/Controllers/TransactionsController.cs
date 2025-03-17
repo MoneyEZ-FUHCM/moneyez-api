@@ -24,6 +24,7 @@ namespace MoneyEz.API.Controllers
             _transactionService = transactionService;
         }
 
+        #region single user
         [HttpGet("user")]
         public Task<IActionResult> GetAllTransactions([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
         {
@@ -57,21 +58,84 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _transactionService.DeleteTransactionAsync(transactionId));
         }
+        #endregion single user
 
+        #region admin   
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("admin")]
         public Task<IActionResult> GetAllTransactionsForAdmin([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
         {
             return ValidateAndExecute(() => _transactionService.GetAllTransactionsForAdminAsync(paginationParameter, filter));
         }
+        #endregion admin
 
+        #region group
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("groups")]
         [Authorize]
-        public Task<IActionResult> GetAllTransactionsForGroup([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
+        public Task<IActionResult> GetAllTransactionsForGroupByGroupID([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
         {
             return ValidateAndExecute(() => _transactionService.GetTransactionByGroupIdAsync(paginationParameter, filter));
         }
 
+        [HttpPost("group/create")]
+        public Task<IActionResult> CreateGroupTransaction([FromBody] CreateGroupTransactionModel model)
+        {
+            return ValidateAndExecute(() => _transactionService.CreateGroupTransactionAsync(model));
+        }
+
+        [HttpGet("group/transaction/{transactionId}")]
+        public Task<IActionResult> GetGroupTransactionDetails(Guid transactionId)
+        {
+            return ValidateAndExecute(() => _transactionService.GetGroupTransactionDetailsAsync(transactionId));
+        }
+
+        [HttpPut("group/update")]
+        public Task<IActionResult> UpdateGroupTransaction([FromBody] UpdateGroupTransactionModel model)
+        {
+            return ValidateAndExecute(() => _transactionService.UpdateGroupTransactionAsync(model));
+        }
+
+        [HttpDelete("group/delete/{transactionId}")]
+        public Task<IActionResult> DeleteGroupTransaction(Guid transactionId)
+        {
+            return ValidateAndExecute(() => _transactionService.DeleteGroupTransactionAsync(transactionId));
+        }
+
+        [HttpPost("group/approve/{transactionId}")]
+        public Task<IActionResult> ApproveGroupTransaction(Guid transactionId)
+        {
+            return ValidateAndExecute(() => _transactionService.ApproveGroupTransactionAsync(transactionId));
+        }
+
+        [HttpPost("group/reject/{transactionId}")]
+        public Task<IActionResult> RejectGroupTransaction(Guid transactionId)
+        {
+            return ValidateAndExecute(() => _transactionService.RejectGroupTransactionAsync(transactionId));
+        }
+
+        #region vote
+
+        [HttpPost("group/vote/create")]
+        public Task<IActionResult> CreateGroupTransactionVote([FromBody] CreateGroupTransactionVoteModel model)
+        {
+            return ValidateAndExecute(() => _transactionService.CreateGroupTransactionVoteAsync(model));
+        }
+
+        [HttpPut("group/vote/update")]
+        public Task<IActionResult> UpdateGroupTransactionVote([FromBody] UpdateGroupTransactionVoteModel model)
+        {
+            return ValidateAndExecute(() => _transactionService.UpdateGroupTransactionVoteAsync(model));
+        }
+
+        [HttpDelete("group/vote/delete/{voteId}")]
+        public Task<IActionResult> DeleteGroupTransactionVote(Guid voteId)
+        {
+            return ValidateAndExecute(() => _transactionService.DeleteGroupTransactionVoteAsync(voteId));
+        }
+
+        #endregion vote
+
+        #endregion group
     }
 }

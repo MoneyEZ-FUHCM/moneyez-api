@@ -15,5 +15,7 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
         public DateTime TransactionDate { get; set; }
         public string Description { get; set; }
         public List<string>? Images { get; set; }
+
+        public bool RequireVote { get; set; } = false;
     }
 }
