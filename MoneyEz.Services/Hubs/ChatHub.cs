@@ -17,11 +17,13 @@ namespace MoneyEz.Services.Hubs
     {
         private readonly IChatHistoryService _chatHistoryService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IChatService _chatService;
 
-        public ChatHub(IChatHistoryService chatHistoryService, IUnitOfWork unitOfWork) 
+        public ChatHub(IChatHistoryService chatHistoryService, IUnitOfWork unitOfWork, IChatService chatService) 
         { 
             _chatHistoryService = chatHistoryService;
             _unitOfWork = unitOfWork;
+            _chatService = chatService;
         }
         public async Task SendMessage(Guid user, string message)
         {
@@ -35,6 +37,8 @@ namespace MoneyEz.Services.Hubs
             await _chatHistoryService.CreateAndUpdateConversation(userMessage);
 
             string botResponse = ProcessMessage(message);
+
+            //var botResponse = await _chatService.ProcessMessageAsync(user, message);
 
             var botMessage = new CreateChatHistoryModel
             {

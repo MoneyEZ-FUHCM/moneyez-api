@@ -244,6 +244,18 @@ namespace MoneyEz.API
             // config bank account service
             services.AddScoped<IBankAccountRepository, BankAccountRepository>();
             services.AddScoped<IBankAccountService, BankAccountService>();
+            // config chat service
+            services.AddScoped<IChatService, ChatService>();
+            // Register HTTP client with optional configuration
+            services.AddHttpClient<IExternalApiService, ExternalApiService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
+
+            // Register services
+            services.AddScoped<IChatService, ChatService>();
+
+            services.AddSignalR();
 
             // config webhook service
             services.AddHttpClient("WebhookClient");

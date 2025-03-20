@@ -7,6 +7,7 @@ using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.BusinessModels.WebhookModels;
+using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -19,10 +20,12 @@ namespace MoneyEz.API.Controllers
     public class TransactionsController : BaseController
     {
         private readonly ITransactionService _transactionService;
+        private readonly IClaimsService _claimsService;
 
-        public TransactionsController(ITransactionService transactionService)
+        public TransactionsController(ITransactionService transactionService, IClaimsService claimsService)
         {
             _transactionService = transactionService;
+            _claimsService = claimsService;
         }
 
         [HttpGet("user")]
@@ -43,7 +46,8 @@ namespace MoneyEz.API.Controllers
         [HttpPost("user")]
         public Task<IActionResult> CreateTransaction([FromBody] CreateTransactionModel model)
         {
-            return ValidateAndExecute(() => _transactionService.CreateTransactionAsync(model));
+            var currentEmail = _claimsService.GetCurrentUserEmail;
+            return ValidateAndExecute(() => _transactionService.CreateTransactionAsync(model, currentEmail));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]

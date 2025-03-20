@@ -107,5 +107,11 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _userSpendingModelService.UpdateExpiredSpendingModelsAsync());
         }
+
+        [HttpGet("current/webhook/sub-categories")]
+        public Task<IActionResult> GetSubCategoriesCurrentSpendingModelUserId([FromQuery] Guid userId)
+        {
+            return ValidateAndExecute(() => _userSpendingModelService.GetSubCategoriesCurrentSpendingModelByUserIdAsync(userId));
+        }
     }
 }

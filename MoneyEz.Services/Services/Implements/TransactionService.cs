@@ -120,7 +120,7 @@ namespace MoneyEz.Services.Services.Implements
                 Data = transactionModel
             };
         }
-        public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model)
+        public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model, string email)
         {
             var user = await GetCurrentUserAsync();
             await ValidateSubcategoryInCurrentSpendingModel(model.SubcategoryId, user.Id);

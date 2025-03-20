@@ -30,17 +30,20 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
         private readonly ISpendingModelService _spendingModelService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public UserSpendingModelService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             IClaimsService claimsService,
-            ISpendingModelService spendingModelService)
+            ISpendingModelService spendingModelService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
             _spendingModelService = spendingModelService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<BaseResultModel> ChooseSpendingModelAsync(ChooseSpendingModelModel model)
@@ -891,6 +894,56 @@ namespace MoneyEz.Services.Services.Implements
                 Status = StatusCodes.Status200OK,
                 Message = "Categories retrieved successfully",
                 Data = _mapper.Map<List<CategoryModel>>(categories)
+            };
+        }
+
+        public async Task<BaseResultModel> GetSubCategoriesCurrentSpendingModelByUserIdAsync(Guid userId)
+        {
+            // Get secret key from header
+            var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-Webhook-Secret"].ToString();
+
+            if (string.IsNullOrEmpty(secretKey) || secretKey != "thisIsSerectKeyPythonService")
+            {
+                throw new DefaultException("Invalid webhook secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
+            }
+
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // Get current active spending model with related data
+            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == user.Id
+                    && usm.EndDate > CommonUtils.GetCurrentTime()
+                    && usm.Status == UserSpendingModelStatus.ACTIVE
+                    && !usm.IsDeleted,
+                include: query => query
+                    .Include(usm => usm.SpendingModel)
+                    .ThenInclude(sm => sm.SpendingModelCategories)
+                    .ThenInclude(smc => smc.Category)
+                    .ThenInclude(c => c.CategorySubcategories)
+                    .ThenInclude(cs => cs.Subcategory)
+            );
+
+            var currentModel = currentModels.FirstOrDefault();
+            if (currentModel == null)
+            {
+                throw new NotExistException("No active spending model found", MessageConstants.SPENDING_MODEL_NOT_FOUND);
+            }
+
+            var subcategories = currentModel.SpendingModel.SpendingModelCategories
+                .SelectMany(smc => smc.Category.CategorySubcategories
+                    .Select(cs => cs.Subcategory))
+                .Where(s => s != null)
+                .ToList();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Subcategories retrieved successfully",
+                Data = _mapper.Map<List<SubcategoryModel>>(subcategories)
             };
         }
     }
