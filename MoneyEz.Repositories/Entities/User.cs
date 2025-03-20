@@ -16,7 +16,7 @@ public partial class User : BaseEntity
 
     public DateTime? Dob { get; set; }
 
-    public int? Gender { get; set; }
+    public Gender? Gender { get; set; }
 
     public string? Address { get; set; } 
 
@@ -59,4 +59,6 @@ public partial class User : BaseEntity
     public virtual ICollection<UserSetting> UserSettings { get; set; } = new List<UserSetting>();
 
     public virtual ICollection<UserSpendingModel> UserSpendingModels { get; set; } = new List<UserSpendingModel>();
+
+    public virtual ICollection<BankAccount> BankAccounts { get; set; } = new List<BankAccount>();
 }

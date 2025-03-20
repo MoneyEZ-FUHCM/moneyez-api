@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Services.BusinessModels.CategoryModels;
@@ -21,40 +22,27 @@ namespace MoneyEz.Services.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IClaimsService _claimsService;
 
-        public CategoryService(IUnitOfWork unitOfWork, IMapper mapper)
+        public CategoryService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _claimsService = claimsService;
         }
 
-        public async Task<BaseResultModel> GetCategoryPaginationAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetCategoryPaginationAsync(PaginationParameter paginationParameter, CategoryFilter categoryFilter)
         {
-            var categories = await _unitOfWork.CategoriesRepository.ToPaginationIncludeAsync(
-                paginationParameter,
-                include: query => query.Include(c => c.CategorySubcategories)
-                                       .ThenInclude(cs => cs.Subcategory)
-            );
+            var categories = await _unitOfWork.CategoriesRepository.GetCategoriesByFilter(paginationParameter, categoryFilter);
 
-            var result = _mapper.Map<Pagination<CategoryModel>>(categories);
+            var categoryModels = _mapper.Map<Pagination<CategoryModel>>(categories);
+            var result = PaginationHelper.GetPaginationResult(categoryModels, categoryModels);
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.CATEGORY_LIST_FETCHED_SUCCESS,
-                Data = new ModelPaging
-                {
-                    Data = result,
-                    MetaData = new
-                    {
-                        result.TotalCount,
-                        result.PageSize,
-                        result.CurrentPage,
-                        result.TotalPages,
-                        result.HasNext,
-                        result.HasPrevious
-                    }
-                }
+                Data = result
             };
         }
 
@@ -71,11 +59,13 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
             }
 
+            var categoryModel = _mapper.Map<CategoryModel>(category);
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.CATEGORY_FETCHED_SUCCESS,
-                Data = _mapper.Map<CategoryModel>(category)
+                Data = categoryModel
             };
         }
 
@@ -97,8 +87,14 @@ namespace MoneyEz.Services.Services.Implements
                 .Select(c => c.NameUnsign)
                 .ToHashSet();
 
+            var existingCodes = existingCategories
+                .Where(c => !c.IsDeleted)
+                .Select(c => c.Code)
+                .ToHashSet();
+
             var newCategories = new List<Category>();
             var duplicateNames = new List<string>();
+            var duplicateCodes = new List<string>();
 
             foreach (var model in models)
             {
@@ -109,8 +105,15 @@ namespace MoneyEz.Services.Services.Implements
                     continue;
                 }
 
+                if (newCategories.Any(c => c.Code == model.Code))
+                {
+                    duplicateCodes.Add(model.Code);
+                    continue;
+                }
+
                 var category = _mapper.Map<Category>(model);
                 category.NameUnsign = unsignName;
+                category.CreatedBy = _claimsService.GetCurrentUserEmail;
                 newCategories.Add(category);
             }
 
@@ -120,7 +123,17 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.CATEGORY_ALREADY_EXISTS,
-                    Message = $"The following categories already exist: {string.Join(", ", duplicateNames)}"
+                    Message = $"The following categories name already exist: {string.Join(", ", duplicateNames)}"
+                };
+            }
+
+            if (duplicateNames.Any())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.CATEGORY_ALREADY_EXISTS,
+                    Message = $"The following categories code already exist: {string.Join(", ", duplicateCodes)}"
                 };
             }
 
@@ -154,8 +167,20 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            if (allCategories.Any(c => c.Code == model.Code && c.Id != model.Id))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.CATEGORY_ALREADY_EXISTS,
+                    Message = $"A category with the code '{model.Code}' already exists."
+                };
+            }
+
             _mapper.Map(model, category);
             category.NameUnsign = unsignName;
+            category.Code = model.Code;
+            category.UpdatedBy = _claimsService.GetCurrentUserEmail;
             _unitOfWork.CategoriesRepository.UpdateAsync(category);
             _unitOfWork.Save();
 
@@ -189,6 +214,7 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            category.UpdatedBy = _claimsService.GetCurrentUserEmail;
             _unitOfWork.CategoriesRepository.SoftDeleteAsync(category);
             _unitOfWork.Save();
 

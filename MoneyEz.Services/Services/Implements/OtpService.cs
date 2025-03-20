@@ -1,6 +1,8 @@
 ﻿using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.EmailModels;
 using MoneyEz.Services.BusinessModels.OtpModels;
+using MoneyEz.Services.Constants;
+using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Utils;
 using MoneyEz.Services.Utils.Email;
@@ -24,8 +26,23 @@ namespace MoneyEz.Services.Services.Implements
             _redisService = redisService;
             _mailService = mailService;
         }
+
+        public Task<OtpModel> CheckEmailRequestOtp(string email)
+        {
+            var key = "Otp_" + email;
+            return _redisService.GetAsync<OtpModel>(key);
+        }
+
         public async Task<OtpModel> CreateOtpAsync(string email, string type, string fullName)
         {
+            // check if sent otp before
+            var key = "Otp_" + email;
+            var otpExist = await _redisService.GetAsync<OtpModel>(key);
+            if (otpExist != null)
+            {
+                throw new DefaultException("Otp has been sent to your email. Please check your email.", MessageConstants.OTP_HAS_SENT);
+            }
+
             // default ExpiryTime otp is 5 minutes
             OtpModel newOtp = new OtpModel()
             {
@@ -35,8 +52,7 @@ namespace MoneyEz.Services.Services.Implements
                 ExpiryTime = CommonUtils.GetCurrentTime().AddMinutes(5)
             };
 
-            await _redisService.SetAsync<OtpModel>(newOtp.OtpCode, newOtp, TimeSpan.FromMinutes(5));
-            //await _unitOfWork.OtpsRepository.AddAsync(newOtp);
+            await _redisService.SetAsync<OtpModel>(key, newOtp, TimeSpan.FromMinutes(5));
 
             if (type == "confirm")
             {
@@ -58,16 +74,22 @@ namespace MoneyEz.Services.Services.Implements
             }
         }
 
+        public async Task<bool> RemoveOtpAsync(string email)
+        {
+            var key = "Otp_" + email;
+            await _redisService.RemoveAsync(key);
+            return true;
+        }
+
         public async Task<bool> ValidateOtpAsync(string email, string otpCode)
         {
-            var otpExist = await _redisService.GetAsync<OtpModel>(otpCode);
+            var key = "Otp_" + email;
+            var otpExist = await _redisService.GetAsync<OtpModel>(key);
             if (otpExist != null)
             {
                 if (otpExist.Email == email && otpExist.ExpiryTime > CommonUtils.GetCurrentTime()
-                    && otpExist.IsUsed == false)
+                    && otpExist.IsValidate == false && otpExist.OtpCode == otpCode)
                 {
-                    otpExist.IsUsed = true;
-                    await _redisService.RemoveAsync(otpCode);
                     return true;
                 }
             }
@@ -85,7 +107,7 @@ namespace MoneyEz.Services.Services.Implements
             };
 
             // send mail
-            await _mailService.SendEmailAsync(newEmail);
+            await _mailService.SendEmailAsync_v2(newEmail);
             return true;
         }
 
@@ -100,7 +122,7 @@ namespace MoneyEz.Services.Services.Implements
             };
 
             // send mail
-            await _mailService.SendEmailAsync(newEmail);
+            await _mailService.SendEmailAsync_v2(newEmail);
             return true;
         }
     }

@@ -2,18 +2,17 @@
 using MoneyEz.Services.BusinessModels.CategoryModels;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MoneyEz.Services.BusinessModels.SubcategoryModels
 {
     public class SubcategoryModel : BaseEntity
     {
-        public required string Name { get; set; }
-        public required string NameUnsign { get; set; }
-        public required string Description { get; set; }
-
-        public List<CategoryModel> Categories { get; set; } = new List<CategoryModel>();
+        public string? Name { get; set; }
+        public string? NameUnsign { get; set; }
+        public string? Description { get; set; }
+        public string? Code { get; set; }
+        public string? Icon { get; set; }
+        public string? CategoryName { get; set; }
+        public string? CategoryCode { get; set; }
     }
 }

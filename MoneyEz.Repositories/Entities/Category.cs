@@ -1,5 +1,7 @@
-﻿using System;
+﻿using MoneyEz.Repositories.Enums;
+using System;
 using System.Collections.Generic;
+using System.Transactions;
 
 namespace MoneyEz.Repositories.Entities;
 
@@ -10,6 +12,12 @@ public partial class Category : BaseEntity
     public string? NameUnsign { get; set; }
 
     public string? Description { get; set; }
+
+    public string? Code { get; set; }
+
+    public string? Icon { get; set; }
+
+    public TransactionType? Type { get; set; }
 
     public virtual ICollection<SpendingModelCategory> SpendingModelCategories { get; set; } = new List<SpendingModelCategory>();
 

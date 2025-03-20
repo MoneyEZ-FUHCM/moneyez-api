@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using MoneyEz.Repositories.Enums;
 using System.Collections.Generic;
 
@@ -23,13 +22,17 @@ public partial class Transaction : BaseEntity
 
     public bool? ApprovalRequired { get; set; }
 
+    public string? RequestCode { get; set; }
+
     public TransactionStatus Status { get; set; } = TransactionStatus.PENDING; // Mặc định là PENDING
 
-    public virtual GroupFund Group { get; set; }
+    public Guid? UserSpendingModelId { get; set; }
 
-    public virtual Subcategory Subcategory { get; set; }
+    public virtual GroupFund? Group { get; set; }
+
+    public virtual Subcategory? Subcategory { get; set; }
 
     public virtual ICollection<TransactionVote> TransactionVotes { get; set; } = new List<TransactionVote>();
 
-    public virtual User User { get; set; }
+    public virtual User? User { get; set; }
 }

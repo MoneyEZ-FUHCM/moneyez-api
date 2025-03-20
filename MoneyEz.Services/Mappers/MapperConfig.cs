@@ -18,6 +18,12 @@ namespace MoneyEz.Services.Mappers
             UserMapperConfig();
             // spending model mapper
             SpendingModelMapperConfig();
+            // user spending model mapper
+            UserSpendingModelMapperConfig();
+
+            //financialgoal
+            FinancialGoalMapperConfig();
+
             //category mapper
             CategoryMapperConfig();
             //subcategory mapper
@@ -27,8 +33,8 @@ namespace MoneyEz.Services.Mappers
             // group fund mapper
             GroupFundConfig();
 
-            // transaction mapper
-
+            // report
+            FinancialReportMapperConfig();
             // chat mapper
             ChatMapperConfig();
 
@@ -40,10 +46,19 @@ namespace MoneyEz.Services.Mappers
 
             // notification mapper
             NotificationMapperConfig();
+
+            // bank account mapper
+            BankAccountMapperConfig();
+
+            // image mapper
+            ImageMapperConfig();
         }
 
         partial void UserMapperConfig();
         partial void SpendingModelMapperConfig();
+        partial void UserSpendingModelMapperConfig();
+        partial void FinancialGoalMapperConfig();
+        partial void FinancialReportMapperConfig();
         partial void CategoryMapperConfig();
         partial void SubcategoryMapperConfig();
         partial void TransactionMapperConfig();
@@ -53,6 +68,10 @@ namespace MoneyEz.Services.Mappers
         partial void LiabilityMapperConfig();
 
         partial void NotificationMapperConfig();
+
+        partial void BankAccountMapperConfig();
+
+        partial void ImageMapperConfig();
     }
 
     public class PaginationConverter<TSource, TDestination> : ITypeConverter<Pagination<TSource>, Pagination<TDestination>>

@@ -13,11 +13,13 @@ public partial class GroupFund : BaseEntity
 
     public string Description { get; set; }
 
-    public decimal? CurrentBalance { get; set; }
+    public decimal CurrentBalance { get; set; }
 
-    public CommonsStatus? Status { get; set; }
+    public GroupStatus? Status { get; set; }
 
     public VisibilityEnum? Visibility { get; set; }
+
+    public Guid? AccountBankId { get; set; }
 
     public virtual ICollection<FinancialGoal> FinancialGoals { get; set; } = new List<FinancialGoal>();
 

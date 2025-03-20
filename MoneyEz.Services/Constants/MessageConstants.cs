@@ -19,6 +19,8 @@ namespace MoneyEz.Services.Constants
         public const string OLD_PASSWORD_INVALID = "OldPasswordInvalid";
         public const string RESET_PASSWORD_FAILED = "CanNotResetPassword";
         public const string ACCOUNT_VERIFIED = "AccountVerified";
+        public const string OTP_HAS_SENT = "OtpHasSent";
+        public const string EMAIL_NOT_REQUEST_OTP = "EmailNotRequestOtpCode";
 
         public const string LOGIN_SUCCESS_MESSAGE = "Login successfully";
         public const string LOGIN_GOOGLE_SUCCESS_MESSAGE = "Login with google successfully";
@@ -63,6 +65,66 @@ namespace MoneyEz.Services.Constants
         public const string INVALID_TOTAL_PERCENTAGE = "InvalidTotalPercentage";//The total percentage amount of all categories must be greater than 0 and less than or equal to 100.
         public const string PERCENTAGE_REQUIRED = "PercentageRequired";//Percentage amounts must be provided for the categories.
         public const string INVALID_PERCENTAGE_AMOUNT = "Percentage amounts cannot be negative.";
+        public const string INVALID_PERIOD_UNIT = "InvalidPeriodUnit";
+        public const string USER_ALREADY_HAS_ACTIVE_SPENDING_MODEL = "UserAlreadyHasActiveSpendingModel";
+        public const string CURRENT_SPENDING_MODEL_NOT_FINISHED = "CurrentSpendingModelNotFinished";
+        public const string CANNOT_CANCEL_SPENDING_MODEL_HAS_GOALS = "CannotCancelSpendingModelHasGoals";
+        public const string START_DATE_CANNOT_BE_IN_PAST = "StartDateCannotBeInPast";
+        public const string END_DATE_MUST_BE_AFTER_START_DATE = "EndDateMustBeAfterStartDate";
+        public const string CANNOT_SELECT_FUTURE_MODEL_WHEN_ACTIVE = "CannotSelectFutureModelWhenActive";
+
+        //financial goal
+        public const string USER_HAS_NO_ACTIVE_SPENDING_MODEL = "UserHasNoActiveSpendingModel";
+        public const string SUBCATEGORY_NOT_IN_SPENDING_MODEL = "SubcategoryNotInSpendingModel";
+        public const string SUBCATEGORY_ALREADY_HAS_GOAL = "SubcategoryAlreadyHasGoal";
+        public const string FINANCIAL_GOAL_NOT_FOUND = "FinancialGoalNotFound";
+        public const string FINANCIAL_GOAL_ACCESS_DENIED = "FinancialGoalAccessDenied";
+        public const string INVALID_TARGET_AMOUNT = "InvalidTargetAmount";
+        public const string INVALID_DEADLINE = "InvalidDeadline";
+        public const string SPENDING_MODEL_DATA_MISSING = "SpendingModelDataMissing";
+
+        public const string USER_NOT_IN_GROUP = "UserNotInGroup";
+        public const string USER_NOT_AUTHORIZED = "UserNotAuthorized";
+        public const string GROUP_ALREADY_HAS_GOAL = "GroupAlreadyHasGoal";
+        public const string GROUP_NOT_FOUND = "GroupNotFound";
+        public const string FINANCIAL_GOAL_NOT_IN_GROUP = "FinancialGoalNotInGroup";
+        public const string INSUFFICIENT_GROUP_FUNDS = "InsufficientGroupFunds";
+        public const string GOAL_NOT_COMPLETED = "GoalNotCompleted";
+        public const string INVALID_SPENDING_MODEL = "InvalidSpendingModel";
+        public const string SPENDING_MODEL_HAS_NO_CATEGORIES = "SpendingModelHasNoCategories";
+        public const string SPENDING_MODEL_HAS_NO_SUBCATEGORIES = "SpendingModelHasNoSubcategories";
+        public const string FINANCIAL_GOAL_CANNOT_BE_DELETED = "FinancialGoalCannotBeDeleted";
+        public const string GOAL_ALREADY_COMPLETED = "GoalAlreadyCompleted";
+        //financial report
+        public const string REPORT_NOT_FOUND = "ReportNotFound";
+        public const string REPORT_CREATE_FAILED = "ReportCreateFailed";
+        public const string REPORT_UPDATE_FAILED = "ReportUpdateFailed";
+        public const string REPORT_DELETE_FAILED = "ReportDeleteFailed";
+        public const string REPORT_ACCESS_DENIED = "ReportAccessDenied";
+        public const string INVALID_REPORT_DATE_RANGE = "InvalidReportDateRange";
+        public const string REPORT_USER_NOT_FOUND = "ReportUserNotFound";
+        public const string REPORT_GROUP_NOT_FOUND = "ReportGroupNotFound";
+        public const string REPORT_TRANSACTION_ERROR = "ReportTransactionError";
+
+        public const string REPORT_GENERATE_SUCCESS_MESSAGE = "Financial report generated successfully.";
+        public const string REPORT_FETCHED_SUCCESS_MESSAGE = "Financial report retrieved successfully.";
+        public const string REPORT_LIST_FETCHED_SUCCESS_MESSAGE = "Financial report list retrieved successfully.";
+        public const string REPORT_UPDATED_SUCCESS_MESSAGE = "Financial report updated successfully.";
+        public const string REPORT_DELETED_SUCCESS_MESSAGE = "Financial report deleted successfully.";
+
+        public const string REPORT_NAME_REQUIRED = "ReportNameRequired";
+        public const string REPORT_START_DATE_REQUIRED = "ReportStartDateRequired";
+        public const string REPORT_END_DATE_REQUIRED = "ReportEndDateRequired";
+        public const string REPORT_TYPE_REQUIRED = "ReportTypeRequired";
+        public const string REPORT_GROUP_ID_REQUIRED = "ReportGroupIdRequired";
+
+        public const string REPORT_NAME_REQUIRED_MESSAGE = "Report name is required.";
+        public const string REPORT_START_DATE_REQUIRED_MESSAGE = "Start date is required.";
+        public const string REPORT_END_DATE_REQUIRED_MESSAGE = "End date is required.";
+        public const string REPORT_TYPE_REQUIRED_MESSAGE = "Report type is required.";
+        public const string REPORT_GROUP_ID_REQUIRED_MESSAGE = "Group ID is required for group reports.";
+        public const string REPORT_PERMISSION_DENIED = "ReportPermissionDenied";
+        public const string REPORT_PERMISSION_DENIED_MESSAGE = "You do not have permission to access this report.";
 
         // category
         public const string CATEGORY_ALREADY_EXISTS = "CategoryAlreadyExists";
@@ -73,6 +135,7 @@ namespace MoneyEz.Services.Constants
         public const string CATEGORY_UPDATED_SUCCESS = "CategoryUpdatedSuccessfully";
         public const string CATEGORY_DELETED_SUCCESS = "CategoryDeletedSuccessfully";
         public const string CATEGORY_HAS_DEPENDENCIES = "CategoryHasDependencies";
+        public const string CATEGORY_TYPE_INVALID = "CATEGORY_TYPE_INVALID";
 
         // subcategory
         public const string SUBCATEGORY_LIST_FETCHED_SUCCESS = "SubcategoryListFetched";
@@ -85,6 +148,7 @@ namespace MoneyEz.Services.Constants
         public const string SUBCATEGORY_NOT_FOUND = "SubcategoryNotFound";
         public const string SUBCATEGORY_ALREADY_EXISTS = "SubcategoryAlreadyExists";
         public const string DUPLICATE_SUBCATEGORY_NAMES = "DuplicateSubcategoryNames";
+        public const string DUPLICATE_SUBCATEGORY_CODES = "DuplicateSubcategoryCodes";
         public const string EMPTY_SUBCATEGORY_LIST = "EmptySubcategoryList";
         public const string CATEGORY_ID_REQUIRED = "CategoryIdRequired";
         public const string SUBCATEGORY_NOT_FOUND_IN_CATEGORY = "SubcategoryNotFoundInCategory";
@@ -96,6 +160,11 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_UPDATED_SUCCESS = "TransactionUpdatedSuccessfully";
         public const string TRANSACTION_DELETED_SUCCESS = "TransactionDeletedSuccessfully";
         public const string TRANSACTION_FETCHED_SUCCESS = "TransactionFetchedSuccessfully";
+
+        public const string TRANSACTION_NOT_IN_GROUP = "TransactionDoesNotBelongToGroup";
+        public const string TRANSACTION_RESPONSE_SUCCESS = "TransactionResponseSuccess";
+        public const string TRANSACTION_MUST_BE_PENDING = "TransactionMustBePending";
+        public const string TRANSACTION_APPROVE_DENIED = "TransactionApproveDenied";
 
         public const string TRANSACTION_ACCESS_DENIED = "TransactionAccessDenied";
         public const string TRANSACTION_CREATE_DENIED = "TransactionCreateDenied";
@@ -116,6 +185,8 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_SUBCATEGORY_REQUIRED = "TransactionSubcategoryRequired";
         public const string TRANSACTION_DATE_REQUIRED = "TransactionDateRequired";
         public const string TRANSACTION_ADMIN_ACCESS_DENIED = "TransactionAdminAccessDenied";
+        public const string SPENDING_MODEL_OVER_LIMIT = "SpendingModelOverLimit";
+        public const string TRANSACTION_AMOUNT_INVALID = "TransactionAmountInvalid";
 
 
         // group
@@ -123,6 +194,7 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_GET_ALL_SUCCESS_MESSAGE = "Group get all successfully";
         public const string GROUP_CLOSE_FAIL = "GroupCloseFailed";
         public const string GROUP_CLOSE_SUCCESS_MESSAGE = "Group closed successfully";
+        public const string GROUP_ACCESS_DENIED = "GroupAccessDenied";
 
         public const string GROUP_CLOSE_FORBIDDEN = "GroupCloseForbidden";
         public const string GROUP_REMOVE_MEMBER_FORBIDDEN = "GroupMemberNotFound";
@@ -140,18 +212,23 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_CAN_NOT_REMOVE_LEADER = "YouAreTheLeader";
         public const string GROUP_LEAVE_SUCCESS_MESSAGE = "You have left the group successfully.";
         public const string GROUP_MEMBER_ALREADY_ROLE = "MemberAlreadyRole";
+        public const string GROUP_LEADER_NOT_FOUND = "GroupLeaderNotFound";
+
+        // fundraising request
+        public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
+        public const string FUNDRAISING_REQUEST_ACCESS_DENIED = "FundraisingRequestAccessDenied";
+        public const string FUNDRAISING_REQUEST_LIST_GET_SUCCESS_MESSAGE = "Fundraising request list fetched successfully";
+        public const string FUNDRAISING_REQUEST_GET_SUCCESS_MESSAGE = "Fundraising request details fetched successfully";
+
 
         // Group contribution
         public const string GROUP_SET_CONTRIBUTION_FORBIDDEN = "GroupSetContributionForbidden";
-        public const string GROUP_INVALID_TOTAL_CONTRIBUTION = "GroupInvalidTotalContribution"; 
+        public const string GROUP_INVALID_TOTAL_CONTRIBUTION = "GroupInvalidTotalContribution";
         public const string GROUP_MEMBER_CONTRIBUTION_NOT_FOUND = "GroupMemberContributionNotFound";
         public const string GROUP_SET_CONTRIBUTION_SUCCESS_MESSAGE = "Group contributions updated successfully";
 
         //subscription
         public const string SUBSCRIPTION_CREATE_SUCCESS_MESSAGE = "Subscription created successfully";
-
-        // report
-        public const string REPORT_GENERATE_SUCCESS_MESSAGE = "Báo cáo sức khỏe tài chính đã được tạo thành công.";
 
         // chat
         public const string CHAT_USER_NOT_EXIST = "UserNotExistChatConversation";
@@ -174,5 +251,30 @@ namespace MoneyEz.Services.Constants
         public const string NOTI_PUSH_FAILED = "CannotPushNotification";
         public const string NOTI_UNREAD_EMPTY = "NotificationUnreadEmpty";
         public const string NOTI_CANNOT_MARK_READ = "CannotMarkReadNotification";
+        public const string NOTI_USER_EMPTY = "NotificationUsersEmpty";
+
+        // bank account
+        public const string BANK_ACCOUNT_NOT_FOUND = "BankAccountNotFound";
+        public const string BANK_ACCOUNT_ALREADY_EXISTS = "BankAccountAlreadyExists";
+        public const string BANK_ACCOUNT_ACCESS_DENIED = "BankAccountAccessDenied";
+        public const string BANK_ACCOUNT_NUMBER_DUPLICATE = "BankAccountNumberDuplicate";
+        public const string BANK_ACCOUNT_REGISTERED_IN_GROUP = "BankAccountRegisteredInGroup";
+
+        public const string BANK_ACCOUNT_LIST_GET_SUCCESS_MESSAGE = "Bank account list fetched successfully";
+        public const string BANK_ACCOUNT_GET_SUCCESS_MESSAGE = "Bank account details fetched successfully";
+        public const string BANK_ACCOUNT_CREATE_SUCCESS_MESSAGE = "Bank account created successfully";
+        public const string BANK_ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Bank account updated successfully";
+        public const string BANK_ACCOUNT_DELETE_SUCCESS_MESSAGE = "Bank account deleted successfully";
+
+        // webhook
+        public const string WEBHOOK_REGISTRATION_FAILED = "WebhookRegistrationFailed";
+        public const string WEBHOOK_URL_MISSING = "WebhookUrlMissing";
+        public const string WEBHOOK_REGISTRATION_SUCCESS = "WebhookRegistrationSuccess";
+        public const string WEBHOOK_REGISTRATION_SUCCESS_MESSAGE = "Webhook registered successfully";
+        public const string WEBHOOK_SECRET_UPDATE_FAILED = "WebhookSecretUpdateFailed";
+        public const string WEBHOOK_INVALID_RESPONSE = "WebhookInvalidResponse";
+        public const string WEBHOOK_SERVER_ERROR = "WebhookServerError";
+        public const string WEBHOOK_NOT_SUPPORTED = "WebhookNotSupported";
+        public const string INVALID_WEBHOOK_SECRET = "InvalidWebhookSecret";
     }
 }

@@ -11,17 +11,22 @@ namespace MoneyEz.Services.Mappers
     {
         partial void TransactionMapperConfig()
         {
-            // Map từ Transaction entity sang TransactionModel
-            CreateMap<Transaction, TransactionModel>();
+            CreateMap<Transaction, TransactionModel>()
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.SubcategoryName, opt => opt.MapFrom(src => src.Subcategory.Name))
+                .ForMember(dest => dest.SubcategoryIcon, opt => opt.MapFrom(src => src.Subcategory.Icon))
+                .ForMember(dest => dest.Images, opt => opt.Ignore());
 
-            // Map từ CreateTransactionModel sang Transaction entity
             CreateMap<CreateTransactionModel, Transaction>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => TransactionStatus.APPROVED)); // Mặc định approved
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => TransactionStatus.APPROVED))
+                .ForMember(dest => dest.Type, opt => opt.Ignore())
+                .ForMember(dest => dest.UserSpendingModelId, opt => opt.Ignore());
 
-            // Map từ UpdateTransactionModel sang Transaction entity
-            CreateMap<UpdateTransactionModel, Transaction>();
+            CreateMap<UpdateTransactionModel, Transaction>()
+                .ForMember(dest => dest.Type, opt => opt.Ignore())
+                .ForMember(dest => dest.UserSpendingModelId, opt => opt.Ignore());
 
-            // Map từ Pagination<Transaction> sang Pagination<TransactionModel>
             CreateMap<Pagination<Transaction>, Pagination<TransactionModel>>()
                 .ConvertUsing<PaginationConverter<Transaction, TransactionModel>>();
         }

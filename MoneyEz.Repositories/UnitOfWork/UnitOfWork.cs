@@ -21,6 +21,15 @@ namespace MoneyEz.Repositories.UnitOfWork
         //spending model
         private ISpendingModelRepository _spendingModelRepository;
 
+        //user spending model
+        private IUserSpendingModelRepository _userSpendingModelRepository;
+
+        //financial goal
+        private IFinancialGoalRepository _financialGoalRepository;
+
+        //finacnial repỏt
+        private IFinancialReportRepository _financialReportRepository;
+
         //spending model category
         private ISpendingModelCategoryRepository _spendingModelCategoryRepository;
 
@@ -35,6 +44,10 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //transaction
         private ITransactionRepository _transactionsRepository;
+
+        //image
+        private IImageRepository _imageRepository;
+
         //group
         private IGroupFundRepository _groupFundRepository;
         //group fund log
@@ -55,6 +68,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         // notification
         private INotificationRepository _notificationRepository;
 
+        // bank account
+        private IBankAccountRepository _bankAccountRepository;
+
         public UnitOfWork(MoneyEzContext context)
         {
             _context = context;
@@ -74,6 +90,30 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _spendingModelRepository ??= new SpendingModelRepository(_context);
+            }
+        }
+
+        public IFinancialGoalRepository FinancialGoalRepository
+        {
+            get
+            {
+                return _financialGoalRepository ??= new FinancialGoalRepository(_context);
+            }
+        }
+
+        public IFinancialReportRepository FinancialReportRepository
+        {
+            get
+            {
+                return _financialReportRepository ??= new FinancialReportRepository(_context);
+            }
+        }
+
+        public IUserSpendingModelRepository UserSpendingModelRepository
+        {
+            get
+            {
+                return _userSpendingModelRepository ??= new UserSpendingModelRepository(_context);
             }
         }
 
@@ -111,6 +151,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _transactionsRepository ??= new TransactionRepository(_context);
+            }
+        }
+
+        public IImageRepository ImageRepository
+        {
+            get
+            {
+                return _imageRepository ??= new ImageRepository(_context);
             }
         }
 
@@ -172,8 +220,8 @@ namespace MoneyEz.Repositories.UnitOfWork
             {
                 return _assetRepository ??= new AssetRepository(_context);
             }
-        } 
-        
+        }
+
         public ILiabilityRepository LiabilityRepository
         {
             get
@@ -187,6 +235,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _notificationRepository ??= new NotificationRepository(_context);
+            }
+        }
+
+        public IBankAccountRepository BankAccountRepository
+        {
+            get
+            {
+                return _bankAccountRepository ??= new BankAccountRepository(_context);
             }
         }
 

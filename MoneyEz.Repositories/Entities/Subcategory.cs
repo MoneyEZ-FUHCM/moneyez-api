@@ -5,13 +5,15 @@ namespace MoneyEz.Repositories.Entities;
 
 public partial class Subcategory : BaseEntity
 {
-    public Guid CategoryId { get; set; }
-
     public string? Name { get; set; }
 
     public string? NameUnsign { get; set; }
 
     public string? Description { get; set; }
+
+    public string? Code { get; set; }
+
+    public string? Icon { get; set; }
 
     public virtual ICollection<RecurringTransaction> RecurringTransactions { get; set; } = new List<RecurringTransaction>();
 

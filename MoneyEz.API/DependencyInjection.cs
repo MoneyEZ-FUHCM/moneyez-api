@@ -2,14 +2,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MoneyEz.API.RunSchedule.Setup;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Repositories.Implements;
 using MoneyEz.Repositories.Repositories.Interfaces;
 using MoneyEz.Repositories.UnitOfWork;
+using MoneyEz.Services.Configuration;
 using MoneyEz.Services.Mappers;
 using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Settings;
+using Quartz;
 using System.Text;
 
 namespace MoneyEz.API
@@ -104,6 +107,7 @@ namespace MoneyEz.API
                         builder.AllowAnyOrigin()
                         .AllowAnyHeader()
                         .WithExposedHeaders("X-Pagination")
+                        .WithExposedHeaders("X-Webhook-Secret")
                         .AllowAnyMethod();
                     });
             });
@@ -111,14 +115,37 @@ namespace MoneyEz.API
             #endregion
 
             // config signalR
+            #region config signalR
             services.AddSignalR(options =>
             {
                 options.KeepAliveInterval = TimeSpan.FromSeconds(30);
                 options.ClientTimeoutInterval = TimeSpan.FromMinutes(2);
             });
+            #endregion
 
             // config mail setting
+            #region config mail setting
             services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+            #endregion
+
+            // config quartz
+            #region config quartz
+            services.AddQuartz(option =>
+            {
+                option.UseMicrosoftDependencyInjectionJobFactory();
+            });
+
+            services.AddQuartzHostedService(option =>
+            {
+                option.WaitForJobsToComplete = true;
+            });
+
+            services.ConfigureOptions<SampleJobSetup>();
+            services.ConfigureOptions<ScanUserSpendingModelJobSetup>();
+            #endregion
+
+            // config webhook setting
+            services.Configure<WebhookSettings>(builder.Configuration.GetSection("WebhookSettings"));
 
             return services;
         }
@@ -147,6 +174,18 @@ namespace MoneyEz.API
             services.AddScoped<ISpendingModelService, SpendingModelService>();
             services.AddScoped<ISpendingModelRepository, SpendingModelRepository>();
 
+            //config user spending model service
+            services.AddScoped<IUserSpendingModelService, UserSpendingModelService>();
+            services.AddScoped<IUserSpendingModelRepository, UserSpendingModelRepository>();
+
+            //config financial goal
+            services.AddScoped<IFinancialGoalRepository, FinancialGoalRepository>();
+            services.AddScoped<IFinancialGoalService, FinancialGoalService>();
+
+            //financial repỏtt
+            services.AddScoped<IFinancialReportRepository, FinancialReportRepository>();
+            services.AddScoped<IFinancialReportService, FinancialReportService>();
+
             //config spending model category service
             services.AddScoped<ISpendingModelCategoryRepository, SpendingModelCategoryRepository>();
 
@@ -164,6 +203,10 @@ namespace MoneyEz.API
             // config transaction service
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<ITransactionRepository, TransactionRepository>();
+            services.AddScoped<ITransactionNotificationService, TransactionNotificationService>();
+
+            // config image service
+            services.AddScoped<IImageRepository, ImageRepository>();
 
             // config mail service
             services.AddScoped<IMailService, MailService>();
@@ -198,6 +241,9 @@ namespace MoneyEz.API
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<INotificationService, NotificationService>();
 
+            // config bank account service
+            services.AddScoped<IBankAccountRepository, BankAccountRepository>();
+            services.AddScoped<IBankAccountService, BankAccountService>();
             // config chat service
             services.AddScoped<IChatService, ChatService>();
             // Register HTTP client with optional configuration
@@ -211,6 +257,10 @@ namespace MoneyEz.API
 
             services.AddSignalR();
 
+            // config webhook service
+            services.AddHttpClient("WebhookClient");
+            services.AddScoped<IWebhookHttpClient, WebhookHttpClient>();
+            services.AddScoped<IWebhookService, WebhookService>();
             #endregion
 
             #region config database

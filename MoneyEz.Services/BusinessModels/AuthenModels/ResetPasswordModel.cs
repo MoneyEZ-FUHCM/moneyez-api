@@ -19,5 +19,8 @@ namespace MoneyEz.Services.BusinessModels.AuthenModels
         [DataType(DataType.Password)]
         [StringLength(20, MinimumLength = 4, ErrorMessage = "Mật khẩu phải có từ 4 đến 20 kí tự.")]
         public string Password { get; set; } = "";
+
+        [Required(ErrorMessage = "Vui lòng nhập mã OTP.")]
+        public string OtpCode { get; set; } = "";
     }
 }
