@@ -61,7 +61,6 @@ namespace MoneyEz.Services.Services.Implements
                             var newTransaction = new CreateTransactionModel
                             {
                                 Amount = apiResponse.Data.Amount.Value,
-                                ApprovalRequired = false,
                                 SubcategoryId = subCategory.Id,
                                 Description = apiResponse.Data.Description,
                                 TransactionDate = CommonUtils.GetCurrentTime(),
