@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
@@ -10,6 +11,7 @@ using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Services.BusinessModels.FinancialGoalModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
+using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
@@ -281,6 +283,169 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Status = StatusCodes.Status200OK,
                 Message = "Personal financial goal deleted successfully."
+            };
+        }
+
+        public async Task<BaseResultModel> GetUserLimitBugdetSubcategoryAsync(Guid subcategoryId)
+        {
+            // Get current user
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+
+            // Get user's current active spending model
+            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == user.Id
+                    && usm.EndDate > CommonUtils.GetCurrentTime()
+                    && usm.Status == UserSpendingModelStatus.ACTIVE
+                    && !usm.IsDeleted,
+                include: query => query
+                    .Include(usm => usm.SpendingModel)
+                    .ThenInclude(sm => sm.SpendingModelCategories)
+                    .ThenInclude(smc => smc.Category)
+                    .ThenInclude(c => c.CategorySubcategories)
+            );
+
+            var currentModel = currentModels.FirstOrDefault()
+                ?? throw new NotExistException("", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+
+            // Get total income for the spending model period
+            var totalIncome = await _unitOfWork.TransactionsRepository.GetToalIncomeByUserSpendingModelAsync(currentModel.Id);
+
+            // Get the category for the subcategory in current spending model
+            var category = await _unitOfWork.CategorySubcategoryRepository
+                .GetCategoryInCurrentSpendingModel(subcategoryId, currentModel.SpendingModelId.Value)
+                ?? throw new DefaultException(
+                    "Subcategory này không thuộc danh mục nào trong mô hình chi tiêu hiện tại.",
+                    MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL
+                );
+
+            // Check if there's already an active goal for this subcategory
+            var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(user.Id, subcategoryId);
+            if (existingGoal != null)
+            {
+                throw new DefaultException(
+                    "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
+                    MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
+                );
+            }
+
+            // Get the spending model category to get the percentage
+            var spendingModelCategory = await _unitOfWork.SpendingModelCategoryRepository
+                .GetByModelAndCategory(currentModel.SpendingModelId.Value, category.Id)
+                ?? throw new DefaultException(
+                    "Không tìm thấy thông tin phần trăm cho danh mục này trong mô hình chi tiêu.",
+                    MessageConstants.CATEGORY_NOT_FOUND_IN_SPENDING_MODEL
+                );
+
+            // Get all subcategories in the same category
+            var subcategoryIds = currentModel.SpendingModel.SpendingModelCategories
+                .Where(smc => smc.Category?.CategorySubcategories != null && smc.CategoryId == category.Id)
+                .SelectMany(smc => smc.Category.CategorySubcategories)
+                .Select(sub => sub.SubcategoryId)
+                .ToList();
+
+            // Get all active financial goals for subcategories in the same category
+            var activeGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.UserId == user.Id
+                    && subcategoryIds.Contains(fg.SubcategoryId.Value)
+                    && fg.Status == FinancialGoalStatus.ACTIVE
+                    && !fg.IsDeleted
+                    && fg.CreatedDate >= currentModel.StartDate
+                    && fg.Deadline <= currentModel.EndDate
+            );
+
+            // Calculate total target amount already allocated in this category
+            var allocatedAmount = activeGoals.Sum(g => g.TargetAmount);
+
+            // Get the subcategory details
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(subcategoryId)
+                ?? throw new NotExistException("", MessageConstants.SUBCATEGORY_NOT_FOUND);
+
+            // Calculate the category's total budget based on income and percentage
+            var categoryBudget = totalIncome * (spendingModelCategory.PercentageAmount ?? 0) / 100m;
+
+            // Calculate remaining available budget for new goals
+            var availableBudget = Math.Max(0, categoryBudget - allocatedAmount);
+
+            // Create and return the result model
+            var limitModel = new LimitBugdetSubcategoriesModel
+            {
+                SubcategoryId = subcategoryId,
+                SubcategoryName = subcategory.Name,
+                LimitBudget = availableBudget
+            };
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = limitModel
+            };
+        }
+
+        public async Task<BaseResultModel> GetUserTransactionsGoalAsync(Guid goalId, PaginationParameter paginationParameter)
+        {
+            // Get current user
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
+            // Get and validate financial goal
+            var goal = await _unitOfWork.FinancialGoalRepository.GetByIdIncludeAsync(
+                goalId,
+                filter: fg => fg.UserId == user.Id
+                    && fg.Status == FinancialGoalStatus.ACTIVE
+                    && !fg.IsDeleted,
+                include: query => query.Include(fg => fg.Subcategory)
+            );
+
+            if (goal == null)
+            {
+                throw new NotExistException("", MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
+            }
+
+            // Get current spending model
+            var currentModel = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == user.Id
+                    && usm.EndDate > CommonUtils.GetCurrentTime()
+                    && usm.Status == UserSpendingModelStatus.ACTIVE
+                    && !usm.IsDeleted
+            );
+
+            if (!currentModel.Any())
+            {
+                throw new NotExistException(MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+            }
+
+            var userSpendingModel = currentModel.First();
+
+            // Get transactions 
+            var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
+                paginationParameter,
+                new TransactionFilter
+                {
+                    UserId = user.Id,
+                    SubcategoryId = goal.SubcategoryId,
+                },
+                include: query => query
+                    .Include(t => t.Subcategory)
+            );
+
+            // Map to transaction models
+            var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
+
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
+            foreach (var transactionModel in transactionModels)
+            {
+                var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
+                transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+            }
+
+            // Create paginated result
+            var paginatedResult = PaginationHelper.GetPaginationResult(transactions, transactionModels);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = paginatedResult
             };
         }
         #endregion Personal
