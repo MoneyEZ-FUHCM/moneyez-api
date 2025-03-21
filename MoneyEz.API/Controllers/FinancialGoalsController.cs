@@ -38,6 +38,20 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalsAsync(paginationParameter));
         }
 
+        [HttpGet("personal/limit-budget/subcategory/{subcategoryId}")]
+
+        public Task<IActionResult> GetUserLimitBugdetSubcategoryAsync(Guid subcategoryId)
+        {
+            return ValidateAndExecute(() => _financialGoalService.GetUserLimitBugdetSubcategoryAsync(subcategoryId));
+        }
+
+        [HttpGet("personal/transaction/{goalId}")]
+
+        public Task<IActionResult> GetUserTransactionsGoalAsync(Guid goalId, [FromQuery] PaginationParameter paginationParameter)
+        {
+            return ValidateAndExecute(() => _financialGoalService.GetUserTransactionsGoalAsync(goalId, paginationParameter));
+        }
+
         [HttpPost("personal/detail")]
 
         public Task<IActionResult> GetPersonalFinancialGoalById([FromBody] GetPersonalFinancialGoalDetailModel model)

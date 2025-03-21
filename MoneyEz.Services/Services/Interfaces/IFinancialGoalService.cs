@@ -13,6 +13,8 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetPersonalFinancialGoalByIdAsync(GetPersonalFinancialGoalDetailModel model);
         Task<BaseResultModel> UpdatePersonalFinancialGoalAsync(UpdatePersonalFinancialGoalModel model);
         Task<BaseResultModel> DeletePersonalFinancialGoalAsync(DeleteFinancialGoalModel model);
+        Task<BaseResultModel> GetUserLimitBugdetSubcategoryAsync(Guid subcategoryId);
+        Task<BaseResultModel> GetUserTransactionsGoalAsync(Guid goalId, PaginationParameter paginationParameter);
 
         Task<BaseResultModel> AddGroupFinancialGoalAsync(AddGroupFinancialGoalModel model);
         Task<BaseResultModel> GetGroupFinancialGoalsAsync(GetGroupFinancialGoalsModel model);
