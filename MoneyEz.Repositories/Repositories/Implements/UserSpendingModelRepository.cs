@@ -19,8 +19,8 @@ namespace MoneyEz.Repositories.Repositories.Implements
         {
             return await _context.UserSpendingModels
                 .Where(usm => usm.UserId == userId
-                            && usm.StartDate >= CommonUtils.GetCurrentTime()
-                            && usm.EndDate < CommonUtils.GetCurrentTime()
+                            && usm.StartDate <= CommonUtils.GetCurrentTime()
+                            && usm.EndDate > CommonUtils.GetCurrentTime()
                             && usm.Status == UserSpendingModelStatus.ACTIVE
                             && !usm.IsDeleted)
                 .OrderByDescending(usm => usm.StartDate)
