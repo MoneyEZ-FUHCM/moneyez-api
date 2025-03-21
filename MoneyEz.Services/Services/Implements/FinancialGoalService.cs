@@ -140,7 +140,8 @@ namespace MoneyEz.Services.Services.Implements
 
             var financialGoals = await _unitOfWork.FinancialGoalRepository.ToPaginationIncludeAsync(
                 paginationParameter,
-                filter: fg => fg.UserId == user.Id && fg.GroupId == null
+                filter: fg => fg.UserId == user.Id && fg.GroupId == null,
+                include: fg => fg.Include(fg => fg.Subcategory)
             );
 
             var mappedGoals = _mapper.Map<List<PersonalFinancialGoalModel>>(financialGoals);
@@ -162,7 +163,8 @@ namespace MoneyEz.Services.Services.Implements
             var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
                 filter: fg => fg.Id == model.GoalId
                             && fg.UserId == user.Id
-                            && fg.GroupId == null
+                            && fg.GroupId == null,
+                include: fg => fg.Include(fg => fg.Subcategory)
             );
 
             if (!financialGoal.Any())
