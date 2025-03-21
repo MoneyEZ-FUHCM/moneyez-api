@@ -1,5 +1,6 @@
 ﻿using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Commons.Filters;
+using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.BusinessModels.WebhookModels;
@@ -19,5 +20,6 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter);
         Task<BaseResultModel> GetTransactionByGroupIdAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter);
         Task<BaseResultModel> UpdateTransactionWebhook(WebhookPayload webhookPayload);
+        Task<BaseResultModel> CreateTransactionPythonService(CreateTransactionPythonModel createTransactionPythonModel);
     }
 }

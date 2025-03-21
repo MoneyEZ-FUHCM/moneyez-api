@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Enums;
+using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.BusinessModels.WebhookModels;
@@ -83,6 +84,12 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> UpdateTransactionWebhook(WebhookPayload webhookPayload)
         {
             return ValidateAndExecute(() => _transactionService.UpdateTransactionWebhook(webhookPayload));
+        }
+
+        [HttpPost("python-service")]
+        public Task<IActionResult> CreateTransactionPythonService(CreateTransactionPythonModel model)
+        {
+            return ValidateAndExecute(() => _transactionService.CreateTransactionPythonService(model));
         }
 
     }
