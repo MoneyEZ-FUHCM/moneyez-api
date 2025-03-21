@@ -18,6 +18,8 @@ using System.Threading.Tasks;
 using MoneyEz.Services.BusinessModels.BankAccountModels;
 using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.WebhookModels;
+using MoneyEz.Services.BusinessModels.ChatModels;
+using MoneyEz.Repositories.Utils;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -257,8 +259,8 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.TRANSACTION_DELETED_SUCCESS
             };
         }
-        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, 
-                                                                                    Guid userSpendingModelId, 
+        public async Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter,
+                                                                                    Guid userSpendingModelId,
                                                                                     TransactionFilter transactionFilter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -508,14 +510,14 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> UpdateTransactionWebhook(WebhookPayload webhookPayload) 
+        public async Task<BaseResultModel> UpdateTransactionWebhook(WebhookPayload webhookPayload)
         {
             // Get bank account to validate secret key
             var bankAccount = await _unitOfWork.BankAccountRepository.GetBankAccountByNumberAsync(webhookPayload.AccountNumber);
 
             if (bankAccount == null || string.IsNullOrEmpty(bankAccount.WebhookSecretKey))
             {
-                throw new NotExistException("Bank account not found or missing webhook configuration", 
+                throw new NotExistException("Bank account not found or missing webhook configuration",
                     MessageConstants.BANK_ACCOUNT_NOT_FOUND);
             }
 
@@ -579,7 +581,7 @@ namespace MoneyEz.Services.Services.Implements
             // Update transaction status
             updatedTransactions.Status = TransactionStatus.APPROVED;
             updatedTransactions.UpdatedBy = user.Email;
-            
+
             _unitOfWork.TransactionsRepository.UpdateAsync(updatedTransactions);
             await _unitOfWork.SaveAsync();
 
@@ -589,5 +591,40 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "Transaction status updated successfully"
             };
         }
+
+        public async Task<BaseResultModel> CreateTransactionPythonService(CreateTransactionPythonModel model)
+        {
+            // Get secret key from header
+            var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-Webhook-Secret"].ToString();
+
+            if (string.IsNullOrEmpty(secretKey) || secretKey != "thisIsSerectKeyPythonService")
+            {
+                throw new DefaultException("Invalid webhook secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
+            }
+
+            // get info user
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId);
+            if (user == null)
+            {
+                throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // search subcategory
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(filter: sc => sc.Code == model.SubcategoryCode && !sc.IsDeleted);
+            if (subcategory.Any())
+            {
+                throw new NotExistException("Subcategory not found", MessageConstants.SUBCATEGORY_NOT_FOUND);
+            }
+
+            var newTransaction = new CreateTransactionModel
+            {
+                Amount = model.Amount,
+                Description = model.Description,
+                SubcategoryId = subcategory.First().Id,
+                TransactionDate = CommonUtils.GetCurrentTime()
+            };
+
+            return await CreateTransactionAsync(newTransaction, user.Email);
+        } 
     }
 }
