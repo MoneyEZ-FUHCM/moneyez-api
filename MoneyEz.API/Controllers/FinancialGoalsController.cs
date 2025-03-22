@@ -52,11 +52,11 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _financialGoalService.GetUserTransactionsGoalAsync(goalId, paginationParameter));
         }
 
-        [HttpPost("personal/detail")]
+        [HttpGet("personal/{goalId}")]
 
-        public Task<IActionResult> GetPersonalFinancialGoalById([FromBody] GetPersonalFinancialGoalDetailModel model)
+        public Task<IActionResult> GetPersonalFinancialGoalById(Guid goalId)
         {
-            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalByIdAsync(model));
+            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalByIdAsync(goalId));
         }
 
         [HttpPut("personal")]
@@ -89,8 +89,8 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _financialGoalService.GetGroupFinancialGoalsAsync(model));
         }
 
-        [HttpPost("group/detail")]
-        public Task<IActionResult> GetGroupFinancialGoalById([FromBody] GetGroupFinancialGoalDetailModel model)
+        [HttpGet("group/detail")]
+        public Task<IActionResult> GetGroupFinancialGoalById([FromQuery] GetGroupFinancialGoalDetailModel model)
         {
             return ValidateAndExecute(() => _financialGoalService.GetGroupFinancialGoalByIdAsync(model));
         }

@@ -10,7 +10,7 @@ namespace MoneyEz.Services.Services.Interfaces
     {
         Task<BaseResultModel> AddPersonalFinancialGoalAsync(AddPersonalFinancialGoalModel model);
         Task<BaseResultModel> GetPersonalFinancialGoalsAsync(PaginationParameter paginationParameter);
-        Task<BaseResultModel> GetPersonalFinancialGoalByIdAsync(GetPersonalFinancialGoalDetailModel model);
+        Task<BaseResultModel> GetPersonalFinancialGoalByIdAsync(Guid id);
         Task<BaseResultModel> UpdatePersonalFinancialGoalAsync(UpdatePersonalFinancialGoalModel model);
         Task<BaseResultModel> DeletePersonalFinancialGoalAsync(DeleteFinancialGoalModel model);
         Task<BaseResultModel> GetUserLimitBugdetSubcategoryAsync(Guid subcategoryId);

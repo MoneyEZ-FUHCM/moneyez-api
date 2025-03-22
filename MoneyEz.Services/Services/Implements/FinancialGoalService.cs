@@ -156,14 +156,14 @@ namespace MoneyEz.Services.Services.Implements
                 Data = paginatedResult
             };
         }
-        public async Task<BaseResultModel> GetPersonalFinancialGoalByIdAsync(GetPersonalFinancialGoalDetailModel model)
+        public async Task<BaseResultModel> GetPersonalFinancialGoalByIdAsync(Guid id)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
             var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.Id == model.GoalId
+                filter: fg => fg.Id == id
                             && fg.UserId == user.Id
                             && fg.GroupId == null,
                 include: fg => fg.Include(fg => fg.Subcategory)
