@@ -18,7 +18,6 @@ namespace MoneyEz.Services.Mappers
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status)); 
 
             CreateMap<AddPersonalFinancialGoalModel, FinancialGoal>()
-                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => StringUtils.ConvertToUnSign(src.Name)))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => FinancialGoalStatus.ACTIVE))  
                 .ForMember(dest => dest.ApprovalStatus, opt => opt.MapFrom(src => ApprovalStatus.APPROVED)); 
 

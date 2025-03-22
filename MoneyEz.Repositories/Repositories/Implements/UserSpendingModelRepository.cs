@@ -23,6 +23,10 @@ namespace MoneyEz.Repositories.Repositories.Implements
                             && usm.EndDate > CommonUtils.GetCurrentTime()
                             && usm.Status == UserSpendingModelStatus.ACTIVE
                             && !usm.IsDeleted)
+                .Include(usm => usm.SpendingModel)
+                .ThenInclude(sm => sm.SpendingModelCategories)
+                .ThenInclude(smc => smc.Category)
+                .ThenInclude(c => c.CategorySubcategories)
                 .OrderByDescending(usm => usm.StartDate)
                 .FirstOrDefaultAsync();
         }

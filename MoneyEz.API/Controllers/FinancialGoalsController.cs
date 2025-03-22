@@ -59,6 +59,13 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalByIdAsync(goalId));
         }
 
+        [HttpGet("personal/user-spending-model/{id}")]
+
+        public Task<IActionResult> GetPersonalFinancialGoalBySpendingModelAsync(Guid id, [FromQuery] PaginationParameter paginationParameter)
+        {
+            return ValidateAndExecute(() => _financialGoalService.GetUserFinancialGoalBySpendingModelAsync(id, paginationParameter));
+        }
+
         [HttpPut("personal")]
 
         public Task<IActionResult> UpdatePersonalFinancialGoal([FromBody] UpdatePersonalFinancialGoalModel model)
