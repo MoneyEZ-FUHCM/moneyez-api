@@ -50,19 +50,15 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var activeSpendingModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
-                filter: usm => usm.UserId == user.Id && usm.EndDate > CommonUtils.GetCurrentTime() && !usm.IsDeleted
-            );
+            var activeSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id);
 
-            if (!activeSpendingModels.Any())
+            if (activeSpendingModel == null)
             {
                 throw new DefaultException("Bạn chưa có mô hình chi tiêu đang hoạt động.", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
             }
 
-            var activeSpendingModelId = activeSpendingModels.First().SpendingModelId;
-
             var spendingModelCategories = await _unitOfWork.SpendingModelCategoryRepository.GetByConditionAsync(
-                filter: smc => smc.SpendingModelId == activeSpendingModelId
+                filter: smc => smc.SpendingModelId == activeSpendingModel.SpendingModelId
             );
 
             if (!spendingModelCategories.Any())
@@ -73,19 +69,27 @@ namespace MoneyEz.Services.Services.Implements
 
             var categoryIds = spendingModelCategories.Select(smc => smc.CategoryId).ToList();
             var categorySubcategories = await _unitOfWork.CategorySubcategoryRepository.GetByConditionAsync(
-                filter: cs => categoryIds.Contains(cs.CategoryId)
+                filter: cs => categoryIds.Contains(cs.CategoryId),
+                include: cs => cs.Include(cs => cs.Subcategory)
             );
 
             if (!categorySubcategories.Any())
             {
-                throw new DefaultException("Không tìm thấy tiểu mục nào trong mô hình chi tiêu hiện tại.",
+                throw new DefaultException("Không tìm thấy danh mục con nào trong mô hình chi tiêu hiện tại.",
                     MessageConstants.SPENDING_MODEL_HAS_NO_SUBCATEGORIES);
             }
 
             if (!categorySubcategories.Any(cs => cs.SubcategoryId == model.SubcategoryId))
             {
-                throw new DefaultException("Tiểu mục đã chọn không thuộc mô hình chi tiêu hiện tại.",
+                throw new DefaultException("Danh mục con đã chọn không thuộc mô hình chi tiêu hiện tại.",
                     MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL);
+            }
+
+            var availableBudget = await CalculateMaximumTargetAmountSubcategory(model.SubcategoryId, user.Id);
+            if (model.TargetAmount > availableBudget)
+            {
+                throw new DefaultException($"Số tiền mục tiêu không được lớn hơn số tiền hiện có ({availableBudget}).",
+                    MessageConstants.INVALID_TARGET_AMOUNT);
             }
 
             var existingGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
@@ -113,17 +117,15 @@ namespace MoneyEz.Services.Services.Implements
                     MessageConstants.INVALID_TARGET_AMOUNT);
             }
 
-            if (model.Deadline <= CommonUtils.GetCurrentTime())
-            {
-                throw new DefaultException("Ngày hoàn thành mục tiêu phải ở tương lai.",
-                    MessageConstants.INVALID_DEADLINE);
-            }
-
             var financialGoal = _mapper.Map<FinancialGoal>(model);
             financialGoal.UserId = user.Id;
             financialGoal.Status = FinancialGoalStatus.ACTIVE; // Mặc định ACTIVE
             financialGoal.ApprovalStatus = ApprovalStatus.APPROVED; // Mặc định APPROVED
-            financialGoal.CreatedDate = CommonUtils.GetCurrentTime();
+            financialGoal.StartDate = activeSpendingModel.StartDate.Value;
+            financialGoal.Deadline = activeSpendingModel.EndDate.Value;
+            financialGoal.Name = categorySubcategories.First(cs => cs.SubcategoryId == model.SubcategoryId).Subcategory.Name;
+            financialGoal.NameUnsign = StringUtils.ConvertToUnSign(financialGoal.Name);
+            financialGoal.CreatedBy = user.Email;
 
             await _unitOfWork.FinancialGoalRepository.AddAsync(financialGoal);
             await _unitOfWork.SaveAsync();
@@ -292,80 +294,10 @@ namespace MoneyEz.Services.Services.Implements
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
                 ?? throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
 
-            // Get user's current active spending model
-            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
-                filter: usm => usm.UserId == user.Id
-                    && usm.EndDate > CommonUtils.GetCurrentTime()
-                    && usm.Status == UserSpendingModelStatus.ACTIVE
-                    && !usm.IsDeleted,
-                include: query => query
-                    .Include(usm => usm.SpendingModel)
-                    .ThenInclude(sm => sm.SpendingModelCategories)
-                    .ThenInclude(smc => smc.Category)
-                    .ThenInclude(c => c.CategorySubcategories)
-            );
-
-            var currentModel = currentModels.FirstOrDefault()
-                ?? throw new NotExistException("", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
-
-            // Get total income for the spending model period
-            var totalIncome = await _unitOfWork.TransactionsRepository.GetToalIncomeByUserSpendingModelAsync(currentModel.Id);
-
-            // Get the category for the subcategory in current spending model
-            var category = await _unitOfWork.CategorySubcategoryRepository
-                .GetCategoryInCurrentSpendingModel(subcategoryId, currentModel.SpendingModelId.Value)
-                ?? throw new DefaultException(
-                    "Subcategory này không thuộc danh mục nào trong mô hình chi tiêu hiện tại.",
-                    MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL
-                );
-
-            // Check if there's already an active goal for this subcategory
-            var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(user.Id, subcategoryId);
-            if (existingGoal != null)
-            {
-                throw new DefaultException(
-                    "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
-                    MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
-                );
-            }
-
-            // Get the spending model category to get the percentage
-            var spendingModelCategory = await _unitOfWork.SpendingModelCategoryRepository
-                .GetByModelAndCategory(currentModel.SpendingModelId.Value, category.Id)
-                ?? throw new DefaultException(
-                    "Không tìm thấy thông tin phần trăm cho danh mục này trong mô hình chi tiêu.",
-                    MessageConstants.CATEGORY_NOT_FOUND_IN_SPENDING_MODEL
-                );
-
-            // Get all subcategories in the same category
-            var subcategoryIds = currentModel.SpendingModel.SpendingModelCategories
-                .Where(smc => smc.Category?.CategorySubcategories != null && smc.CategoryId == category.Id)
-                .SelectMany(smc => smc.Category.CategorySubcategories)
-                .Select(sub => sub.SubcategoryId)
-                .ToList();
-
-            // Get all active financial goals for subcategories in the same category
-            var activeGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.UserId == user.Id
-                    && subcategoryIds.Contains(fg.SubcategoryId.Value)
-                    && fg.Status == FinancialGoalStatus.ACTIVE
-                    && !fg.IsDeleted
-                    && fg.CreatedDate >= currentModel.StartDate
-                    && fg.Deadline <= currentModel.EndDate
-            );
-
-            // Calculate total target amount already allocated in this category
-            var allocatedAmount = activeGoals.Sum(g => g.TargetAmount);
-
-            // Get the subcategory details
             var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(subcategoryId)
                 ?? throw new NotExistException("", MessageConstants.SUBCATEGORY_NOT_FOUND);
 
-            // Calculate the category's total budget based on income and percentage
-            var categoryBudget = totalIncome * (spendingModelCategory.PercentageAmount ?? 0) / 100m;
-
-            // Calculate remaining available budget for new goals
-            var availableBudget = Math.Max(0, categoryBudget - allocatedAmount);
+            var availableBudget = await CalculateMaximumTargetAmountSubcategory(subcategoryId, user.Id);
 
             // Create and return the result model
             var limitModel = new LimitBugdetSubcategoriesModel
@@ -446,6 +378,43 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Status = StatusCodes.Status200OK,
                 Data = paginatedResult
+            };
+        }
+
+        public async Task<BaseResultModel> GetUserFinancialGoalBySpendingModelAsync(Guid userSpendingModelId, PaginationParameter paginationParameter)
+        {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
+            var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetByIdAsync(userSpendingModelId);
+            if (userSpendingModel == null)
+            {
+                throw new NotExistException("", MessageConstants.SPENDING_MODEL_NOT_FOUND);
+            }
+
+            if (userSpendingModel.UserId != user.Id)
+            {
+                throw new DefaultException("", MessageConstants.USER_SPENDING_MODEL_ACCESS_DENY);
+            }
+
+            var financialGoals = await _unitOfWork.FinancialGoalRepository.ToPaginationIncludeAsync(
+                paginationParameter,
+                filter: fg => fg.UserId == user.Id
+                            && !fg.IsDeleted
+                            && fg.GroupId == null
+                            && fg.StartDate == userSpendingModel.StartDate
+                            && fg.Deadline == userSpendingModel.EndDate,
+                include: fg => fg.Include(fg => fg.Subcategory)
+            );
+
+            var financialGoalModels = _mapper.Map<List<PersonalFinancialGoalModel>>(financialGoals);
+
+            var result = PaginationHelper.GetPaginationResult(financialGoals, financialGoalModels);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = result
             };
         }
         #endregion Personal
@@ -1074,5 +1043,76 @@ namespace MoneyEz.Services.Services.Implements
                 notification);
         }
         #endregion notification
+
+        private async Task<decimal> CalculateMaximumTargetAmountSubcategory(Guid subcategoryId, Guid userId)
+        {
+            // Get user's current active spending model
+            var currentModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(userId);
+            if (currentModel == null)
+            {
+                throw new NotExistException("", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+            }
+
+            // Get total income for the spending model period
+            var totalIncome = await _unitOfWork.TransactionsRepository.GetToalIncomeByUserSpendingModelAsync(currentModel.Id);
+
+            // Get the category for the subcategory in current spending model
+            var category = await _unitOfWork.CategorySubcategoryRepository
+                .GetCategoryInCurrentSpendingModel(subcategoryId, currentModel.SpendingModelId.Value)
+                ?? throw new DefaultException(
+                    "Subcategory này không thuộc danh mục nào trong mô hình chi tiêu hiện tại.",
+                    MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL
+                );
+
+            // Check if there's already an active goal for this subcategory
+            var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(userId, subcategoryId);
+            if (existingGoal != null)
+            {
+                throw new DefaultException(
+                    "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
+                    MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
+                );
+            }
+
+            // Get the spending model category to get the percentage
+            var spendingModelCategory = await _unitOfWork.SpendingModelCategoryRepository
+                .GetByModelAndCategory(currentModel.SpendingModelId.Value, category.Id)
+                ?? throw new DefaultException(
+                    "Không tìm thấy thông tin phần trăm cho danh mục này trong mô hình chi tiêu.",
+                    MessageConstants.CATEGORY_NOT_FOUND_IN_SPENDING_MODEL
+                );
+
+            // Get all subcategories in the same category
+            var subcategoryIds = currentModel.SpendingModel.SpendingModelCategories
+                .Where(smc => smc.Category?.CategorySubcategories != null && smc.CategoryId == category.Id)
+                .SelectMany(smc => smc.Category.CategorySubcategories)
+                .Select(sub => sub.SubcategoryId)
+                .ToList();
+
+            // Get all active financial goals for subcategories in the same category
+            var activeGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.UserId == userId
+                    && subcategoryIds.Contains(fg.SubcategoryId.Value)
+                    && fg.Status == FinancialGoalStatus.ACTIVE
+                    && !fg.IsDeleted
+                    && fg.CreatedDate >= currentModel.StartDate
+                    && fg.Deadline <= currentModel.EndDate
+            );
+
+            // Calculate total target amount already allocated in this category
+            var allocatedAmount = activeGoals.Sum(g => g.TargetAmount);
+
+            // Get the subcategory details
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(subcategoryId)
+                ?? throw new NotExistException("", MessageConstants.SUBCATEGORY_NOT_FOUND);
+
+            // Calculate the category's total budget based on income and percentage
+            var categoryBudget = totalIncome * (spendingModelCategory.PercentageAmount ?? 0) / 100m;
+
+            // Calculate remaining available budget for new goals
+            var availableBudget = Math.Max(0, categoryBudget - allocatedAmount);
+
+            return availableBudget;
+        }
     }
 }
