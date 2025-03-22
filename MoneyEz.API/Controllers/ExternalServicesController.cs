@@ -1,0 +1,27 @@
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using MoneyEz.Services.BusinessModels.ChatModels;
+using MoneyEz.Services.BusinessModels.ExternalServiceModels;
+using MoneyEz.Services.Services.Implements;
+using MoneyEz.Services.Services.Interfaces;
+
+namespace MoneyEz.API.Controllers
+{
+    [Route("api/v1/external-services")]
+    [ApiController]
+    public class ExternalServicesController : BaseController
+    {
+        private readonly IExternalApiService _externalApiService;
+
+        public ExternalServicesController(IExternalApiService externalApiService)
+        {
+            _externalApiService = externalApiService;
+        }
+
+        [HttpPost("transaction/create")]
+        public Task<IActionResult> CreateTransactionPythonService(ExternalReciveRequestModel model)
+        {
+            return ValidateAndExecute(() => _externalApiService.ExecuteExternalService(model));
+        }
+    }
+}

@@ -86,11 +86,5 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _transactionService.UpdateTransactionWebhook(webhookPayload));
         }
 
-        [HttpPost("python-service")]
-        public Task<IActionResult> CreateTransactionPythonService(CreateTransactionPythonModel model)
-        {
-            return ValidateAndExecute(() => _transactionService.CreateTransactionPythonService(model));
-        }
-
     }
 }

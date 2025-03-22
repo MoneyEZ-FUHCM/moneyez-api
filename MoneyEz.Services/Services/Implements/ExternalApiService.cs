@@ -1,6 +1,11 @@
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using MoneyEz.Services.BusinessModels.ChatModels;
+using MoneyEz.Services.BusinessModels.ExternalServiceModels;
+using MoneyEz.Services.BusinessModels.ResultModels;
+using MoneyEz.Services.Constants;
+using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
 
 namespace MoneyEz.Services.Services.Implements
@@ -9,13 +14,48 @@ namespace MoneyEz.Services.Services.Implements
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ITransactionService _transactionService;
 
-        public ExternalApiService(HttpClient httpClient, IConfiguration configuration)
+        public ExternalApiService(HttpClient httpClient, 
+            IConfiguration configuration, 
+            IHttpContextAccessor httpContextAccessor,
+            ITransactionService transactionService)
         {
             _httpClient = httpClient;
             _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
+            _transactionService = transactionService;
             // Configure base URL from settings if needed
             // _httpClient.BaseAddress = new Uri(_configuration["ExternalApi:BaseUrl"]);
+        }
+
+        public async Task<BaseResultModel> ExecuteExternalService(ExternalReciveRequestModel model)
+        {
+            // validate webhook
+            var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-External-Secret"].ToString();
+
+            if (string.IsNullOrEmpty(secretKey) || secretKey != "thisIsSerectKeyPythonService")
+            {
+                throw new DefaultException("Invalid external secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
+            }
+
+            switch (model.Command)
+            {
+                case "create_transaction":
+                    var data = model.Data as dynamic;
+                    var createTransactionModel = new CreateTransactionPythonModel
+                    {
+                        Amount = data?.Amount ?? 0,
+                        SubcategoryCode = data?.SubcategoryCode ?? string.Empty,
+                        Description = data?.Description ?? string.Empty,
+                        UserId = data?.UserId ?? Guid.Empty
+                    };
+                    // Call service to create transaction
+                    return await _transactionService.CreateTransactionPythonService(createTransactionModel);
+                default:
+                    throw new DefaultException("Invalid command", MessageConstants.INVALID_COMMAND);
+            }
         }
 
         public async Task<ChatMessageExternalResponse> ProcessMessageAsync(ChatMessageRequest request)

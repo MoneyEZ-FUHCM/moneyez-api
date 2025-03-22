@@ -108,6 +108,7 @@ namespace MoneyEz.API
                         .AllowAnyHeader()
                         .WithExposedHeaders("X-Pagination")
                         .WithExposedHeaders("X-Webhook-Secret")
+                        .WithExposedHeaders("X-External-Secret")
                         .AllowAnyMethod();
                     });
             });
