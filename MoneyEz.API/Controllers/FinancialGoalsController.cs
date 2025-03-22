@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.FinancialGoalModels;
 using MoneyEz.Services.Services.Interfaces;
@@ -33,9 +34,9 @@ namespace MoneyEz.API.Controllers
 
         [HttpGet("personal")]
 
-        public Task<IActionResult> GetPersonalFinancialGoals([FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetPersonalFinancialGoals([FromQuery] PaginationParameter paginationParameter, [FromQuery] FinancialGoalFilter filter)
         {
-            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalsAsync(paginationParameter));
+            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalsAsync(paginationParameter, filter));
         }
 
         [HttpGet("personal/limit-budget/subcategory/{subcategoryId}")]
@@ -61,9 +62,16 @@ namespace MoneyEz.API.Controllers
 
         [HttpGet("personal/user-spending-model/{id}")]
 
-        public Task<IActionResult> GetPersonalFinancialGoalBySpendingModelAsync(Guid id, [FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetPersonalFinancialGoalBySpendingModelAsync(Guid id, [FromQuery] PaginationParameter paginationParameter, [FromQuery] FinancialGoalFilter filter)
         {
-            return ValidateAndExecute(() => _financialGoalService.GetUserFinancialGoalBySpendingModelAsync(id, paginationParameter));
+            return ValidateAndExecute(() => _financialGoalService.GetUserFinancialGoalBySpendingModelAsync(id, paginationParameter, filter));
+        }
+
+        [HttpGet("personal/create/available-categories")]
+
+        public Task<IActionResult> GetAvailableCategoriesCreateGoalUserAsync()
+        {
+            return ValidateAndExecute(() => _financialGoalService.GetAvailableCategoriesCreateGoalPersonalAsync());
         }
 
         [HttpPut("personal")]

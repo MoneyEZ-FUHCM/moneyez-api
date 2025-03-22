@@ -10,6 +10,7 @@ using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Services.BusinessModels.FinancialGoalModels;
+using MoneyEz.Services.BusinessModels.FinancialGoalModels.CreatePersonnalGoal;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.Constants;
@@ -136,15 +137,16 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "Tạo mục tiêu tài chính thành công."
             };
         }
-        public async Task<BaseResultModel> GetPersonalFinancialGoalsAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetPersonalFinancialGoalsAsync(PaginationParameter paginationParameter, FinancialGoalFilter filter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var financialGoals = await _unitOfWork.FinancialGoalRepository.ToPaginationIncludeAsync(
+            var financialGoals = await _unitOfWork.FinancialGoalRepository.GetPersonalFinancialGoalsFilterAsync(
+                user.Id,
                 paginationParameter,
-                filter: fg => fg.UserId == user.Id && fg.GroupId == null,
+                filter,
                 include: fg => fg.Include(fg => fg.Subcategory)
             );
 
@@ -381,7 +383,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetUserFinancialGoalBySpendingModelAsync(Guid userSpendingModelId, PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetUserFinancialGoalBySpendingModelAsync(Guid userSpendingModelId, PaginationParameter paginationParameter, FinancialGoalFilter filter)
         {
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
@@ -397,12 +399,11 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("", MessageConstants.USER_SPENDING_MODEL_ACCESS_DENY);
             }
 
-            var financialGoals = await _unitOfWork.FinancialGoalRepository.ToPaginationIncludeAsync(
+            var financialGoals = await _unitOfWork.FinancialGoalRepository.GetPersonalFinancialGoalsFilterAsync(
+                user.Id,
                 paginationParameter,
-                filter: fg => fg.UserId == user.Id
-                            && !fg.IsDeleted
-                            && fg.GroupId == null
-                            && fg.StartDate == userSpendingModel.StartDate
+                filter,
+                condition: fg =>  fg.StartDate == userSpendingModel.StartDate
                             && fg.Deadline == userSpendingModel.EndDate,
                 include: fg => fg.Include(fg => fg.Subcategory)
             );
@@ -415,6 +416,94 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Status = StatusCodes.Status200OK,
                 Data = result
+            };
+        }
+
+        public async Task<BaseResultModel> GetAvailableCategoriesCreateGoalPersonalAsync()
+        {
+            // Get current user
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
+            // Get active spending model
+            var activeSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id)
+                ?? throw new NotExistException("", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+
+            // Get spending model categories with their subcategories
+            var spendingModelCategories = await _unitOfWork.SpendingModelCategoryRepository.GetByConditionAsync(
+                filter: smc => smc.SpendingModelId == activeSpendingModel.SpendingModelId,
+                include: query => query
+                    .Include(smc => smc.Category)
+                        .ThenInclude(c => c.CategorySubcategories)
+                            .ThenInclude(cs => cs.Subcategory)
+            );
+
+            if (!spendingModelCategories.Any())
+            {
+                throw new DefaultException(
+                    "Mô hình chi tiêu hiện tại không có danh mục nào.",
+                    MessageConstants.SPENDING_MODEL_HAS_NO_CATEGORIES
+                );
+            }
+
+            // Get existing active goals
+            var existingGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.UserId == user.Id
+                    && fg.Status == FinancialGoalStatus.ACTIVE
+                    && !fg.IsDeleted
+                    && fg.GroupId == null
+                    && fg.StartDate == activeSpendingModel.StartDate
+                    && fg.Deadline == activeSpendingModel.EndDate
+            );
+
+            var subcategoriesWithGoals = existingGoals.Select(g => g.SubcategoryId.Value).ToHashSet();
+
+            // Create result list
+            var availableCategories = new List<AvailableCategoriesModel>();
+
+            foreach (var spendingModelCategory in spendingModelCategories)
+            {
+                var category = spendingModelCategory.Category;
+                if (category == null || !category.CategorySubcategories.Any())
+                    continue;
+
+                var categoryModel = new AvailableCategoriesModel
+                {
+                    CategoryId = category.Id,
+                    CategoryCode = category.Code,
+                    CategoryName = category.Name,
+                    CategoryIcon = category.Icon,
+                    Subcategories = new List<AvailableSubcategoriesModel>()
+                };
+
+                // Add subcategories without goals
+                foreach (var categorySubcategory in category.CategorySubcategories)
+                {
+                    var subcategory = categorySubcategory.Subcategory;
+                    if (subcategory == null) continue;
+
+                    var hasGoal = subcategoriesWithGoals.Contains(subcategory.Id);
+                    
+                    categoryModel.Subcategories.Add(new AvailableSubcategoriesModel
+                    {
+                        SubcategoryId = subcategory.Id,
+                        SubcategoryCode = subcategory.Code,
+                        SubcategoryName = subcategory.Name,
+                        SubcategoryIcon = subcategory.Icon,
+                        Status = hasGoal ? "HAS_GOAL" : "AVAILABLE"
+                    });
+                }
+
+                if (categoryModel.Subcategories.Any())
+                {
+                    availableCategories.Add(categoryModel);
+                }
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = availableCategories
             };
         }
         #endregion Personal
