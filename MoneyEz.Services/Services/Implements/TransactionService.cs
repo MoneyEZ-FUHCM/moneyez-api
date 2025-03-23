@@ -471,7 +471,6 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
             }
 
-            // Verify user is a member of the group
             var isMember = groupFund.GroupMembers.Any(member =>
                 member.UserId == user.Id &&
                 member.Status == GroupMemberStatus.ACTIVE);
@@ -487,7 +486,7 @@ namespace MoneyEz.Services.Services.Implements
                 include: query => query.Include(t => t.Subcategory).Include(t => t.User)
             );
 
-            var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
+            var transactionModels = _mapper.Map<List<GroupTransactionModel>>(transactions);
 
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
@@ -541,6 +540,25 @@ namespace MoneyEz.Services.Services.Implements
             var groupMember = group.GroupMembers.FirstOrDefault(m => m.UserId == user.Id)
                 ?? throw new DefaultException(MessageConstants.USER_NOT_IN_GROUP);
 
+            if (model.Amount <= 0)
+                throw new DefaultException("Số tiền giao dịch phải lớn hơn 0.");
+
+            if (!Enum.IsDefined(typeof(TransactionType), model.Type))
+                throw new DefaultException("Loại giao dịch không hợp lệ.");
+
+            var now = CommonUtils.GetCurrentTime().Date;
+            if (model.TransactionDate.Date > now)
+                throw new DefaultException("Không được tạo giao dịch cho ngày trong tương lai.");
+
+            if (model.TransactionDate < now.AddYears(-5) || model.TransactionDate > now.AddMonths(1))
+                throw new DefaultException("Ngày giao dịch không hợp lệ.");
+
+            if (model.Images != null && model.Images.Any(url => string.IsNullOrWhiteSpace(url)))
+                throw new DefaultException("Ảnh đính kèm không được rỗng.");
+
+            if (model.Description?.Length > 1000)
+                throw new DefaultException("Mô tả giao dịch quá dài (tối đa 1000 ký tự).");
+
             bool requiresApproval = groupMember.Role != RoleGroup.LEADER;
             TransactionStatus transactionStatus = requiresApproval ? TransactionStatus.PENDING : TransactionStatus.APPROVED;
 
@@ -572,6 +590,8 @@ namespace MoneyEz.Services.Services.Implements
                 await _unitOfWork.ImageRepository.AddRangeAsync(images);
             }
 
+            await _unitOfWork.SaveAsync();
+
             await UpdateFinancialGoalAndBalance(transaction, model.Amount);
 
             if (requiresApproval)
@@ -592,11 +612,36 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> UpdateGroupTransactionAsync(UpdateGroupTransactionModel model)
         {
+            if (model.Id == Guid.Empty)
+                throw new DefaultException("Mã giao dịch không hợp lệ.");
+
+            if (model.GroupId == Guid.Empty)
+                throw new DefaultException("Mã nhóm không hợp lệ.");
+
+            if (model.Amount.HasValue && model.Amount <= 0)
+                throw new DefaultException("Số tiền phải lớn hơn 0.");
+
+            if (model.Type.HasValue && !Enum.IsDefined(typeof(TransactionType), model.Type.Value))
+                throw new DefaultException("Loại giao dịch không hợp lệ.");
+
+            if (model.TransactionDate.HasValue)
+            {
+                var today = CommonUtils.GetCurrentTime().Date;
+                if (model.TransactionDate.Value.Date > today)
+                    throw new DefaultException("Không được cập nhật giao dịch cho ngày trong tương lai.");
+
+                if (model.TransactionDate.Value.Date < today.AddYears(-5))
+                    throw new DefaultException("Ngày giao dịch quá xa trong quá khứ.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Description) && model.Description.Length > 1000)
+                throw new DefaultException("Mô tả giao dịch quá dài (tối đa 1000 ký tự).");
+
+            if (model.Images != null && model.Images.Any(url => string.IsNullOrWhiteSpace(url)))
+                throw new DefaultException("Ảnh đính kèm không được rỗng hoặc trống.");
+
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.Id)
                 ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
-
-            if (transaction.Status != TransactionStatus.PENDING)
-                throw new DefaultException(MessageConstants.TRANSACTION_MUST_BE_PENDING);
 
             await UpdateFinancialGoalAndBalance(transaction, -transaction.Amount);
             _mapper.Map(model, transaction);
@@ -791,18 +836,31 @@ namespace MoneyEz.Services.Services.Implements
         private async Task UpdateFinancialGoalAndBalance(Transaction transaction, decimal amount)
         {
             var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(transaction.GroupId.Value)
-                ?? throw new NotExistException(MessageConstants.GROUP_NOT_EXIST);
+                ?? throw new NotExistException("GroupFund không tồn tại.");
 
-            var activeGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(
-                transaction.UserId.Value, transaction.SubcategoryId.Value);
+            FinancialGoal? activeGoal = null;
+
+            if (transaction.GroupId != Guid.Empty)
+            {
+                activeGoal = await _unitOfWork.FinancialGoalRepository
+                    .GetActiveGoalByGroupId(transaction.GroupId.Value);
+            }
+
+            if (activeGoal == null && transaction.UserId.HasValue && transaction.SubcategoryId.HasValue)
+            {
+                activeGoal = await _unitOfWork.FinancialGoalRepository
+                    .GetActiveGoalByUserAndSubcategory(transaction.UserId.Value, transaction.SubcategoryId.Value);
+            }
 
             if (activeGoal != null && activeGoal.Status == FinancialGoalStatus.ACTIVE && activeGoal.Deadline > DateTime.UtcNow)
             {
                 activeGoal.CurrentAmount += amount;
+
                 if (activeGoal.CurrentAmount >= activeGoal.TargetAmount)
                 {
                     activeGoal.CurrentAmount = activeGoal.TargetAmount;
                     activeGoal.Status = FinancialGoalStatus.COMPLETED;
+
                     await _transactionNotificationService.NotifyGoalCompletedAsync(activeGoal);
                 }
 
@@ -821,6 +879,7 @@ namespace MoneyEz.Services.Services.Implements
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
         }
+
 
         private async Task LogGroupFundChange(GroupFund group, string description, GroupAction action, string userEmail)
         {

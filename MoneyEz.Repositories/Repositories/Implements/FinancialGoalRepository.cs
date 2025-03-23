@@ -23,5 +23,18 @@ namespace MoneyEz.Repositories.Repositories.Implements
                           && !fg.IsDeleted)
                 .FirstOrDefaultAsync();
         }
+
+        public async Task<FinancialGoal?> GetActiveGoalByGroupId(Guid groupId)
+        {
+            return await _context.FinancialGoals
+                .FirstOrDefaultAsync(g =>
+                    g.GroupId == groupId &&
+                    g.Status == FinancialGoalStatus.ACTIVE &&
+                    g.Deadline > DateTime.UtcNow &&
+                    !g.IsDeleted);
+        }
+
+        
+
     }
 }
