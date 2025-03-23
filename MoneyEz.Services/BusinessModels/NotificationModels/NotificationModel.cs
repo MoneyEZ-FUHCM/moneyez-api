@@ -21,6 +21,6 @@ namespace MoneyEz.Services.BusinessModels.NotificationModels
 
         public Guid? UserId { get; set; }
 
-        public int? Type { get; set; }
+        public string? Type { get; set; }
     }
 }

@@ -59,6 +59,20 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _userSpendingModelService.GetChartCurrentSpendingModelAsync());
         }
 
+        [HttpGet("current/categories")]
+        [Authorize(Roles = nameof(RolesEnum.USER))]
+        public Task<IActionResult> GetCategoriesCurrentSpendingModel()
+        {
+            return ValidateAndExecute(() => _userSpendingModelService.GetCategoriesCurrentSpendingModelAsync());
+        }
+
+        [HttpGet("current/sub-categories")]
+        [Authorize(Roles = nameof(RolesEnum.USER))]
+        public Task<IActionResult> GetSubCategoriesCurrentSpendingModel([FromQuery] CategoryCurrentSpendingModelFiter fiter)
+        {
+            return ValidateAndExecute(() => _userSpendingModelService.GetSubCategoriesCurrentSpendingModelAsync(fiter));
+        }
+
         [HttpGet("chart/{id}")]
         [Authorize]
         public Task<IActionResult> GetChartSpendingModel(Guid id)
@@ -92,6 +106,12 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> ScanUserSpendingModelTimeExpried()
         {
             return ValidateAndExecute(() => _userSpendingModelService.UpdateExpiredSpendingModelsAsync());
+        }
+
+        [HttpGet("current/webhook/sub-categories")]
+        public Task<IActionResult> GetSubCategoriesCurrentSpendingModelUserId([FromQuery] Guid userId)
+        {
+            return ValidateAndExecute(() => _userSpendingModelService.GetSubCategoriesCurrentSpendingModelByUserIdAsync(userId));
         }
     }
 }

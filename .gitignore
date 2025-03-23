@@ -485,3 +485,4 @@ $RECYCLE.BIN/
 
 MoneyEz.API/firebase-adminsdk.json
 /MoneyEz.API/Properties
+/MoneyEz.API/sendgrid-config.json
