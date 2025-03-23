@@ -326,7 +326,6 @@ namespace MoneyEz.Services.Services.Implements
             var goal = await _unitOfWork.FinancialGoalRepository.GetByIdIncludeAsync(
                 goalId,
                 filter: fg => fg.UserId == user.Id
-                    && fg.Status == FinancialGoalStatus.ACTIVE
                     && !fg.IsDeleted,
                 include: query => query.Include(fg => fg.Subcategory)
             );
