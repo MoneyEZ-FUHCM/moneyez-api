@@ -9,6 +9,7 @@ using Org.BouncyCastle.Asn1;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace MoneyEz.Repositories.Repositories.Implements
@@ -151,6 +152,14 @@ namespace MoneyEz.Repositories.Repositories.Implements
             }
 
             return query;
+        }
+
+        public async Task<decimal> GetToalIncomeByUserSpendingModelAsync(Guid userSpendingModelId)
+        {
+            var query = _context.Transactions
+                .Where(t => t.UserSpendingModelId == userSpendingModelId && t.Type == TransactionType.INCOME && t.IsDeleted == false);
+
+            return await query.SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
     }
 }

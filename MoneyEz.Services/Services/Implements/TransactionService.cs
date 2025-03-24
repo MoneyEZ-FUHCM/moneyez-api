@@ -17,6 +17,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using MoneyEz.Services.BusinessModels.BankAccountModels;
 using MoneyEz.Repositories.Commons.Filters;
+using MoneyEz.Services.BusinessModels.WebhookModels;
+using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Repositories.Utils;
 
 namespace MoneyEz.Services.Services.Implements
@@ -27,13 +29,15 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
         private readonly ITransactionNotificationService _transactionNotificationService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public TransactionService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService, ITransactionNotificationService transactionNotificationService)
+        public TransactionService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService, ITransactionNotificationService transactionNotificationService, IHttpContextAccessor httpContextAccessor)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
             _transactionNotificationService = transactionNotificationService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         #region single user
@@ -118,7 +122,7 @@ namespace MoneyEz.Services.Services.Implements
                 Data = transactionModel
             };
         }
-        public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model)
+        public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model, string email)
         {
             var user = await GetCurrentUserAsync();
             await ValidateSubcategoryInCurrentSpendingModel(model.SubcategoryId, user.Id);
@@ -692,6 +696,81 @@ namespace MoneyEz.Services.Services.Implements
             await LogGroupFundChange(group, $"Giao dịch '{transaction.Description}' đã bị xóa.", GroupAction.DELETED, transaction.UpdatedBy);
 
             _unitOfWork.TransactionsRepository.PermanentDeletedAsync(transaction);
+
+public async Task<BaseResultModel> UpdateTransactionWebhook(WebhookPayload webhookPayload)
+        {
+            // Get bank account to validate secret key
+            var bankAccount = await _unitOfWork.BankAccountRepository.GetBankAccountByNumberAsync(webhookPayload.AccountNumber);
+
+            if (bankAccount == null || string.IsNullOrEmpty(bankAccount.WebhookSecretKey))
+            {
+                throw new NotExistException("Bank account not found or missing webhook configuration",
+                    MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            }
+
+            // get info user
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(bankAccount.UserId);
+            if (user == null)
+            {
+                throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // Get secret key from header
+            var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-Webhook-Secret"].ToString();
+
+            if (string.IsNullOrEmpty(secretKey) || secretKey != bankAccount.WebhookSecretKey)
+            {
+                throw new DefaultException("Invalid webhook secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
+            }
+
+            // Get transaction by request code
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.RequestCode == webhookPayload.Description);
+            var updatedTransactions = transactions.FirstOrDefault();
+
+            if (updatedTransactions == null)
+            {
+                // search user spending model
+                var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id);
+                if (userSpendingModel == null)
+                {
+                    throw new NotExistException("User spending model not found", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+                }
+
+                // create new transaction
+                var newTransaction = new Transaction
+                {
+                    Amount = webhookPayload.Amount,
+                    Description = "[Auto] " + webhookPayload.Description,
+                    Status = TransactionStatus.APPROVED,
+                    Type = webhookPayload.TransactionType,
+                    TransactionDate = webhookPayload.Timestamp,
+                    UserSpendingModelId = userSpendingModel.Id,
+                    UserId = bankAccount.UserId,
+                    CreatedBy = user.Email,
+                };
+
+                await _unitOfWork.TransactionsRepository.AddAsync(newTransaction);
+                await _unitOfWork.SaveAsync();
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status201Created,
+                    Message = "Transaction created successfully"
+                };
+            }
+
+            if (updatedTransactions.Amount != webhookPayload.Amount)
+            {
+                throw new DefaultException("Transaction amount invalid", MessageConstants.TRANSACTION_AMOUNT_INVALID);
+            }
+
+            // Update transaction status
+            updatedTransactions.Status = TransactionStatus.APPROVED;
+            updatedTransactions.UpdatedBy = user.Email;
+
+            _unitOfWork.TransactionsRepository.UpdateAsync(updatedTransactions);
+
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
@@ -700,6 +779,7 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.TRANSACTION_DELETED_SUCCESS
             };
         }
+        
         public async Task<BaseResultModel> ApproveGroupTransactionAsync(Guid transactionId)
         {
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId)
@@ -732,6 +812,7 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.TRANSACTION_APPROVED_SUCCESS
             };
         }
+        
         public async Task<BaseResultModel> RejectGroupTransactionAsync(Guid transactionId)
         {
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId)
@@ -895,8 +976,44 @@ namespace MoneyEz.Services.Services.Implements
             await _unitOfWork.GroupFundLogRepository.AddAsync(log);
             await _unitOfWork.SaveAsync();
         }
-
-
+                Message = "Transaction status updated successfully"
+            };
+        }
         #endregion group
+
+        public async Task<BaseResultModel> CreateTransactionPythonService(CreateTransactionPythonModel model)
+        {
+            // Get secret key from header
+            var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-Webhook-Secret"].ToString();
+
+            if (string.IsNullOrEmpty(secretKey) || secretKey != "thisIsSerectKeyPythonService")
+            {
+                throw new DefaultException("Invalid webhook secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
+            }
+
+            // get info user
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId);
+            if (user == null)
+            {
+                throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // search subcategory
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(filter: sc => sc.Code == model.SubcategoryCode && !sc.IsDeleted);
+            if (subcategory.Any())
+            {
+                throw new NotExistException("Subcategory not found", MessageConstants.SUBCATEGORY_NOT_FOUND);
+            }
+
+            var newTransaction = new CreateTransactionModel
+            {
+                Amount = model.Amount,
+                Description = model.Description,
+                SubcategoryId = subcategory.First().Id,
+                TransactionDate = CommonUtils.GetCurrentTime()
+            };
+
+            return await CreateTransactionAsync(newTransaction, user.Email);
+        } 
     }
 }

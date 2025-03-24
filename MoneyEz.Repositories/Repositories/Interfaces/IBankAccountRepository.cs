@@ -9,6 +9,6 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
 {
     public interface IBankAccountRepository : IGenericRepository<BankAccount>
     {
-
+        public Task<BankAccount?> GetBankAccountByNumberAsync(string accountNumber);
     }
 }

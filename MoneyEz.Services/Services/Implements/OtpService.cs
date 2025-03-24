@@ -107,7 +107,7 @@ namespace MoneyEz.Services.Services.Implements
             };
 
             // send mail
-            await _mailService.SendEmailAsync(newEmail);
+            await _mailService.SendEmailAsync_v2(newEmail);
             return true;
         }
 
@@ -122,7 +122,7 @@ namespace MoneyEz.Services.Services.Implements
             };
 
             // send mail
-            await _mailService.SendEmailAsync(newEmail);
+            await _mailService.SendEmailAsync_v2(newEmail);
             return true;
         }
     }

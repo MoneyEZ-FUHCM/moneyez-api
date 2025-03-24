@@ -9,6 +9,7 @@ using MoneyEz.Services.BusinessModels.GroupFund;
 using Microsoft.AspNetCore.Authorization;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.GroupFund.GroupInvite;
+using MoneyEz.Repositories.Commons.Filters;
 
 namespace MoneyEz.API.Controllers
 {
@@ -83,9 +84,9 @@ namespace MoneyEz.API.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> GetAllGroupFunds([FromQuery] PaginationParameter paginationParameters)
+        public async Task<IActionResult> GetAllGroupFunds([FromQuery] PaginationParameter paginationParameters, [FromQuery] GroupFilter groupFilter)
         {
-            return await ValidateAndExecute(() => _groupFundsService.GetAllGroupFunds(paginationParameters));
+            return await ValidateAndExecute(() => _groupFundsService.GetAllGroupFunds(paginationParameters, groupFilter));
         }
 
         [HttpGet("{id}")]
