@@ -7,6 +7,7 @@ using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
+using MoneyEz.Services.BusinessModels.TransactionModels.Group;
 using MoneyEz.Services.BusinessModels.WebhookModels;
 using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
@@ -109,16 +110,10 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _transactionService.DeleteGroupTransactionAsync(transactionId));
         }
 
-        [HttpPost("group/approve/{transactionId}")]
-        public Task<IActionResult> ApproveGroupTransaction(Guid transactionId)
+        [HttpPost("group/response")]
+        public Task<IActionResult> ResponseGroupTransaction(ResponseGroupTransactionModel model)
         {
-            return ValidateAndExecute(() => _transactionService.ApproveGroupTransactionAsync(transactionId));
-        }
-
-        [HttpPost("group/reject/{transactionId}")]
-        public Task<IActionResult> RejectGroupTransaction(Guid transactionId)
-        {
-            return ValidateAndExecute(() => _transactionService.RejectGroupTransactionAsync(transactionId));
+            return ValidateAndExecute(() => _transactionService.ResponseGroupTransactionAsync(model));
         }
 
         #region vote

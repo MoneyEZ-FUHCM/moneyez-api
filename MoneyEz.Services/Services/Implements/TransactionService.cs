@@ -20,6 +20,7 @@ using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.WebhookModels;
 using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Repositories.Utils;
+using MoneyEz.Services.BusinessModels.TransactionModels.Group;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -705,9 +706,9 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> ApproveGroupTransactionAsync(Guid transactionId)
+        public async Task<BaseResultModel> ResponseGroupTransactionAsync(ResponseGroupTransactionModel model)
         {
-            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId)
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.TransactionId)
                 ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
 
             var userEmail = _claimsService.GetCurrentUserEmail;
@@ -723,19 +724,36 @@ namespace MoneyEz.Services.Services.Implements
             if (groupMember.Role != RoleGroup.LEADER)
                 throw new DefaultException(MessageConstants.PERMISSION_DENIED);
 
-            transaction.Status = TransactionStatus.APPROVED;
-            _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
-            await _unitOfWork.SaveAsync();
-
-            await UpdateFinancialGoalAndBalance(transaction, transaction.Amount);
-
-            await _transactionNotificationService.NotifyTransactionApprovalRequestAsync(group, transaction, user);
-
-            return new BaseResultModel
+            if (model.IsApprove)
             {
-                Status = StatusCodes.Status200OK,
-                Message = MessageConstants.TRANSACTION_APPROVED_SUCCESS
-            };
+                transaction.Status = TransactionStatus.APPROVED;
+                _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
+                await _unitOfWork.SaveAsync();
+
+                await UpdateFinancialGoalAndBalance(transaction, transaction.Amount);
+
+                await _transactionNotificationService.NotifyTransactionApprovalRequestAsync(group, transaction, user);
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = MessageConstants.TRANSACTION_APPROVED_SUCCESS
+                };
+            }
+            else
+            {
+                transaction.Status = TransactionStatus.REJECTED;
+                _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
+                await _unitOfWork.SaveAsync();
+
+                await _transactionNotificationService.NotifyTransactionApprovalRequestAsync(group, transaction, user);
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = MessageConstants.TRANSACTION_REJECTED_SUCCESS
+                };
+            }
         }
 
         public async Task<BaseResultModel> RejectGroupTransactionAsync(Guid transactionId)
