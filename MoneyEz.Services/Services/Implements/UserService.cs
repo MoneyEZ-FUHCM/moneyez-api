@@ -146,7 +146,7 @@ namespace MoneyEz.Services.Services.Implements
                 Body = EmailCreateAccount.EmailSendCreateAccount(model.Email, password, model.FullName)
             };
 
-            await _mailService.SendEmailAsync_v2(passwordEmail);
+            await _mailService.SendEmailAsync(passwordEmail);
 
             return new BaseResultModel
             {

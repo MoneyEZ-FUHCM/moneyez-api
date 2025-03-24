@@ -13,11 +13,11 @@ namespace MoneyEz.Services.Mappers
         {
             // Mapping cho Financial Goal cá nhân
             CreateMap<FinancialGoal, PersonalFinancialGoalModel>()
-                .ForMember(dest => dest.SubcategoryName, opt => opt.MapFrom(src => src.Subcategory.Name))
-                .ForMember(dest => dest.SubcategoryIcon, opt => opt.MapFrom(src => src.Subcategory.Icon))
+                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => src.NameUnsign))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status)); 
 
             CreateMap<AddPersonalFinancialGoalModel, FinancialGoal>()
+                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => StringUtils.ConvertToUnSign(src.Name)))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => FinancialGoalStatus.ACTIVE))  
                 .ForMember(dest => dest.ApprovalStatus, opt => opt.MapFrom(src => ApprovalStatus.APPROVED)); 
 

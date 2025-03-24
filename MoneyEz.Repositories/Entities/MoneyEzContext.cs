@@ -629,10 +629,6 @@ public partial class MoneyEzContext : DbContext
             entity.Property(e => e.AccountHolderName)
                 .IsRequired()
                 .HasMaxLength(100);
-            entity.Property(e => e.WebhookSecretKey)
-                .HasMaxLength(60); 
-            entity.Property(e => e.WebhookUrl)
-                .HasMaxLength(500);
 
             entity.HasOne(d => d.User)
                 .WithMany(p => p.BankAccounts)

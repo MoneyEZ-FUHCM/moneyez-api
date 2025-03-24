@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.BankAccountModels;
-using MoneyEz.Services.BusinessModels.WebhookModels;
-using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
 
 namespace MoneyEz.API.Controllers
@@ -14,12 +12,10 @@ namespace MoneyEz.API.Controllers
     public class BankAccountsController : BaseController
     {
         private readonly IBankAccountService _bankAccountService;
-        private readonly IWebhookService _webhookService;
 
-        public BankAccountsController(IBankAccountService bankAccountService, IWebhookService webhookService)
+        public BankAccountsController(IBankAccountService bankAccountService)
         {
             _bankAccountService = bankAccountService;
-            _webhookService = webhookService;
         }
 
         [HttpGet]
@@ -62,13 +58,6 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> DeleteBankAccount(Guid id)
         {
             return ValidateAndExecute(() => _bankAccountService.DeleteBankAccountAsync(id));
-        }
-
-        [HttpPost("register-webhook")]
-        [Authorize]
-        public Task<IActionResult> RegisterWebhook([FromBody] WebhookRegisterModel model)
-        {
-            return ValidateAndExecute(() => _webhookService.RegisterWebhookAsync(model.AccountBankId));
         }
     }
 }

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
-using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.FinancialGoalModels;
 using MoneyEz.Services.Services.Interfaces;
@@ -34,44 +33,16 @@ namespace MoneyEz.API.Controllers
 
         [HttpGet("personal")]
 
-        public Task<IActionResult> GetPersonalFinancialGoals([FromQuery] PaginationParameter paginationParameter, [FromQuery] FinancialGoalFilter filter)
+        public Task<IActionResult> GetPersonalFinancialGoals([FromQuery] PaginationParameter paginationParameter)
         {
-            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalsAsync(paginationParameter, filter));
+            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalsAsync(paginationParameter));
         }
 
-        [HttpGet("personal/limit-budget/subcategory/{subcategoryId}")]
+        [HttpPost("personal/detail")]
 
-        public Task<IActionResult> GetUserLimitBugdetSubcategoryAsync(Guid subcategoryId)
+        public Task<IActionResult> GetPersonalFinancialGoalById([FromBody] GetPersonalFinancialGoalDetailModel model)
         {
-            return ValidateAndExecute(() => _financialGoalService.GetUserLimitBugdetSubcategoryAsync(subcategoryId));
-        }
-
-        [HttpGet("personal/transaction/{goalId}")]
-
-        public Task<IActionResult> GetUserTransactionsGoalAsync(Guid goalId, [FromQuery] PaginationParameter paginationParameter)
-        {
-            return ValidateAndExecute(() => _financialGoalService.GetUserTransactionsGoalAsync(goalId, paginationParameter));
-        }
-
-        [HttpGet("personal/{goalId}")]
-
-        public Task<IActionResult> GetPersonalFinancialGoalById(Guid goalId)
-        {
-            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalByIdAsync(goalId));
-        }
-
-        [HttpGet("personal/user-spending-model/{id}")]
-
-        public Task<IActionResult> GetPersonalFinancialGoalBySpendingModelAsync(Guid id, [FromQuery] PaginationParameter paginationParameter, [FromQuery] FinancialGoalFilter filter)
-        {
-            return ValidateAndExecute(() => _financialGoalService.GetUserFinancialGoalBySpendingModelAsync(id, paginationParameter, filter));
-        }
-
-        [HttpGet("personal/create/available-categories")]
-
-        public Task<IActionResult> GetAvailableCategoriesCreateGoalUserAsync()
-        {
-            return ValidateAndExecute(() => _financialGoalService.GetAvailableCategoriesCreateGoalPersonalAsync());
+            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalByIdAsync(model));
         }
 
         [HttpPut("personal")]
@@ -104,8 +75,8 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _financialGoalService.GetGroupFinancialGoalsAsync(model));
         }
 
-        [HttpGet("group/detail")]
-        public Task<IActionResult> GetGroupFinancialGoalById([FromQuery] GetGroupFinancialGoalDetailModel model)
+        [HttpPost("group/detail")]
+        public Task<IActionResult> GetGroupFinancialGoalById([FromBody] GetGroupFinancialGoalDetailModel model)
         {
             return ValidateAndExecute(() => _financialGoalService.GetGroupFinancialGoalByIdAsync(model));
         }

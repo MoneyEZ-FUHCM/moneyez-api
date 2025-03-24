@@ -19,9 +19,5 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetChartSpendingModelAsync(Guid id);
         Task<BaseResultModel> GetTransactionsByUserSpendingModelAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter, Guid userSpendingModelId);
         Task<BaseResultModel> UpdateExpiredSpendingModelsAsync();
-        Task<BaseResultModel> GetSubCategoriesCurrentSpendingModelAsync(CategoryCurrentSpendingModelFiter fiter);
-        Task<BaseResultModel> GetCategoriesCurrentSpendingModelAsync();
-        Task<BaseResultModel> GetSubCategoriesCurrentSpendingModelByUserIdAsync(Guid userId);
-
     }
 }

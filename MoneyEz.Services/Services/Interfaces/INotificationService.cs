@@ -1,8 +1,6 @@
 ﻿using MoneyEz.Repositories.Commons;
-using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
-using MoneyEz.Services.BusinessModels.NotificationModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using System;
 using System.Collections.Generic;
@@ -22,7 +20,7 @@ namespace MoneyEz.Services.Services.Interfaces
 
         public Task<BaseResultModel> GetNotificationById(Guid id);
 
-        public Task<BaseResultModel> GetNotificationsByUser(PaginationParameter paginationParameter, NotificationFilter filter);
+        public Task<BaseResultModel> GetNotificationsByUser(PaginationParameter paginationParameter);
 
         public Task<bool> PushMessageFirebase(string title, string body, Guid userId);
 
@@ -31,9 +29,5 @@ namespace MoneyEz.Services.Services.Interfaces
         public Task<BaseResultModel> MarkNotificationIsReadById(Guid notificationId);
 
         public Task<bool> PushListMessageFirebase(string title, string body, List<string> fcmTokens);
-
-        public Task<BaseResultModel> DeleteNotificationById(Guid id);
-
-        public Task<BaseResultModel> AddNotificationByAdmin(CreateNotificationModel createNotificationModel);
     }
 }

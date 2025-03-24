@@ -20,7 +20,5 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
                         TransactionFilter transactionFilter,
                         Func<IQueryable<Transaction>, IIncludableQueryable<Transaction, object>>? include = null);
 
-        Task<decimal> GetToalIncomeByUserSpendingModelAsync(Guid userSpendingModelId);
-
     }
 }

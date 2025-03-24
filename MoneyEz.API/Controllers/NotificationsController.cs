@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
-using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Services.BusinessModels.NotificationModels;
 using MoneyEz.Services.Services.Implements;
@@ -26,9 +25,9 @@ namespace MoneyEz.API.Controllers
 
         [HttpGet("user")]
         [Authorize]
-        public Task<IActionResult> GetNotificationsByUser([FromQuery] PaginationParameter paginationParameter, [FromQuery] NotificationFilter filter)
+        public Task<IActionResult> GetNotificationsByUser([FromQuery] PaginationParameter paginationParameter)
         {
-            return ValidateAndExecute(() => _notificationService.GetNotificationsByUser(paginationParameter, filter));
+            return ValidateAndExecute(() => _notificationService.GetNotificationsByUser(paginationParameter));
         }
 
         [HttpGet("{id}")]
@@ -57,14 +56,13 @@ namespace MoneyEz.API.Controllers
         [Authorize(Roles = "ADMIN")]
         public Task<IActionResult> AddNotificationForUsers(CreateNotificationModel createNotificationModel)
         {
-            return ValidateAndExecute(() => _notificationService.AddNotificationByAdmin(createNotificationModel));
-        }
+            var newNoti = new Notification
+            {
+                Title = createNotificationModel.Title,
+                Message = createNotificationModel.Message
+            };
 
-        [HttpDelete("{id}")]
-        [Authorize(Roles = "USER")]
-        public Task<IActionResult> DeleteNotificationById(Guid id)
-        {
-            return ValidateAndExecute(() => _notificationService.DeleteNotificationById(id));
+            return ValidateAndExecute(() => _notificationService.AddNotificationByListUser(createNotificationModel.UserIds, newNoti));
         }
     }
 }

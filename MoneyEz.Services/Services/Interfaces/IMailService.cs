@@ -10,7 +10,5 @@ namespace MoneyEz.Services.Services.Interfaces
     public interface IMailService
     {
         public Task SendEmailAsync(MailRequest mailRequest);
-
-        public Task SendEmailAsync_v2(MailRequest mailRequest);
     }
 }

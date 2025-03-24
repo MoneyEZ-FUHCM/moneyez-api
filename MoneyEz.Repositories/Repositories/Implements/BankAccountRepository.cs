@@ -17,10 +17,5 @@ namespace MoneyEz.Repositories.Repositories.Implements
         {
             _context = context;
         }
-
-        public Task<BankAccount?> GetBankAccountByNumberAsync(string accountNumber)
-        {
-            return _context.BankAccounts.FirstOrDefaultAsync(x => x.AccountNumber == accountNumber && !x.IsDeleted);
-        }
     }
 }

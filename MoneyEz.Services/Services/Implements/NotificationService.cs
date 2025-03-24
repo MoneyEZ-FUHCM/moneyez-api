@@ -1,11 +1,9 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using MoneyEz.Repositories.Commons;
-using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
-using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.NotificationModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.UserModels;
@@ -68,8 +66,13 @@ namespace MoneyEz.Services.Services.Implements
                 List<Notification> notificationList = new List<Notification>();
                 foreach (Guid userId in userIds)
                 {
-                    notification.UserId = userId;
-                    notificationList.Add(notification);
+                    var newNoti = new Notification
+                    {
+                        UserId = userId,
+                        Title = notification.Title,
+                        Message = notification.Message,
+                    };
+                    notificationList.Add(newNoti);
                 }
                 await _unitOfWork.NotificationRepository.AddRangeAsync(notificationList);
                 await _unitOfWork.SaveAsync();
@@ -107,7 +110,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetNotificationsByUser(PaginationParameter paginationParameter, NotificationFilter filter)
+        public async Task<BaseResultModel> GetNotificationsByUser(PaginationParameter paginationParameter)
         {
             var currentEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(currentEmail);
@@ -116,11 +119,10 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
 
-            filter.UserId = user.Id;
-            var notifications = await _unitOfWork.NotificationRepository.GetNotificationsFilter(paginationParameter, filter);
-            var notiListModels = _mapper.Map<List<NotificationModel>>(notifications);
+            var notiList = await _unitOfWork.NotificationRepository.ToPagination(paginationParameter);
+            var notiListModels = _mapper.Map<List<NotificationModel>>(notiList);
 
-            var notificationPagingResult = PaginationHelper.GetPaginationResult(notifications, notiListModels);
+            var notificationPagingResult = PaginationHelper.GetPaginationResult(notiList, notiListModels);
 
             return new BaseResultModel
             {
@@ -210,48 +212,6 @@ namespace MoneyEz.Services.Services.Implements
                 return false;
             }
             throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
-        }
-
-        public async Task<BaseResultModel> DeleteNotificationById(Guid id)
-        {
-            var delNoti = await _unitOfWork.NotificationRepository.GetByIdAsync(id);
-            if (delNoti != null)
-            {
-                _unitOfWork.NotificationRepository.PermanentDeletedAsync(delNoti);
-                await _unitOfWork.SaveAsync();
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status200OK,
-                    Message = "Delete notification successfully"
-                };
-            }
-            throw new NotExistException("", MessageConstants.NOTI_NOT_EXIST);
-        }
-
-        public async Task<BaseResultModel> AddNotificationByAdmin(CreateNotificationModel model)
-        {
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
-            if (user == null)
-            {
-                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
-            }
-
-            if (!model.UserIds.Any())
-            {
-                throw new DefaultException("", MessageConstants.NOTI_USER_EMPTY);
-            }
-
-            var newNotification = new Notification
-            {
-                Title = model.Title,
-                TitleUnsign = StringUtils.ConvertToUnSign(model.Title),
-                Message = model.Message,
-                Type = NotificationType.SYSTEM,
-                CreatedBy = user.Email
-            };
-
-            return await AddNotificationByListUser(model.UserIds, newNotification);
-
         }
     }
 }

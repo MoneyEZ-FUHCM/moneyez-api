@@ -14,11 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create sendgrid-config.json
-        run: |
-            mkdir -p ./MoneyEz.API
-            echo "${{ secrets.SEND_GRID_API }}" | base64 --decode > ./MoneyEz.API/sendgrid-config.json
-
       - name: Create firebase-adminsdk.json
         run: |
             mkdir -p ./MoneyEz.API

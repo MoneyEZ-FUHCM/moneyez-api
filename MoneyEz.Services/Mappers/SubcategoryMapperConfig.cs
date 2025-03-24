@@ -20,15 +20,7 @@ namespace MoneyEz.Services.Mappers
                 .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => src.NameUnsign));
 
             // Map từ Subcategory -> SubcategoryModel
-            CreateMap<Subcategory, SubcategoryModel>()
-                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src =>
-                    src.CategorySubcategories != null && src.CategorySubcategories.Any()
-                        ? src.CategorySubcategories.First().Category.Name
-                        : null))
-                .ForMember(dest => dest.CategoryCode, opt => opt.MapFrom(src =>
-                    src.CategorySubcategories != null && src.CategorySubcategories.Any()
-                        ? src.CategorySubcategories.First().Category.Code
-                        : null));
+            CreateMap<Subcategory, SubcategoryModel>();
 
             // Map từ Pagination<Subcategory> -> Pagination<SubcategoryModel>
             CreateMap<Pagination<Subcategory>, Pagination<SubcategoryModel>>()

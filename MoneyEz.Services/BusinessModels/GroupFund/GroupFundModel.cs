@@ -18,8 +18,7 @@ namespace MoneyEz.Services.BusinessModels.GroupFund
         public decimal? CurrentBalance { get; set; }
         public string? Status { get; set; }
         public string? Visibility { get; set; }
-        public string? ImageUrl { get; set; }
         public List<GroupMemberModel> GroupMembers { get; set; } = new List<GroupMemberModel>();
-        //public ImageModel? Image { get; set; }
+        public List<ImageModel> Images { get; set; } = new List<ImageModel>();
     }
 }

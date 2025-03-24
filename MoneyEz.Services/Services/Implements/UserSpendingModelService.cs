@@ -7,11 +7,9 @@ using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Repositories.Utils;
-using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Services.BusinessModels.ChartModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.SpendingModelModels;
-using MoneyEz.Services.BusinessModels.SubcategoryModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
@@ -29,21 +27,15 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
-        private readonly ISpendingModelService _spendingModelService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public UserSpendingModelService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            IClaimsService claimsService,
-            ISpendingModelService spendingModelService,
-            IHttpContextAccessor httpContextAccessor)
+            IClaimsService claimsService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
-            _spendingModelService = spendingModelService;
-            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<BaseResultModel> ChooseSpendingModelAsync(ChooseSpendingModelModel model)
@@ -501,14 +493,6 @@ namespace MoneyEz.Services.Services.Implements
             var chartData = new List<ChartSpendingCategoryModel>();
             decimal totalSpent = 0;
 
-            // Get total income for the spending model period
-            decimal totalIncome = await _unitOfWork.TransactionsRepository.GetTotalIncomeAsync(
-                userId: user.Id,
-                groupId: null,
-                startDate: currentModel.StartDate.Value,
-                endDate: currentModel.EndDate.Value
-            );
-
             // Get all transactions within the model's time period
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
                 filter: t => t.UserId == user.Id && t.GroupId == null &&
@@ -532,32 +516,21 @@ namespace MoneyEz.Services.Services.Implements
                 var categoryTotal = categoryTransactions.Sum(t => t.Amount);
                 totalSpent += categoryTotal;
 
-                // Calculate planned spending amount based on percentage of total income
-                var planningSpent = (spendingModelCategory.PercentageAmount.Value / 100) * totalIncome;
-
                 chartData.Add(new ChartSpendingCategoryModel
                 {
                     CategoryName = spendingModelCategory.Category.Name,
                     TotalSpent = categoryTotal,
-                    PlanningSpent = planningSpent,
                     PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
-                    ActualPercentage = 0, // Will be calculated after we have the total
-                    OverSpent = categoryTotal > planningSpent ? categoryTotal - planningSpent : 0 // Calculate overspent amount
+                    ActualPercentage = 0 // Will be calculated after we have the total
                 });
             }
 
             // Calculate actual percentages
-            foreach (var category in chartData)
+            if (totalSpent > 0)
             {
-                // Calculate actual percentage based on percentage used of planned spending
-                if (category.PlanningSpent > 0)
+                foreach (var category in chartData)
                 {
-                    // (TotalSpent / PlanningSpent) * PlannedPercentage = % used of planned percentage
-                    category.ActualPercentage = Math.Round((category.TotalSpent / category.PlanningSpent) * category.PlannedPercentage, 2);
-                }
-                else
-                {
-                    category.ActualPercentage = 0;
+                    category.ActualPercentage = Math.Round((category.TotalSpent / totalSpent) * 100, 2);
                 }
             }
 
@@ -568,8 +541,6 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Categories = chartData,
                     TotalSpent = totalSpent,
-                    TotalIncome = totalIncome,
-                    TotalOverspent = chartData.Sum(c => c.OverSpent), // Add total overspent
                     StartDate = currentModel.StartDate,
                     EndDate = currentModel.EndDate
                 }
@@ -578,7 +549,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetChartSpendingModelAsync(Guid spendingModelId)
         {
-            var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetByIdIncludeAsync(
+            var spendingModel = await _unitOfWork.UserSpendingModelRepository.GetByIdIncludeAsync(
                 spendingModelId,
                 include: query => query
                     .Include(usm => usm.SpendingModel)
@@ -586,7 +557,7 @@ namespace MoneyEz.Services.Services.Implements
                     .ThenInclude(smc => smc.Category)
             );
 
-            if (userSpendingModel == null)
+            if (spendingModel == null)
             {
                 return new BaseResultModel
                 {
@@ -596,7 +567,7 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            if (!userSpendingModel.SpendingModel.SpendingModelCategories.Any())
+            if (!spendingModel.SpendingModel.SpendingModelCategories.Any())
             {
                 return new BaseResultModel
                 {
@@ -609,19 +580,11 @@ namespace MoneyEz.Services.Services.Implements
             var chartData = new List<ChartSpendingCategoryModel>();
             decimal totalSpent = 0;
 
-            // Get total income for the spending model period
-            decimal totalIncome = await _unitOfWork.TransactionsRepository.GetTotalIncomeAsync(
-                userId: userSpendingModel.UserId,
-                groupId: null,
-                startDate: userSpendingModel.StartDate.Value,
-                endDate: userSpendingModel.EndDate.Value
-            );
-
             // Get all transactions within the model's time period
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.UserId == userSpendingModel.UserId && t.GroupId == null &&
-                            t.TransactionDate >= userSpendingModel.StartDate &&
-                            t.TransactionDate <= userSpendingModel.EndDate &&
+                filter: t => t.GroupId == null &&
+                            t.TransactionDate >= spendingModel.StartDate &&
+                            t.TransactionDate <= spendingModel.EndDate &&
                             t.Status == TransactionStatus.APPROVED,
                 include: query => query
                     .Include(t => t.Subcategory)
@@ -630,7 +593,7 @@ namespace MoneyEz.Services.Services.Implements
             );
 
             // Group transactions by category and calculate totals
-            foreach (var spendingModelCategory in userSpendingModel.SpendingModel.SpendingModelCategories)
+            foreach (var spendingModelCategory in spendingModel.SpendingModel.SpendingModelCategories)
             {
                 var categoryTransactions = transactions.Where(t =>
                     t.Subcategory != null &&
@@ -640,32 +603,21 @@ namespace MoneyEz.Services.Services.Implements
                 var categoryTotal = categoryTransactions.Sum(t => t.Amount);
                 totalSpent += categoryTotal;
 
-                // Calculate planned spending amount based on percentage of total income
-                var planningSpent = (spendingModelCategory.PercentageAmount.Value / 100) * totalIncome;
-
                 chartData.Add(new ChartSpendingCategoryModel
                 {
                     CategoryName = spendingModelCategory.Category.Name,
                     TotalSpent = categoryTotal,
-                    PlanningSpent = planningSpent,
                     PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
-                    ActualPercentage = 0, // Will be calculated after we have the total
-                    OverSpent = categoryTotal > planningSpent ? categoryTotal - planningSpent : 0 // Calculate overspent amount
+                    ActualPercentage = 0 // Will be calculated after we have the total
                 });
             }
 
             // Calculate actual percentages
-            foreach (var category in chartData)
+            if (totalSpent > 0)
             {
-                // Calculate actual percentage based on percentage used of planned spending
-                if (category.PlanningSpent > 0)
+                foreach (var category in chartData)
                 {
-                    // (TotalSpent / PlanningSpent) * PlannedPercentage = % used of planned percentage
-                    category.ActualPercentage = Math.Round((category.TotalSpent / category.PlanningSpent) * category.PlannedPercentage, 2);
-                }
-                else
-                {
-                    category.ActualPercentage = 0;
+                    category.ActualPercentage = Math.Round((category.TotalSpent / totalSpent) * 100, 2);
                 }
             }
 
@@ -676,10 +628,8 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Categories = chartData,
                     TotalSpent = totalSpent,
-                    TotalIncome = totalIncome,
-                    TotalOverspent = chartData.Sum(c => c.OverSpent), // Add total overspent
-                    StartDate = userSpendingModel.StartDate,
-                    EndDate = userSpendingModel.EndDate
+                    StartDate = spendingModel.StartDate,
+                    EndDate = spendingModel.EndDate
                 }
             };
         }
@@ -750,17 +700,13 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var expiredModelUpdate = new List<UserSpendingModel>();
-
             // Update status to EXPIRED for all expired models
             foreach (var model in expiredModels)
             {
                 model.Status = UserSpendingModelStatus.EXPIRED;
                 model.UpdatedDate = currentTime;
-                expiredModelUpdate.Add(model);
             }
 
-            _unitOfWork.UserSpendingModelRepository.UpdateRangeAsync(expiredModelUpdate);
             await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
@@ -768,182 +714,6 @@ namespace MoneyEz.Services.Services.Implements
                 Status = StatusCodes.Status200OK,
                 Message = $"Successfully updated {expiredModels.Count()} expired spending models.",
                 Data = expiredModels.Count()
-            };
-        }
-
-        public async Task<BaseResultModel> GetSubCategoriesCurrentSpendingModelAsync(CategoryCurrentSpendingModelFiter filter)
-        {
-            // Get current user
-            string userEmail = _claimsService.GetCurrentUserEmail;
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
-                ?? throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
-
-            // Get current active spending model with related data
-            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
-                filter: usm => usm.UserId == user.Id 
-                    && usm.EndDate > CommonUtils.GetCurrentTime()
-                    && usm.Status == UserSpendingModelStatus.ACTIVE
-                    && !usm.IsDeleted,
-                include: query => query
-                    .Include(usm => usm.SpendingModel)
-                    .ThenInclude(sm => sm.SpendingModelCategories)
-                    .ThenInclude(smc => smc.Category)
-                    .ThenInclude(c => c.CategorySubcategories)
-                    .ThenInclude(cs => cs.Subcategory)
-            );
-
-            var currentModel = currentModels.FirstOrDefault();
-            if (currentModel == null)
-            {
-                throw new NotExistException("No active spending model found", MessageConstants.SPENDING_MODEL_NOT_FOUND);
-            }
-
-            var subcategories = currentModel.SpendingModel.SpendingModelCategories
-                .Where(smc => smc.Category.Code != null && (string.IsNullOrEmpty(filter.Code) || smc.Category.Code == filter.Code)
-                    && (string.IsNullOrEmpty(filter.Type) || smc.Category.Type.ToString() == filter.Type.ToString().ToUpper()))
-                .SelectMany(smc => smc.Category.CategorySubcategories
-                    .Select(cs => cs.Subcategory))
-                .Where(s => s != null)
-                .ToList();
-
-            // If IsLastUsed is true, get and prioritize recently used subcategories
-            if (filter.IsLastUsed.HasValue && filter.IsLastUsed.Value)
-            {
-                // Get recent transactions for this user
-                var recentTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                    filter: t => t.UserId == user.Id 
-                        && t.GroupId == null 
-                        && t.Status == TransactionStatus.APPROVED
-                        && t.SubcategoryId != null,
-                    orderBy: query => query.OrderByDescending(t => t.TransactionDate)
-                );
-
-                // Get distinct subcategory IDs from recent transactions
-                var recentSubcategoryIds = recentTransactions
-                    .Select(t => t.SubcategoryId.Value)
-                    .Distinct()
-                    .Take(5)
-                    .ToList();
-
-                // Split subcategories into recent and others
-                var recentSubcategories = subcategories
-                    .Where(s => recentSubcategoryIds.Contains(s.Id))
-                    .OrderBy(s => recentSubcategoryIds.IndexOf(s.Id));
-
-                var otherSubcategories = subcategories
-                    .Where(s => !recentSubcategoryIds.Contains(s.Id))
-                    .OrderBy(s => s.Name);
-
-                // Combine the lists with recent subcategories first
-                subcategories = recentSubcategories.Concat(otherSubcategories).ToList();
-            }
-            else
-            {
-                // If not sorting by recent usage, sort by name
-                subcategories = subcategories.OrderBy(s => s.Name).ToList();
-            }
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = "Subcategories retrieved successfully",
-                Data = _mapper.Map<List<SubcategoryModel>>(subcategories)
-            };
-        }
-
-        public async Task<BaseResultModel> GetCategoriesCurrentSpendingModelAsync()
-        {
-            // Get current user
-            string userEmail = _claimsService.GetCurrentUserEmail;
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
-                ?? throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
-
-            // Get current active spending model with related data
-            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
-                filter: usm => usm.UserId == user.Id
-                    && usm.EndDate > CommonUtils.GetCurrentTime()
-                    && usm.Status == UserSpendingModelStatus.ACTIVE
-                    && !usm.IsDeleted,
-                include: query => query
-                    .Include(usm => usm.SpendingModel)
-                    .ThenInclude(sm => sm.SpendingModelCategories)
-                    .ThenInclude(smc => smc.Category)
-                    .ThenInclude(c => c.CategorySubcategories)
-                    .ThenInclude(cs => cs.Subcategory)
-            );
-
-            var currentModel = currentModels.FirstOrDefault();
-            if (currentModel == null)
-            {
-                throw new NotExistException("No active spending model found", MessageConstants.SPENDING_MODEL_NOT_FOUND);
-            }
-
-            var spendingModel = await _spendingModelService.GetSpendingModelByIdAsync(currentModel.SpendingModelId.Value);
-            if (spendingModel == null)
-            {
-                throw new NotExistException("", MessageConstants.SPENDING_MODEL_NOT_FOUND);
-            }
-
-            var categories = currentModel.SpendingModel.SpendingModelCategories
-                .Select(smc => smc.Category)
-                .Where(s => s != null)
-                .ToList();
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = "Categories retrieved successfully",
-                Data = _mapper.Map<List<CategoryModel>>(categories)
-            };
-        }
-
-        public async Task<BaseResultModel> GetSubCategoriesCurrentSpendingModelByUserIdAsync(Guid userId)
-        {
-            // Get secret key from header
-            var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-Webhook-Secret"].ToString();
-
-            if (string.IsNullOrEmpty(secretKey) || secretKey != "thisIsSerectKeyPythonService")
-            {
-                throw new DefaultException("Invalid webhook secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
-            }
-
-            var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
-            if (user == null)
-            {
-                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
-            }
-
-            // Get current active spending model with related data
-            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
-                filter: usm => usm.UserId == user.Id
-                    && usm.EndDate > CommonUtils.GetCurrentTime()
-                    && usm.Status == UserSpendingModelStatus.ACTIVE
-                    && !usm.IsDeleted,
-                include: query => query
-                    .Include(usm => usm.SpendingModel)
-                    .ThenInclude(sm => sm.SpendingModelCategories)
-                    .ThenInclude(smc => smc.Category)
-                    .ThenInclude(c => c.CategorySubcategories)
-                    .ThenInclude(cs => cs.Subcategory)
-            );
-
-            var currentModel = currentModels.FirstOrDefault();
-            if (currentModel == null)
-            {
-                throw new NotExistException("No active spending model found", MessageConstants.SPENDING_MODEL_NOT_FOUND);
-            }
-
-            var subcategories = currentModel.SpendingModel.SpendingModelCategories
-                .SelectMany(smc => smc.Category.CategorySubcategories
-                    .Select(cs => cs.Subcategory))
-                .Where(s => s != null)
-                .ToList();
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = "Subcategories retrieved successfully",
-                Data = _mapper.Map<List<SubcategoryModel>>(subcategories)
             };
         }
     }

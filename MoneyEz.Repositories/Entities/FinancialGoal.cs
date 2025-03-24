@@ -21,8 +21,6 @@ public partial class FinancialGoal : BaseEntity
 
     public decimal CurrentAmount { get; set; }
 
-    public DateTime StartDate { get; set; }
-
     public DateTime Deadline { get; set; }
 
     public FinancialGoalStatus Status { get; set; }
