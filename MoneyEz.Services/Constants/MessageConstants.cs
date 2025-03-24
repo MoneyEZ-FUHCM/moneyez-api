@@ -72,6 +72,7 @@ namespace MoneyEz.Services.Constants
         public const string START_DATE_CANNOT_BE_IN_PAST = "StartDateCannotBeInPast";
         public const string END_DATE_MUST_BE_AFTER_START_DATE = "EndDateMustBeAfterStartDate";
         public const string CANNOT_SELECT_FUTURE_MODEL_WHEN_ACTIVE = "CannotSelectFutureModelWhenActive";
+        public const string USER_SPENDING_MODEL_ACCESS_DENY = "UserSpendingModelAccessDeny";
 
         //financial goal
         public const string USER_HAS_NO_ACTIVE_SPENDING_MODEL = "UserHasNoActiveSpendingModel";
@@ -186,6 +187,7 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_DATE_REQUIRED = "TransactionDateRequired";
         public const string TRANSACTION_ADMIN_ACCESS_DENIED = "TransactionAdminAccessDenied";
         public const string SPENDING_MODEL_OVER_LIMIT = "SpendingModelOverLimit";
+        public const string TRANSACTION_AMOUNT_INVALID = "TransactionAmountInvalid";
 
         //vote
         public const string VOTE_ALREADY_EXISTS = "VoteAlreadyExists";
@@ -257,6 +259,7 @@ namespace MoneyEz.Services.Constants
         public const string NOTI_PUSH_FAILED = "CannotPushNotification";
         public const string NOTI_UNREAD_EMPTY = "NotificationUnreadEmpty";
         public const string NOTI_CANNOT_MARK_READ = "CannotMarkReadNotification";
+        public const string NOTI_USER_EMPTY = "NotificationUsersEmpty";
 
         // bank account
         public const string BANK_ACCOUNT_NOT_FOUND = "BankAccountNotFound";
@@ -270,5 +273,16 @@ namespace MoneyEz.Services.Constants
         public const string BANK_ACCOUNT_CREATE_SUCCESS_MESSAGE = "Bank account created successfully";
         public const string BANK_ACCOUNT_UPDATE_SUCCESS_MESSAGE = "Bank account updated successfully";
         public const string BANK_ACCOUNT_DELETE_SUCCESS_MESSAGE = "Bank account deleted successfully";
+
+        // webhook
+        public const string WEBHOOK_REGISTRATION_FAILED = "WebhookRegistrationFailed";
+        public const string WEBHOOK_URL_MISSING = "WebhookUrlMissing";
+        public const string WEBHOOK_REGISTRATION_SUCCESS = "WebhookRegistrationSuccess";
+        public const string WEBHOOK_REGISTRATION_SUCCESS_MESSAGE = "Webhook registered successfully";
+        public const string WEBHOOK_SECRET_UPDATE_FAILED = "WebhookSecretUpdateFailed";
+        public const string WEBHOOK_INVALID_RESPONSE = "WebhookInvalidResponse";
+        public const string WEBHOOK_SERVER_ERROR = "WebhookServerError";
+        public const string WEBHOOK_NOT_SUPPORTED = "WebhookNotSupported";
+        public const string INVALID_WEBHOOK_SECRET = "InvalidWebhookSecret";
     }
 }

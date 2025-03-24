@@ -16,5 +16,7 @@ namespace MoneyEz.Repositories.Entities
         public string AccountHolderName { get; set; } = null!;
         public CommonsStatus? Status { get; set; }
         public virtual User? User { get; set; }
+        public string? WebhookSecretKey { get; set; }
+        public string? WebhookUrl { get; set; }
     }
 }

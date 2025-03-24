@@ -24,6 +24,8 @@ using MoneyEz.Services.BusinessModels.BankAccountModels;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.BusinessModels.ImageModels;
+using MoneyEz.Repositories.Commons.Filters;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -68,7 +70,7 @@ namespace MoneyEz.Services.Services.Implements
             // Map the model to a new GroupFund entity and set its Id to the one generated for groupEntity
             var groupFund = _mapper.Map<GroupFund>(model);
             groupFund.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
-            groupFund.Status = CommonsStatus.ACTIVE;
+            groupFund.Status = GroupStatus.ACTIVE;
             groupFund.Visibility = VisibilityEnum.PRIVATE;
             groupFund.CreatedBy = user.Email;
             groupFund.AccountBankId = model.AccountBankId;
@@ -129,10 +131,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var result = _mapper.Map<GroupFundModel>(groupFund);
             result.GroupMembers = new List<GroupMemberModel>();
-            result.Images = new List<ImageModel>
-            {
-                _mapper.Map<ImageModel>(newImage)
-            };
+            result.ImageUrl = newImage?.ImageUrl != null ? newImage.ImageUrl : null;
 
             // Return a success result with the created groupFund
             return new BaseResultModel
@@ -143,7 +142,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetAllGroupFunds(PaginationParameter paginationParameters)
+        public async Task<BaseResultModel> GetAllGroupFunds(PaginationParameter paginationParameters, GroupFilter filter)
         {
             // check current user
             var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
@@ -155,14 +154,15 @@ namespace MoneyEz.Services.Services.Implements
             if (currentUser.Role == RolesEnum.ADMIN)
             {
                 // Get all groupFunds
-                var groupFunds = await _unitOfWork.GroupFundRepository.ToPagination(paginationParameters);
+                var groupFunds = await _unitOfWork.GroupFundRepository.GetGroupFundsFilterAsync(paginationParameters, filter);
                 var groupFundModels = _mapper.Map<List<GroupFundModel>>(groupFunds);
 
                 // Get and map images for each group fund
+                var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.GROUP.ToString());
                 foreach (var groupFund in groupFundModels)
                 {
-                    var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(groupFund.Id, EntityName.GROUP.ToString());
-                    groupFund.Images = _mapper.Map<List<ImageModel>>(images) ?? new List<ImageModel>();
+                    var image = images.FirstOrDefault(i => i.EntityId == groupFund.Id);
+                    groupFund.ImageUrl = image?.ImageUrl != null ? image.ImageUrl : null;
                 }
 
                 var groupPagingResult = PaginationHelper.GetPaginationResult(groupFunds, groupFundModels);
@@ -175,12 +175,15 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
+                // setup filter
+                filter.UserId = currentUser.Id;
+
                 // Get all group's user
-                var groupFunds = await _unitOfWork.GroupFundRepository.ToPaginationIncludeAsync(
+                var groupFunds = await _unitOfWork.GroupFundRepository.GetGroupFundsFilterAsync(
                     paginationParameters,
+                    filter,
                     include: q => q
-                        .Include(x => x.GroupMembers),
-                    filter: x => x.GroupMembers.Any(gm => gm.UserId == currentUser.Id && gm.Status != GroupMemberStatus.INACTIVE)
+                        .Include(x => x.GroupMembers)
                 );
 
                 // remove group member in list
@@ -192,10 +195,11 @@ namespace MoneyEz.Services.Services.Implements
                 var groupFundModels = _mapper.Map<List<GroupFundModel>>(groupFunds);
 
                 // Get and map images for each group fund
+                var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.GROUP.ToString());
                 foreach (var groupFund in groupFundModels)
                 {
-                    var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(groupFund.Id, EntityName.GROUP.ToString());
-                    groupFund.Images = _mapper.Map<List<ImageModel>>(images) ?? new List<ImageModel>();
+                    var image = images.FirstOrDefault(i => i.EntityId == groupFund.Id);
+                    groupFund.ImageUrl = image?.ImageUrl != null ? image.ImageUrl : null;
                 }
 
                 var groupPagingResult = PaginationHelper.GetPaginationResult(groupFunds, groupFundModels);
@@ -242,7 +246,7 @@ namespace MoneyEz.Services.Services.Implements
             if (groupFund.Transactions.Any())
             {
                 // Soft delete: mark the group as inactive
-                groupFund.Status = CommonsStatus.INACTIVE;
+                groupFund.Status = GroupStatus.DISBANDED;
                 _unitOfWork.GroupFundRepository.SoftDeleteAsync(groupFund);
 
                 // Add a log entry for the disband group action
@@ -628,7 +632,7 @@ namespace MoneyEz.Services.Services.Implements
             };
 
             // send mail
-            await _mailService.SendEmailAsync(newEmail);
+            await _mailService.SendEmailAsync_v2(newEmail);
 
             // Add a log entry for the invite member action
             groupFund.GroupFundLogs.Add(new GroupFundLog
@@ -758,7 +762,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(groupFund.Id, EntityName.GROUP.ToString());
             var groupFundModel = _mapper.Map<GroupFundModel>(groupFund);
-            groupFundModel.Images = _mapper.Map<List<ImageModel>>(images) ?? new List<ImageModel>();
+            groupFundModel.ImageUrl = images.FirstOrDefault()?.ImageUrl;
 
             return new BaseResultModel
             {
