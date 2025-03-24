@@ -27,8 +27,18 @@ namespace MoneyEz.Services.Mappers
                 .ForMember(dest => dest.Type, opt => opt.Ignore())
                 .ForMember(dest => dest.UserSpendingModelId, opt => opt.Ignore());
 
+            CreateMap<Transaction, GroupTransactionModel>()
+               .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+               .ForMember(dest => dest.Images, opt => opt.Ignore()); 
+
+            CreateMap<CreateGroupTransactionModel, Transaction>();
+
+            CreateMap<UpdateGroupTransactionModel, Transaction>();
+
             CreateMap<Pagination<Transaction>, Pagination<TransactionModel>>()
                 .ConvertUsing<PaginationConverter<Transaction, TransactionModel>>();
         }
     }
 }
+

@@ -189,6 +189,13 @@ namespace MoneyEz.Services.Constants
         public const string SPENDING_MODEL_OVER_LIMIT = "SpendingModelOverLimit";
         public const string TRANSACTION_AMOUNT_INVALID = "TransactionAmountInvalid";
 
+        //vote
+        public const string VOTE_ALREADY_EXISTS = "VoteAlreadyExists";
+        public const string VOTE_UPDATED = "VoteUpdated";
+        public const string VOTE_SUCCESS = "VoteSuccess";
+        public const string VOTE_NOT_FOUND = "VoteNotFound";
+        public const string VOTE_DELETED = "VoteDeleted";
+        public const string PERMISSION_DENIED = "PermissionDenied.";
 
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";

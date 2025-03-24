@@ -117,11 +117,11 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundsService.CreateFundraisingRequest(model));
         }
 
-        [HttpPost("funds/response")]
-        [Authorize]
-        public async Task<IActionResult> ResponseTransactionRequest([FromBody] UpdateGroupTransactionModel model)
-        {
-            return await ValidateAndExecute(() => _groupFundsService.ResponsePendingTransaction(model));
-        }
+        //[HttpPost("funds/response")]
+        //[Authorize]
+        //public async Task<IActionResult> ResponseTransactionRequest([FromBody] UpdateGroupTransactionModel model)
+        //{
+        //    return await ValidateAndExecute(() => _groupFundsService.ResponsePendingTransaction(model));
+        //}
     }
 }
