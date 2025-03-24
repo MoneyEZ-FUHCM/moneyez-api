@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MoneyEz.Services.BusinessModels.TransactionModels
+namespace MoneyEz.Services.BusinessModels.TransactionModels.Group
 {
     public class CreateGroupTransactionVoteModel
     {
