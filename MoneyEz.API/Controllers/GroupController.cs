@@ -123,5 +123,19 @@ namespace MoneyEz.API.Controllers
         //{
         //    return await ValidateAndExecute(() => _groupFundsService.ResponsePendingTransaction(model));
         //}
+
+        [HttpGet("group-logs")]
+        [Authorize]
+        public async Task<IActionResult> GetGroupFundLogs([FromQuery]PaginationParameter paginationParameters, [FromQuery]GetGroupFundModel getGroupFundModel)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.GetGroupFundLogs(paginationParameters, getGroupFundModel));
+        }
+
+        [HttpGet("member-logs")]
+        [Authorize]
+        public async Task<IActionResult> GetGroupMemLogs([FromQuery]PaginationParameter paginationParameters, [FromQuery]GetGroupFundModel getGroupFundModel)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.GetGroupMemLogs(paginationParameters, getGroupFundModel));
+        }
     }
 }

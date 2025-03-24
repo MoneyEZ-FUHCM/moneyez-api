@@ -26,7 +26,9 @@ using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.BusinessModels.ImageModels;
 using MoneyEz.Repositories.Commons.Filters;
 using Microsoft.AspNetCore.Http.HttpResults;
-
+using MoneyEz.Services.BusinessModels.GroupFundLogModels;
+using MoneyEz.Services.BusinessModels.FinancialReportModels;
+using MoneyEz.Services.BusinessModels.GroupMemLogModels;
 namespace MoneyEz.Services.Services.Implements
 {
     public class GroupFundsService : IGroupFundsService
@@ -1278,7 +1280,84 @@ namespace MoneyEz.Services.Services.Implements
 
             return leader;
         }
+        
+        public async Task<BaseResultModel> GetGroupFundLogs(PaginationParameter paginationParameters, GetGroupFundModel getGroupFundModel)
+        {
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
 
+            // Kiểm tra xem user có thuộc nhóm quỹ không
+            var isMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == getGroupFundModel.GroupId && gm.UserId == currentUser.Id
+            );
+
+            if (!isMember.Any())
+            {
+                throw new DefaultException("You can not access this group.", MessageConstants.GROUP_ACCESS_DENIED);
+            }
+
+            var logsPagination = await _unitOfWork.GroupFundLogRepository.ToPaginationIncludeAsync(
+                   paginationParameters,
+                   filter: log => log.GroupId == getGroupFundModel.GroupId,
+                   orderBy: q => q.OrderByDescending(log => log.CreatedDate)
+               );
+
+            var groupFundLogModels = _mapper.Map<List<GroupFundLogModel>>(logsPagination);
+
+            var result = PaginationHelper.GetPaginationResult(logsPagination, groupFundLogModels);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Success",
+                Data = result
+            };
+        }
+
+        public async Task<BaseResultModel> GetGroupMemLogs(PaginationParameter paginationParameters, GetGroupFundModel getGroupFundModel)
+        {
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+           var isMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+               filter: gm => gm.GroupId == getGroupFundModel.GroupId && gm.UserId == currentUser.Id
+           );
+
+            if (!isMember.Any())
+            {
+                throw new DefaultException("You can not access this group.", MessageConstants.GROUP_ACCESS_DENIED);
+            }
+
+            var groupMemberIds = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == getGroupFundModel.GroupId
+            );
+
+            var memberIds = groupMemberIds.Select(gm => gm.Id).ToList();
+
+            var logsPagination = await _unitOfWork.GroupMemberLogRepository.ToPaginationIncludeAsync(
+                paginationParameters,
+                filter: log => memberIds.Contains(log.GroupMemberId),
+                orderBy: q => q.OrderByDescending(log => log.CreatedDate)
+            );
+
+            var groupMemLogModels = _mapper.Map<Pagination<GroupMemLogModel>>(logsPagination);
+
+            var result = PaginationHelper.GetPaginationResult(logsPagination, groupMemLogModels);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Success",
+                Data = result
+            };
+        }        
+        
         public async Task<List<GroupMember>> GetGroupMembers(Guid groupId)
         {
             // Get group with members

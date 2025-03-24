@@ -52,6 +52,12 @@ namespace MoneyEz.Services.Mappers
 
             // image mapper
             ImageMapperConfig();
+
+            // group fund log
+            GroupFundLogConfig();
+
+            // group mem log
+            GroupMemLogConfig();
         }
 
         partial void UserMapperConfig();
@@ -72,6 +78,8 @@ namespace MoneyEz.Services.Mappers
         partial void BankAccountMapperConfig();
 
         partial void ImageMapperConfig();
+        partial void GroupFundLogConfig();
+        partial void GroupMemLogConfig();
     }
 
     public class PaginationConverter<TSource, TDestination> : ITypeConverter<Pagination<TSource>, Pagination<TDestination>>
