@@ -8,6 +8,8 @@ namespace MoneyEz.Services.Services.Interfaces
     {
         Task<ChatMessageExternalResponse> ProcessMessageAsync(ChatMessageRequest request);
 
-        Task<BaseResultModel> ExecuteExternalService(ExternalReciveRequestModel model);
+        Task<BaseResultModel> ExecuteReceiveExternalService(ExternalReciveRequestModel model);
+
+        Task<BaseResultModel> ExecuteSendExternalService(ExternalSendRequestModel model);
     }
 }

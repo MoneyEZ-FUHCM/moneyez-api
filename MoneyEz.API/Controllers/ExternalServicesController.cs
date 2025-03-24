@@ -21,7 +21,7 @@ namespace MoneyEz.API.Controllers
         [HttpPost("transaction/create")]
         public Task<IActionResult> CreateTransactionPythonService(ExternalReciveRequestModel model)
         {
-            return ValidateAndExecute(() => _externalApiService.ExecuteExternalService(model));
+            return ValidateAndExecute(() => _externalApiService.ExecuteReceiveExternalService(model));
         }
     }
 }

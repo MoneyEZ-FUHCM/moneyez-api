@@ -247,6 +247,11 @@ namespace MoneyEz.API
             services.AddScoped<IBankAccountService, BankAccountService>();
             // config chat service
             services.AddScoped<IChatService, ChatService>();
+
+            // config external service
+            services.AddScoped<IExternalApiService, ExternalApiService>();
+            services.AddScoped<IAIKnowledgeService, AIKnowledgeService>();
+
             // Register HTTP client with optional configuration
             services.AddHttpClient<IExternalApiService, ExternalApiService>(client =>
             {
@@ -270,8 +275,8 @@ namespace MoneyEz.API
 
             services.AddDbContext<MoneyEzContext>(options =>
             {
-                //options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
-                options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
+                options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
+                //options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
             });
 
             #endregion

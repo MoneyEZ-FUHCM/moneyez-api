@@ -30,7 +30,7 @@ namespace MoneyEz.Services.Services.Implements
             // _httpClient.BaseAddress = new Uri(_configuration["ExternalApi:BaseUrl"]);
         }
 
-        public async Task<BaseResultModel> ExecuteExternalService(ExternalReciveRequestModel model)
+        public async Task<BaseResultModel> ExecuteReceiveExternalService(ExternalReciveRequestModel model)
         {
             // validate webhook
             var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-External-Secret"].ToString();
@@ -56,6 +56,11 @@ namespace MoneyEz.Services.Services.Implements
                 default:
                     throw new DefaultException("Invalid command", MessageConstants.INVALID_COMMAND);
             }
+        }
+
+        public Task<BaseResultModel> ExecuteSendExternalService(ExternalSendRequestModel model)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<ChatMessageExternalResponse> ProcessMessageAsync(ChatMessageRequest request)

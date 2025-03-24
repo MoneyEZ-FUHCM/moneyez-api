@@ -11,9 +11,6 @@ namespace MoneyEz.Services.BusinessModels.ExternalServiceModels
     {
         [Required(ErrorMessage = "Command is required")]
         public string Command { get; set; } = string.Empty;
-        public required int Status { get; set; }
-        public string ErrorCode { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
         public object? Data { get; set; } = new object();
     }
 }
