@@ -28,6 +28,18 @@ namespace MoneyEz.Repositories.Repositories.Implements
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<FinancialGoal?> GetActiveGoalByGroupId(Guid groupId)
+        {
+            return await _context.FinancialGoals
+                .FirstOrDefaultAsync(g =>
+                    g.GroupId == groupId &&
+                    g.Status == FinancialGoalStatus.ACTIVE &&
+                    g.Deadline > DateTime.UtcNow &&
+                    !g.IsDeleted);
+        }
+
+        
+
         public async Task<Pagination<FinancialGoal>> GetPersonalFinancialGoalsFilterAsync(Guid userId, 
             PaginationParameter paginationParameter, FinancialGoalFilter financialGoalFilter,
             Expression<Func<FinancialGoal, bool>>? condition = null,

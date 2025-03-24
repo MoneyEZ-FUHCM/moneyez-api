@@ -449,7 +449,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        //group
+        #region group
         public async Task<BaseResultModel> GetTransactionByGroupIdAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
@@ -475,7 +475,6 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
             }
 
-            // Verify user is a member of the group
             var isMember = groupFund.GroupMembers.Any(member =>
                 member.UserId == user.Id &&
                 member.Status == GroupMemberStatus.ACTIVE);
@@ -491,7 +490,7 @@ namespace MoneyEz.Services.Services.Implements
                 include: query => query.Include(t => t.Subcategory).Include(t => t.User)
             );
 
-            var transactionModels = _mapper.Map<List<TransactionModel>>(transactions);
+            var transactionModels = _mapper.Map<List<GroupTransactionModel>>(transactions);
 
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
@@ -509,6 +508,401 @@ namespace MoneyEz.Services.Services.Implements
                 Data = result
             };
         }
+
+        public async Task<BaseResultModel> GetGroupTransactionDetailsAsync(Guid transactionId)
+        {
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdIncludeAsync(transactionId,
+                query => query.Include(t => t.User).Include(t => t.Group));
+
+            if (transaction == null)
+            {
+                throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
+            }
+
+            var transactionModel = _mapper.Map<TransactionModel>(transaction);
+
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
+            transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = transactionModel
+            };
+        }
+
+        public async Task<BaseResultModel> CreateGroupTransactionAsync(CreateGroupTransactionModel model)
+        {
+            string userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
+            var group = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                model.GroupId, q => q.Include(g => g.GroupMembers).Include(g => g.GroupFundLogs))
+                ?? throw new NotExistException(MessageConstants.GROUP_NOT_EXIST);
+
+            var groupMember = group.GroupMembers.FirstOrDefault(m => m.UserId == user.Id)
+                ?? throw new DefaultException(MessageConstants.USER_NOT_IN_GROUP);
+
+            if (model.Amount <= 0)
+                throw new DefaultException("Số tiền giao dịch phải lớn hơn 0.");
+
+            if (!Enum.IsDefined(typeof(TransactionType), model.Type))
+                throw new DefaultException("Loại giao dịch không hợp lệ.");
+
+            var now = CommonUtils.GetCurrentTime().Date;
+            if (model.TransactionDate.Date > now)
+                throw new DefaultException("Không được tạo giao dịch cho ngày trong tương lai.");
+
+            if (model.TransactionDate < now.AddYears(-5) || model.TransactionDate > now.AddMonths(1))
+                throw new DefaultException("Ngày giao dịch không hợp lệ.");
+
+            if (model.Images != null && model.Images.Any(url => string.IsNullOrWhiteSpace(url)))
+                throw new DefaultException("Ảnh đính kèm không được rỗng.");
+
+            if (model.Description?.Length > 1000)
+                throw new DefaultException("Mô tả giao dịch quá dài (tối đa 1000 ký tự).");
+
+            bool requiresApproval = groupMember.Role != RoleGroup.LEADER;
+            TransactionStatus transactionStatus = requiresApproval ? TransactionStatus.PENDING : TransactionStatus.APPROVED;
+
+            if (groupMember.Role == RoleGroup.LEADER && model.Type == TransactionType.EXPENSE && model.RequireVote)
+            {
+                transactionStatus = TransactionStatus.PENDING;
+            }
+
+            var transaction = _mapper.Map<Transaction>(model);
+            transaction.UserId = user.Id;
+            transaction.Status = transactionStatus;
+            transaction.ApprovalRequired = requiresApproval;
+            transaction.CreatedBy = user.Email;
+
+            await _unitOfWork.TransactionsRepository.AddAsync(transaction);
+            await _unitOfWork.SaveAsync();
+
+            await LogGroupFundChange(group, $"{user.FullName} đã tạo giao dịch: {transaction.Description}.", GroupAction.CREATED, user.Email);
+
+            if (model.Images?.Any() == true)
+            {
+                var images = model.Images.Select(url => new Image
+                {
+                    EntityId = transaction.Id,
+                    EntityName = EntityName.TRANSACTION.ToString(),
+                    ImageUrl = url
+                }).ToList();
+
+                await _unitOfWork.ImageRepository.AddRangeAsync(images);
+            }
+
+            await _unitOfWork.SaveAsync();
+
+            await UpdateFinancialGoalAndBalance(transaction, model.Amount);
+
+            if (requiresApproval)
+            {
+                await _transactionNotificationService.NotifyTransactionApprovalRequestAsync(group, transaction, user);
+            }
+            else
+            {
+                await _transactionNotificationService.NotifyTransactionCreatedAsync(group, transaction, user);
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status201Created,
+                Message = MessageConstants.TRANSACTION_CREATED_SUCCESS
+            };
+        }
+
+        public async Task<BaseResultModel> UpdateGroupTransactionAsync(UpdateGroupTransactionModel model)
+        {
+            if (model.Id == Guid.Empty)
+                throw new DefaultException("Mã giao dịch không hợp lệ.");
+
+            if (model.GroupId == Guid.Empty)
+                throw new DefaultException("Mã nhóm không hợp lệ.");
+
+            if (model.Amount.HasValue && model.Amount <= 0)
+                throw new DefaultException("Số tiền phải lớn hơn 0.");
+
+            if (model.Type.HasValue && !Enum.IsDefined(typeof(TransactionType), model.Type.Value))
+                throw new DefaultException("Loại giao dịch không hợp lệ.");
+
+            if (model.TransactionDate.HasValue)
+            {
+                var today = CommonUtils.GetCurrentTime().Date;
+                if (model.TransactionDate.Value.Date > today)
+                    throw new DefaultException("Không được cập nhật giao dịch cho ngày trong tương lai.");
+
+                if (model.TransactionDate.Value.Date < today.AddYears(-5))
+                    throw new DefaultException("Ngày giao dịch quá xa trong quá khứ.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Description) && model.Description.Length > 1000)
+                throw new DefaultException("Mô tả giao dịch quá dài (tối đa 1000 ký tự).");
+
+            if (model.Images != null && model.Images.Any(url => string.IsNullOrWhiteSpace(url)))
+                throw new DefaultException("Ảnh đính kèm không được rỗng hoặc trống.");
+
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.Id)
+                ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
+
+            await UpdateFinancialGoalAndBalance(transaction, -transaction.Amount);
+            _mapper.Map(model, transaction);
+            await UpdateFinancialGoalAndBalance(transaction, model.Amount ?? transaction.Amount);
+
+            var group = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(transaction.GroupId.Value, q => q.Include(g => g.GroupFundLogs));
+            await LogGroupFundChange(group, $"Giao dịch '{transaction.Description}' đã được cập nhật.", GroupAction.UPDATED, transaction.UpdatedBy);
+
+            var oldImages = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
+            _unitOfWork.ImageRepository.PermanentDeletedListAsync(oldImages);
+
+            if (model.Images?.Any() == true)
+            {
+                var newImages = model.Images.Select(url => new Image
+                {
+                    EntityId = transaction.Id,
+                    EntityName = EntityName.TRANSACTION.ToString(),
+                    ImageUrl = url
+                }).ToList();
+
+                await _unitOfWork.ImageRepository.AddRangeAsync(newImages);
+            }
+
+            _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.TRANSACTION_UPDATED_SUCCESS
+            };
+        }
+
+        public async Task<BaseResultModel> DeleteGroupTransactionAsync(Guid transactionId)
+        {
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId)
+                ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
+
+            await UpdateFinancialGoalAndBalance(transaction, -transaction.Amount);
+
+            var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
+            if (images.Any())
+            {
+                _unitOfWork.ImageRepository.PermanentDeletedListAsync(images);
+            }
+
+            var group = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(transaction.GroupId.Value, q => q.Include(g => g.GroupFundLogs));
+            await LogGroupFundChange(group, $"Giao dịch '{transaction.Description}' đã bị xóa.", GroupAction.DELETED, transaction.UpdatedBy);
+
+            _unitOfWork.TransactionsRepository.PermanentDeletedAsync(transaction);
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.TRANSACTION_DELETED_SUCCESS
+            };
+        }
+
+        public async Task<BaseResultModel> ApproveGroupTransactionAsync(Guid transactionId)
+        {
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId)
+                ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
+
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
+            var group = await _unitOfWork.GroupFundRepository.GetByIdAsync(transaction.GroupId.Value)
+                ?? throw new NotExistException(MessageConstants.GROUP_NOT_EXIST);
+
+            var groupMember = group.GroupMembers.FirstOrDefault(m => m.UserId == user.Id)
+                ?? throw new DefaultException(MessageConstants.USER_NOT_IN_GROUP);
+
+            if (groupMember.Role != RoleGroup.LEADER)
+                throw new DefaultException(MessageConstants.PERMISSION_DENIED);
+
+            transaction.Status = TransactionStatus.APPROVED;
+            _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
+            await _unitOfWork.SaveAsync();
+
+            await UpdateFinancialGoalAndBalance(transaction, transaction.Amount);
+
+            await _transactionNotificationService.NotifyTransactionApprovalRequestAsync(group, transaction, user);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.TRANSACTION_APPROVED_SUCCESS
+            };
+        }
+
+        public async Task<BaseResultModel> RejectGroupTransactionAsync(Guid transactionId)
+        {
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId)
+                ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
+
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
+            var group = await _unitOfWork.GroupFundRepository.GetByIdAsync(transaction.GroupId.Value)
+                ?? throw new NotExistException(MessageConstants.GROUP_NOT_EXIST);
+
+            var groupMember = group.GroupMembers.FirstOrDefault(m => m.UserId == user.Id)
+                ?? throw new DefaultException(MessageConstants.USER_NOT_IN_GROUP);
+
+            if (groupMember.Role != RoleGroup.LEADER)
+                throw new DefaultException(MessageConstants.PERMISSION_DENIED);
+
+            transaction.Status = TransactionStatus.REJECTED;
+            _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
+            await _unitOfWork.SaveAsync();
+
+            await _transactionNotificationService.NotifyTransactionApprovalRequestAsync(group, transaction, user);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.TRANSACTION_REJECTED_SUCCESS
+            };
+        }
+
+        #region vote
+
+        public async Task<BaseResultModel> CreateGroupTransactionVoteAsync(CreateGroupTransactionVoteModel model)
+        {
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.TransactionId)
+                ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
+
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
+            var existingVote = await _unitOfWork.TransactionVoteRepository.GetByConditionAsync(
+                filter: v => v.TransactionId == model.TransactionId && v.UserId == user.Id);
+
+            if (existingVote.Any())
+            {
+                throw new DefaultException(MessageConstants.VOTE_ALREADY_EXISTS);
+            }
+
+            var vote = new TransactionVote
+            {
+                TransactionId = model.TransactionId,
+                UserId = user.Id,
+                Vote = model.Vote
+            };
+
+            await _unitOfWork.TransactionVoteRepository.AddAsync(vote);
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status201Created,
+                Message = MessageConstants.VOTE_SUCCESS
+            };
+        }
+
+        public async Task<BaseResultModel> UpdateGroupTransactionVoteAsync(UpdateGroupTransactionVoteModel model)
+        {
+            var vote = await _unitOfWork.TransactionVoteRepository.GetByIdAsync(model.Id)
+                ?? throw new NotExistException(MessageConstants.VOTE_NOT_FOUND);
+
+            vote.Vote = model.Vote;
+
+            _unitOfWork.TransactionVoteRepository.UpdateAsync(vote);
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.VOTE_UPDATED
+            };
+        }
+
+        public async Task<BaseResultModel> DeleteGroupTransactionVoteAsync(Guid voteId)
+        {
+            var vote = await _unitOfWork.TransactionVoteRepository.GetByIdAsync(voteId)
+                ?? throw new NotExistException(MessageConstants.VOTE_NOT_FOUND);
+
+            _unitOfWork.TransactionVoteRepository.PermanentDeletedAsync(vote);
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.VOTE_DELETED
+            };
+        }
+
+        #endregion vote
+
+
+        private async Task UpdateFinancialGoalAndBalance(Transaction transaction, decimal amount)
+        {
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(transaction.GroupId.Value)
+                ?? throw new NotExistException("GroupFund không tồn tại.");
+
+            FinancialGoal? activeGoal = null;
+
+            if (transaction.GroupId != Guid.Empty)
+            {
+                activeGoal = await _unitOfWork.FinancialGoalRepository
+                    .GetActiveGoalByGroupId(transaction.GroupId.Value);
+            }
+
+            if (activeGoal == null && transaction.UserId.HasValue && transaction.SubcategoryId.HasValue)
+            {
+                activeGoal = await _unitOfWork.FinancialGoalRepository
+                    .GetActiveGoalByUserAndSubcategory(transaction.UserId.Value, transaction.SubcategoryId.Value);
+            }
+
+            if (activeGoal != null && activeGoal.Status == FinancialGoalStatus.ACTIVE && activeGoal.Deadline > DateTime.UtcNow)
+            {
+                activeGoal.CurrentAmount += amount;
+
+                if (activeGoal.CurrentAmount >= activeGoal.TargetAmount)
+                {
+                    activeGoal.CurrentAmount = activeGoal.TargetAmount;
+                    activeGoal.Status = FinancialGoalStatus.COMPLETED;
+
+                    await _transactionNotificationService.NotifyGoalCompletedAsync(activeGoal);
+                }
+
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(activeGoal);
+            }
+
+            if (transaction.Type == TransactionType.INCOME)
+            {
+                groupFund.CurrentBalance += amount;
+            }
+            else if (transaction.Type == TransactionType.EXPENSE)
+            {
+                groupFund.CurrentBalance -= amount;
+            }
+
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            await _unitOfWork.SaveAsync();
+        }
+
+        private async Task LogGroupFundChange(GroupFund group, string description, GroupAction action, string userEmail)
+        {
+            var log = new GroupFundLog
+            {
+                GroupId = group.Id,
+                ChangeDescription = description,
+                Action = action,
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = userEmail
+            };
+
+            await _unitOfWork.GroupFundLogRepository.AddAsync(log);
+            await _unitOfWork.SaveAsync();
+        }
+
+
+        #endregion group
 
         public async Task<BaseResultModel> UpdateTransactionWebhook(WebhookPayload webhookPayload)
         {
@@ -625,6 +1019,7 @@ namespace MoneyEz.Services.Services.Implements
             };
 
             return await CreateTransactionAsync(newTransaction, user.Email);
-        } 
+        }
+
     }
 }

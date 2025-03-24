@@ -26,7 +26,9 @@ using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.BusinessModels.ImageModels;
 using MoneyEz.Repositories.Commons.Filters;
 using Microsoft.AspNetCore.Http.HttpResults;
-
+using MoneyEz.Services.BusinessModels.GroupFundLogModels;
+using MoneyEz.Services.BusinessModels.FinancialReportModels;
+using MoneyEz.Services.BusinessModels.GroupMemLogModels;
 namespace MoneyEz.Services.Services.Implements
 {
     public class GroupFundsService : IGroupFundsService
@@ -1160,98 +1162,98 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> ResponsePendingTransaction(UpdateGroupTransactionModel updateGroupTransactionModel)
-        {
-            // Get current user and verify existence
-            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
-            if (currentUser == null)
-            {
-                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
-            }
-
-            // Get group with members to verify leadership
-            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
-                updateGroupTransactionModel.GroupId,
-                include: q => q.Include(g => g.GroupMembers)
-            );
-
-            if (groupFund == null)
-            {
-                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
-            }
-
-            // Verify user is leader of the group
-            var isLeader = groupFund.GroupMembers.Any(member =>
-                member.UserId == currentUser.Id &&
-                member.Role == RoleGroup.LEADER || member.Role == RoleGroup.MOD &&
-                member.Status == GroupMemberStatus.ACTIVE);
-
-            if (!isLeader)
-            {
-                throw new DefaultException("", MessageConstants.TRANSACTION_UPDATE_DENIED);
-            }
-
-            // Get and verify transaction
-            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(updateGroupTransactionModel.TransactionId);
-            if (transaction == null)
-            {
-                throw new NotExistException("", MessageConstants.TRANSACTION_NOT_FOUND);
-            }
-
-            // Verify transaction belongs to group
-            if (transaction.GroupId != updateGroupTransactionModel.GroupId)
-            {
-                throw new DefaultException("", MessageConstants.TRANSACTION_NOT_IN_GROUP);
-            }
-
-            // Verify transaction is in PENDING status
-            if (transaction.Status != TransactionStatus.PENDING)
-            {
-                throw new DefaultException("", MessageConstants.TRANSACTION_MUST_BE_PENDING);
-            }
-
-            // verify transaction is required approval
-            if (transaction.ApprovalRequired == false)
-            {
-                throw new DefaultException("Transaction must be require approval", MessageConstants.TRANSACTION_APPROVE_DENIED);
-            }
-
-            // Update transaction status
-            transaction.Status = updateGroupTransactionModel.Status;
-            transaction.UpdatedBy = currentUser.Email;
-            transaction.UpdatedDate = CommonUtils.GetCurrentTime();
-
-            // Update group balance if transaction is approved
-            if (updateGroupTransactionModel.Status == TransactionStatus.APPROVED)
-            {
-                if (transaction.Type == TransactionType.INCOME)
+        /*        public async Task<BaseResultModel> ResponsePendingTransaction(UpdateGroupTransactionModel updateGroupTransactionModel)
                 {
-                    groupFund.CurrentBalance += transaction.Amount;
+                    // Get current user and verify existence
+                    var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+                    if (currentUser == null)
+                    {
+                        throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+                    }
+
+                    // Get group with members to verify leadership
+                    var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                        updateGroupTransactionModel.GroupId,
+                        include: q => q.Include(g => g.GroupMembers)
+                    );
+
+                    if (groupFund == null)
+                    {
+                        throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+                    }
+
+                    // Verify user is leader of the group
+                    var isLeader = groupFund.GroupMembers.Any(member =>
+                        member.UserId == currentUser.Id &&
+                        member.Role == RoleGroup.LEADER || member.Role == RoleGroup.MOD &&
+                        member.Status == GroupMemberStatus.ACTIVE);
+
+                    if (!isLeader)
+                    {
+                        throw new DefaultException("", MessageConstants.TRANSACTION_UPDATE_DENIED);
+                    }
+
+                    // Get and verify transaction
+                    var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(updateGroupTransactionModel.TransactionId);
+                    if (transaction == null)
+                    {
+                        throw new NotExistException("", MessageConstants.TRANSACTION_NOT_FOUND);
+                    }
+
+                    // Verify transaction belongs to group
+                    if (transaction.GroupId != updateGroupTransactionModel.GroupId)
+                    {
+                        throw new DefaultException("", MessageConstants.TRANSACTION_NOT_IN_GROUP);
+                    }
+
+                    // Verify transaction is in PENDING status
+                    if (transaction.Status != TransactionStatus.PENDING)
+                    {
+                        throw new DefaultException("", MessageConstants.TRANSACTION_MUST_BE_PENDING);
+                    }
+
+                    // verify transaction is required approval
+                    if (transaction.ApprovalRequired == false)
+                    {
+                        throw new DefaultException("Transaction must be require approval", MessageConstants.TRANSACTION_APPROVE_DENIED);
+                    }
+
+                    // Update transaction status
+                    transaction.Status = updateGroupTransactionModel.Status;
+                    transaction.UpdatedBy = currentUser.Email;
+                    transaction.UpdatedDate = CommonUtils.GetCurrentTime();
+
+                    // Update group balance if transaction is approved
+                    if (updateGroupTransactionModel.Status == TransactionStatus.APPROVED)
+                    {
+                        if (transaction.Type == TransactionType.INCOME)
+                        {
+                            groupFund.CurrentBalance += transaction.Amount;
+                        }
+                        else
+                        {
+                            groupFund.CurrentBalance -= transaction.Amount;
+                        }
+                        groupFund.UpdatedBy = currentUser.Email;
+                        _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+                    }
+
+                    // Update transaction in repository
+                    _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
+
+                    // push noti to member in group
+
+
+                    await _unitOfWork.SaveAsync();
+
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status200OK,
+                        Message = MessageConstants.TRANSACTION_RESPONSE_SUCCESS,
+                        Data = _mapper.Map<TransactionModel>(transaction)
+                    };
                 }
-                else
-                {
-                    groupFund.CurrentBalance -= transaction.Amount;
-                }
-                groupFund.UpdatedBy = currentUser.Email;
-                _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
-            }
-
-            // Update transaction in repository
-            _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
-
-            // push noti to member in group
-
-
-            await _unitOfWork.SaveAsync();
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = MessageConstants.TRANSACTION_RESPONSE_SUCCESS,
-                Data = _mapper.Map<TransactionModel>(transaction)
-            };
-        }
-
+        */
         public async Task<GroupMember> GetGroupLeader(Guid groupId)
         {
             // Get group with members
@@ -1278,7 +1280,84 @@ namespace MoneyEz.Services.Services.Implements
 
             return leader;
         }
+        
+        public async Task<BaseResultModel> GetGroupFundLogs(PaginationParameter paginationParameters, GetGroupFundModel getGroupFundModel)
+        {
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
 
+            // Kiểm tra xem user có thuộc nhóm quỹ không
+            var isMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == getGroupFundModel.GroupId && gm.UserId == currentUser.Id
+            );
+
+            if (!isMember.Any())
+            {
+                throw new DefaultException("You can not access this group.", MessageConstants.GROUP_ACCESS_DENIED);
+            }
+
+            var logsPagination = await _unitOfWork.GroupFundLogRepository.ToPaginationIncludeAsync(
+                   paginationParameters,
+                   filter: log => log.GroupId == getGroupFundModel.GroupId,
+                   orderBy: q => q.OrderByDescending(log => log.CreatedDate)
+               );
+
+            var groupFundLogModels = _mapper.Map<List<GroupFundLogModel>>(logsPagination);
+
+            var result = PaginationHelper.GetPaginationResult(logsPagination, groupFundLogModels);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Success",
+                Data = result
+            };
+        }
+
+        public async Task<BaseResultModel> GetGroupMemLogs(PaginationParameter paginationParameters, GetGroupFundModel getGroupFundModel)
+        {
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+           var isMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+               filter: gm => gm.GroupId == getGroupFundModel.GroupId && gm.UserId == currentUser.Id
+           );
+
+            if (!isMember.Any())
+            {
+                throw new DefaultException("You can not access this group.", MessageConstants.GROUP_ACCESS_DENIED);
+            }
+
+            var groupMemberIds = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == getGroupFundModel.GroupId
+            );
+
+            var memberIds = groupMemberIds.Select(gm => gm.Id).ToList();
+
+            var logsPagination = await _unitOfWork.GroupMemberLogRepository.ToPaginationIncludeAsync(
+                paginationParameters,
+                filter: log => memberIds.Contains(log.GroupMemberId),
+                orderBy: q => q.OrderByDescending(log => log.CreatedDate)
+            );
+
+            var groupMemLogModels = _mapper.Map<Pagination<GroupMemLogModel>>(logsPagination);
+
+            var result = PaginationHelper.GetPaginationResult(logsPagination, groupMemLogModels);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Success",
+                Data = result
+            };
+        }        
+        
         public async Task<List<GroupMember>> GetGroupMembers(Guid groupId)
         {
             // Get group with members
@@ -1301,5 +1380,7 @@ namespace MoneyEz.Services.Services.Implements
 
             return members;
         }
+
+
     }
 }

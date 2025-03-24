@@ -117,11 +117,25 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundsService.CreateFundraisingRequest(model));
         }
 
-        [HttpPost("funds/response")]
+        //[HttpPost("funds/response")]
+        //[Authorize]
+        //public async Task<IActionResult> ResponseTransactionRequest([FromBody] UpdateGroupTransactionModel model)
+        //{
+        //    return await ValidateAndExecute(() => _groupFundsService.ResponsePendingTransaction(model));
+        //}
+
+        [HttpGet("group-logs")]
         [Authorize]
-        public async Task<IActionResult> ResponseTransactionRequest([FromBody] UpdateGroupTransactionModel model)
+        public async Task<IActionResult> GetGroupFundLogs([FromQuery]PaginationParameter paginationParameters, [FromQuery]GetGroupFundModel getGroupFundModel)
         {
-            return await ValidateAndExecute(() => _groupFundsService.ResponsePendingTransaction(model));
+            return await ValidateAndExecute(() => _groupFundsService.GetGroupFundLogs(paginationParameters, getGroupFundModel));
+        }
+
+        [HttpGet("member-logs")]
+        [Authorize]
+        public async Task<IActionResult> GetGroupMemLogs([FromQuery]PaginationParameter paginationParameters, [FromQuery]GetGroupFundModel getGroupFundModel)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.GetGroupMemLogs(paginationParameters, getGroupFundModel));
         }
     }
 }

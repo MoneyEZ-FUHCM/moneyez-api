@@ -70,6 +70,47 @@ namespace MoneyEz.Services.Services.Implements
             };
             await _notificationService.AddNotificationByUserId(user.Id, notification);
         }
+
+
+        public async Task NotifyTransactionApprovalRequestAsync(GroupFund group, Transaction transaction, User requester)
+        {
+            var leader = group.GroupMembers.FirstOrDefault(m => m.Role == RoleGroup.LEADER);
+            if (leader != null)
+            {
+                await _notificationService.AddNotificationByUserId(leader.UserId, new Notification
+                {
+                    Title = "Yêu cầu phê duyệt giao dịch",
+                    Message = $"Thành viên {requester.FullName} vừa tạo giao dịch cần phê duyệt: {transaction.Description}.",
+                    Type = NotificationType.GROUP,
+                    EntityId = transaction.Id
+                });
+            }
+        }
+
+        public async Task NotifyTransactionCreatedAsync(GroupFund group, Transaction transaction, User creator)
+        {
+            foreach (var member in group.GroupMembers)
+            {
+                await _notificationService.AddNotificationByUserId(member.UserId, new Notification
+                {
+                    Title = "Giao dịch mới",
+                    Message = $"Giao dịch '{transaction.Description}' đã được tạo bởi {creator.FullName}.",
+                    Type = NotificationType.GROUP,
+                    EntityId = transaction.Id
+                });
+            }
+        }
+
+        public async Task NotifyGoalCompletedAsync(FinancialGoal goal)
+        {
+            await _notificationService.AddNotificationByUserId(goal.UserId, new Notification
+            {
+                Title = "Hoàn thành mục tiêu tài chính!",
+                Message = $"Mục tiêu '{goal.Name}' đã đạt được!",
+                Type = NotificationType.USER,
+                EntityId = goal.Id
+            });
+        }
     }
 
 }

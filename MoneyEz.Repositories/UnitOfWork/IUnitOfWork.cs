@@ -38,6 +38,9 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //transaction
         ITransactionRepository TransactionsRepository { get; }
+        
+        //vote
+        ITransactionVoteRepository TransactionVoteRepository { get; }
 
         //image
         IImageRepository ImageRepository { get; }

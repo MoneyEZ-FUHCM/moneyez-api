@@ -44,6 +44,8 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //transaction
         private ITransactionRepository _transactionsRepository;
+        //vote
+        private ITransactionVoteRepository _transactionVoteRepository;
 
         //image
         private IImageRepository _imageRepository;
@@ -151,6 +153,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _transactionsRepository ??= new TransactionRepository(_context);
+            }
+        }
+
+        public ITransactionVoteRepository TransactionVoteRepository
+        {
+            get
+            {
+                return _transactionVoteRepository ??= new TransactionVoteRepository(_context);
             }
         }
 
