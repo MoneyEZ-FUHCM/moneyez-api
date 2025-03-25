@@ -901,25 +901,24 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var userRole = groupMember.First().Role;
-
             var allowedStatuses = new List<FinancialGoalStatus>();
 
             if (userRole == RoleGroup.LEADER || userRole == RoleGroup.MOD)
             {
                 allowedStatuses.AddRange(new[]
                 {
-            FinancialGoalStatus.PENDING,
-            FinancialGoalStatus.ACTIVE,
-            FinancialGoalStatus.ARCHIVED
-        });
+                    FinancialGoalStatus.PENDING,
+                    FinancialGoalStatus.ACTIVE,
+                    FinancialGoalStatus.ARCHIVED
+                });
             }
             else
             {
                 allowedStatuses.AddRange(new[]
                 {
-            FinancialGoalStatus.ACTIVE,
-            FinancialGoalStatus.ARCHIVED
-        });
+                    FinancialGoalStatus.ACTIVE,
+                    FinancialGoalStatus.ARCHIVED
+                });
             }
 
             var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
@@ -933,7 +932,72 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
-            var mappedGoal = _mapper.Map<GroupFinancialGoalModel>(financialGoal.First());
+            var goal = financialGoal.First();
+            
+            // Get all group members
+            var groupMembers = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == model.GroupId && gm.Status == GroupMemberStatus.ACTIVE,
+                include: query => query.Include(gm => gm.User)
+            );
+
+            var memberCount = groupMembers.Count();
+            if (memberCount == 0)
+            {
+                throw new DefaultException("No active members found in the group.", MessageConstants.GROUP_MEMBER_NOT_FOUND);
+            }
+
+            // Calculate default equal planned contribution percentage
+            var defaultPlannedPercentage = 100m / memberCount;
+
+            // Get all transactions related to this financial goal
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == model.GroupId 
+                            && t.CreatedDate >= goal.CreatedDate 
+                            && t.CreatedDate <= goal.Deadline
+            );
+
+            // Calculate member contributions
+            var memberContributions = new List<GroupMemberContributionModel>();
+            var totalCurrentContributions = transactions.Sum(t => t.Amount);
+
+            foreach (var member in groupMembers)
+            {
+                // Calculate actual contributions
+                var memberTransactions = transactions.Where(t => t.UserId == member.UserId);
+                var currentContributionAmount = memberTransactions.Sum(t => t.Amount);
+
+                // Calculate planned amounts
+                var plannedContributionPercentage = defaultPlannedPercentage; // Can be customized per member if needed
+                var plannedTargetAmount = (goal.TargetAmount * plannedContributionPercentage) / 100;
+                
+                // Calculate remaining and completion
+                var remainingAmount = Math.Max(0, plannedTargetAmount - currentContributionAmount);
+                var completionPercentage = plannedTargetAmount > 0 
+                    ? Math.Min(100, (currentContributionAmount / plannedTargetAmount) * 100)
+                    : 0;
+
+                memberContributions.Add(new GroupMemberContributionModel
+                {
+                    UserId = member.UserId,
+                    FullName = member.User?.FullName ?? "Unknown User",
+                    // Actual metrics
+                    CurrentContributionAmount = currentContributionAmount,
+                    // Planned metrics
+                    PlannedContributionPercentage = Math.Round(plannedContributionPercentage, 2),
+                    PlannedTargetAmount = Math.Round(plannedTargetAmount, 2),
+                    // Progress metrics
+                    RemainingAmount = Math.Round(remainingAmount, 2),
+                    CompletionPercentage = Math.Round(completionPercentage, 2)
+                });
+            }
+
+            // Map the goal to the detailed model
+            var mappedGoal = _mapper.Map<GroupFinancialGoalDetailModel>(goal);
+            mappedGoal.MemberContributions = memberContributions;
+            mappedGoal.TotalCurrentAmount = Math.Round(totalCurrentContributions, 2);
+            mappedGoal.CompletionPercentage = goal.TargetAmount > 0 
+                ? Math.Round((totalCurrentContributions / goal.TargetAmount) * 100, 2)
+                : 0;
 
             return new BaseResultModel
             {

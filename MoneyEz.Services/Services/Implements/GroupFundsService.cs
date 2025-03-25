@@ -933,7 +933,11 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = MessageConstants.GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE
+                Message = MessageConstants.GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE,
+                Data = new
+                {
+                    GroupId = groupFund.Id
+                }
             };
         }
 
