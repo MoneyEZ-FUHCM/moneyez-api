@@ -81,9 +81,10 @@ namespace MoneyEz.API.Controllers
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("groups")]
         [Authorize]
-        public Task<IActionResult> GetAllTransactionsForGroupByGroupID([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
+        public Task<IActionResult> GetAllTransactionsForGroupByGroupID([FromQuery] Guid groupId, 
+            [FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
         {
-            return ValidateAndExecute(() => _transactionService.GetTransactionByGroupIdAsync(paginationParameter, filter));
+            return ValidateAndExecute(() => _transactionService.GetTransactionByGroupIdAsync(groupId, paginationParameter, filter));
         }
 
         [HttpPost("group/create")]
@@ -149,6 +150,12 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> CreateTransactionPythonService(CreateTransactionPythonModel model)
         {
             return ValidateAndExecute(() => _transactionService.CreateTransactionPythonService(model));
+        }
+
+        [HttpPut("categorize")]
+        public Task<IActionResult> CategorizeTransaction(CategorizeTransactionModel model)
+        {
+            return ValidateAndExecute(() => _transactionService.CategorizeTransactionAsync(model));
         }
     }
 }

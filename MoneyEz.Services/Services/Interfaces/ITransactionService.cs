@@ -19,7 +19,9 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model);
         Task<BaseResultModel> DeleteTransactionAsync(Guid transactionId);
         Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter);
-        Task<BaseResultModel> GetTransactionByGroupIdAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter);
+        Task<BaseResultModel> GetTransactionByGroupIdAsync(Guid groupId, 
+            PaginationParameter paginationParameter, TransactionFilter transactionFilter);
+        Task<BaseResultModel> CategorizeTransactionAsync(CategorizeTransactionModel model);
         Task<BaseResultModel> CreateGroupTransactionAsync(CreateGroupTransactionModel model);
         Task<BaseResultModel> GetGroupTransactionDetailsAsync(Guid transactionId);
         Task<BaseResultModel> UpdateGroupTransactionAsync(UpdateGroupTransactionModel model);

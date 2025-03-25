@@ -26,7 +26,8 @@ namespace MoneyEz.Services.Mappers
 
             CreateMap<UpdateTransactionModel, Transaction>()
                 .ForMember(dest => dest.Type, opt => opt.Ignore())
-                .ForMember(dest => dest.UserSpendingModelId, opt => opt.Ignore());
+                .ForMember(dest => dest.UserSpendingModelId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore());
 
             CreateMap<Transaction, GroupTransactionModel>()
                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
