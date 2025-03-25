@@ -45,6 +45,12 @@ namespace MoneyEz.Services.Mappers
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => FinancialGoalStatus.PENDING))  
                 .ForMember(dest => dest.ApprovalStatus, opt => opt.MapFrom(src => ApprovalStatus.PENDING));
 
+            CreateMap<FinancialGoal, GroupFinancialGoalDetailModel>()
+                .IncludeBase<FinancialGoal, GroupFinancialGoalModel>()
+                .ForMember(dest => dest.MemberContributions, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalCurrentAmount, opt => opt.Ignore())
+                .ForMember(dest => dest.CompletionPercentage, opt => opt.Ignore());
+
             CreateMap<Pagination<FinancialGoal>, Pagination<GroupFinancialGoalModel>>()
                 .ConvertUsing<PaginationConverter<FinancialGoal, GroupFinancialGoalModel>>();
         }
