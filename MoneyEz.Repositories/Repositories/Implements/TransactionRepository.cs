@@ -9,6 +9,7 @@ using Org.BouncyCastle.Asn1;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -75,6 +76,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
 
         public async Task<Pagination<Transaction>> GetTransactionsFilterAsync(PaginationParameter paginationParameter, 
                         TransactionFilter transactionFilter,
+                        Expression<Func<Transaction, bool>>? condition = null,
                         Func<IQueryable<Transaction>, IIncludableQueryable<Transaction, object>>? include = null)
         {
             var query = _context.Transactions.AsQueryable();
@@ -103,16 +105,6 @@ namespace MoneyEz.Repositories.Repositories.Implements
             // Apply IsDeleted filter
             query = query.Where(u => u.IsDeleted == filter.IsDeleted);
 
-            if (filter.GroupId.HasValue)
-            {
-                query = query.Where(t => t.GroupId == filter.GroupId.Value);
-            }
-
-            if (filter.UserId.HasValue)
-            {
-                query = query.Where(t => t.UserId == filter.UserId.Value);
-            }
-
             if (filter.SubcategoryId.HasValue)
             {
                 query = query.Where(t => t.SubcategoryId == filter.SubcategoryId.Value);
@@ -131,6 +123,23 @@ namespace MoneyEz.Repositories.Repositories.Implements
             if (filter.ToDate.HasValue)
             {
                 query = query.Where(t => t.TransactionDate <= filter.ToDate.Value);
+            }
+
+            // filter by status
+            if (!string.IsNullOrEmpty(filter.Status))
+            {
+                switch (filter.Status.ToLower())
+                {
+                    case "approved":
+                        query = query.Where(t => t.Status == TransactionStatus.APPROVED);
+                        break;
+                    case "rejected":
+                        query = query.Where(t => t.Status == TransactionStatus.REJECTED);
+                        break;
+                    case "pending":
+                        query = query.Where(t => t.Status == TransactionStatus.PENDING);
+                        break;
+                }
             }
 
             // Apply sorting

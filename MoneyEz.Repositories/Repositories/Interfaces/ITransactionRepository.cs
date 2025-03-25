@@ -4,6 +4,7 @@ using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace MoneyEz.Repositories.Repositories.Interfaces
@@ -18,6 +19,7 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
 
         Task<Pagination<Transaction>> GetTransactionsFilterAsync(PaginationParameter paginationParameter,
                         TransactionFilter transactionFilter,
+                        Expression<Func<Transaction, bool>>? condition = null,
                         Func<IQueryable<Transaction>, IIncludableQueryable<Transaction, object>>? include = null);
 
         Task<decimal> GetToalIncomeByUserSpendingModelAsync(Guid userSpendingModelId);

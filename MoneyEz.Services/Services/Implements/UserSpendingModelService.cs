@@ -711,11 +711,11 @@ namespace MoneyEz.Services.Services.Implements
 
             transactionFilter.FromDate = userSpendingModel.StartDate;
             transactionFilter.ToDate = userSpendingModel.EndDate;
-            transactionFilter.UserId = user.Id;
 
             var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
                 transactionFilter,
+                t => t.UserId == user.Id,
                 include: query => query.Include(t => t.Subcategory)
             );
 

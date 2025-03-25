@@ -355,9 +355,9 @@ namespace MoneyEz.Services.Services.Implements
                 paginationParameter,
                 new TransactionFilter
                 {
-                    UserId = user.Id,
                     SubcategoryId = goal.SubcategoryId,
                 },
+                condition: t => t.UserId == user.Id,
                 include: query => query
                     .Include(t => t.Subcategory)
             );
