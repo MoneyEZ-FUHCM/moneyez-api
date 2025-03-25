@@ -18,5 +18,6 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
         public string? SubcategoryName { get; set; }
         public string? SubcategoryIcon { get; set; }
         public List<string>? Images { get; set; }
+        public string? InsertType { get; set; }
     }
 }

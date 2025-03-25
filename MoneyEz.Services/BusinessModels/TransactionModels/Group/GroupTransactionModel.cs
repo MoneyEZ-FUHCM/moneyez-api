@@ -20,5 +20,6 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Group
         public TransactionStatus Status { get; set; } = TransactionStatus.PENDING;
         public bool ApprovalRequired { get; set; }
         public string? RequestCode { get; set; }
+        public string? InsertType { get; set; }
     }
 }

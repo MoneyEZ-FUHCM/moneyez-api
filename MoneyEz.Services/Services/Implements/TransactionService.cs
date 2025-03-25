@@ -56,11 +56,10 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            transactionFilter.UserId = user.Id;
-
             var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
                 transactionFilter,
+                condition: t => t.UserId == user.Id,
                 include: query => query.Include(t => t.Subcategory)
             );
 
@@ -69,8 +68,8 @@ namespace MoneyEz.Services.Services.Implements
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
-                var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
-                transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+                var transactionImages = images.Where(i => i.EntityId == transactionModel.Id).ToList();
+                transactionModel.Images = transactionImages.Select(i => i.ImageUrl).ToList();
             }
 
             var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
@@ -287,13 +286,13 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            transactionFilter.UserId = user.Id;
             transactionFilter.FromDate = userSpendingModel.StartDate;
             transactionFilter.ToDate = userSpendingModel.EndDate;
 
             var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
                 transactionFilter,
+                condition: t => t.Status == TransactionStatus.APPROVED && t.UserId == user.Id,
                 include: query => query.Include(t => t.Subcategory)
             );
 
@@ -436,8 +435,8 @@ namespace MoneyEz.Services.Services.Implements
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
-                var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
-                transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+                var transactionImages = images.Where(i => i.EntityId == transactionModel.Id).ToList();
+                transactionModel.Images = transactionImages.Select(i => i.ImageUrl).ToList();
             }
 
             var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
@@ -451,7 +450,7 @@ namespace MoneyEz.Services.Services.Implements
         }
 
         #region group
-        public async Task<BaseResultModel> GetTransactionByGroupIdAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter)
+        public async Task<BaseResultModel> GetTransactionByGroupIdAsync(Guid groupId, PaginationParameter paginationParameter, TransactionFilter transactionFilter)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
@@ -460,13 +459,8 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
 
-            if (!transactionFilter.GroupId.HasValue)
-            {
-                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
-            }
-
             var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
-                transactionFilter.GroupId.Value,
+                groupId,
                 include: q => q.Include(g => g.GroupMembers)
                              .Include(g => g.Transactions)
             );
@@ -496,8 +490,8 @@ namespace MoneyEz.Services.Services.Implements
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
-                var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
-                transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+                var transactionImages = images.Where(i => i.EntityId == transactionModel.Id).ToList();
+                transactionModel.Images = transactionImages.Select(i => i.ImageUrl).ToList();
             }
 
             var result = PaginationHelper.GetPaginationResult(transactions, transactionModels);
@@ -966,13 +960,14 @@ namespace MoneyEz.Services.Services.Implements
                 var newTransaction = new Transaction
                 {
                     Amount = webhookPayload.Amount,
-                    Description = "[Auto] " + webhookPayload.Description,
-                    Status = TransactionStatus.APPROVED,
+                    Description = "[Ngân hàng] " + webhookPayload.Description,
+                    Status = TransactionStatus.PENDING,
                     Type = webhookPayload.TransactionType,
                     TransactionDate = webhookPayload.Timestamp,
-                    UserSpendingModelId = userSpendingModel.Id,
                     UserId = bankAccount.UserId,
                     CreatedBy = user.Email,
+                    ApprovalRequired = true,
+                    InsertType = InsertType.BANKING,
                 };
 
                 await _unitOfWork.TransactionsRepository.AddAsync(newTransaction);
@@ -984,6 +979,8 @@ namespace MoneyEz.Services.Services.Implements
                     Message = "Transaction created successfully"
                 };
             }
+
+            // update transaction pending to approved
 
             if (updatedTransactions.Amount != webhookPayload.Amount)
             {
@@ -1039,5 +1036,56 @@ namespace MoneyEz.Services.Services.Implements
             return await CreateTransactionAsync(newTransaction, user.Email);
         }
 
+        public async Task<BaseResultModel> CategorizeTransactionAsync(CategorizeTransactionModel model)
+        {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+
+            // validate
+            var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.TransactionId);
+            if (transaction == null)
+            {
+                throw new NotExistException("", MessageConstants.TRANSACTION_NOT_FOUND);
+            }
+
+            if (transaction.UserId != user.Id)
+            {
+                throw new DefaultException("You can only categorize your own transactions.", MessageConstants.TRANSACTION_UPDATE_DENIED);
+            }
+
+            if (model.CategorizeTransaction == CategorizeTransaction.PERSONAL)
+            {
+                // for personal
+
+                var updatePersonalTransaction = new UpdateTransactionModel
+                {
+                    Id = transaction.Id,
+                    Amount = transaction.Amount,
+                    Description = transaction.Description,
+                    SubcategoryId = model.SubcategoryId != null ? model.SubcategoryId.Value : transaction.SubcategoryId.Value,
+                };
+
+                return await UpdateTransactionAsync(updatePersonalTransaction);
+            }
+            else
+            {
+                if (model.GroupId == null)
+                {
+                    throw new DefaultException("Transaction is not in any group.", MessageConstants.TRANSACTION_NOT_IN_GROUP);
+                }
+
+                // for group
+                var updateGroupTransaction = new UpdateGroupTransactionModel
+                {
+                    Id = transaction.Id,
+                    Amount = transaction.Amount,
+                    Description = transaction.Description,
+                    GroupId = model.GroupId.Value,
+                    Type = transaction.Type,
+                };
+
+                return await UpdateGroupTransactionAsync(updateGroupTransaction);
+            }
+        }
     }
 }
