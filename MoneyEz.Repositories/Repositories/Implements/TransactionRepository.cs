@@ -86,6 +86,11 @@ namespace MoneyEz.Repositories.Repositories.Implements
                 query = include(query);
             }
 
+            if (condition != null)
+            {
+                query = query.Where(condition);
+            }
+
             // apply filter
             query = ApplyTransactionFiltering(query, transactionFilter);
 
