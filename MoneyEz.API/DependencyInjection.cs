@@ -181,8 +181,9 @@ namespace MoneyEz.API
             //config financial goal
             services.AddScoped<IFinancialGoalRepository, FinancialGoalRepository>();
             services.AddScoped<IFinancialGoalService, FinancialGoalService>();
+            services.AddScoped<IGoalPredictionService, GoalPredictionService>();
 
-            //financial repỏtt
+            //financial report
             services.AddScoped<IFinancialReportRepository, FinancialReportRepository>();
             services.AddScoped<IFinancialReportService, FinancialReportService>();
 

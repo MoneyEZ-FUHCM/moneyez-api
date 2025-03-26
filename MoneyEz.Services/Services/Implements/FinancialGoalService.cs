@@ -31,13 +31,15 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IClaimsService _claimsService;
         private readonly INotificationService _notificationService;
         private readonly ITransactionNotificationService _transactionNotificationService;
+        private readonly IGoalPredictionService _goalPredictionService;
 
         public FinancialGoalService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             IClaimsService claimsService,
             INotificationService notificationService,
-            ITransactionNotificationService transactionNotificationService)
+            ITransactionNotificationService transactionNotificationService,
+            IGoalPredictionService goalPredictionService)
 
         {
             _unitOfWork = unitOfWork;
@@ -45,6 +47,7 @@ namespace MoneyEz.Services.Services.Implements
             _claimsService = claimsService;
             _notificationService = notificationService;
             _transactionNotificationService = transactionNotificationService;
+            _goalPredictionService = goalPredictionService;
         }
 
         #region Personal
@@ -213,7 +216,11 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
-            var mappedGoal = _mapper.Map<PersonalFinancialGoalModel>(financialGoal.First());
+            var goal = financialGoal.First();
+            var mappedGoal = _mapper.Map<PersonalFinancialGoalModel>(goal);
+
+            // Add prediction data
+            mappedGoal.Prediction = await _goalPredictionService.PredictGoalCompletion(id, goal.IsSaving);
 
             return new BaseResultModel
             {
