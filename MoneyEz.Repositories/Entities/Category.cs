@@ -19,6 +19,8 @@ public partial class Category : BaseEntity
 
     public TransactionType? Type { get; set; }
 
+    public bool IsSaving { get; set; } = false;
+
     public virtual ICollection<SpendingModelCategory> SpendingModelCategories { get; set; } = new List<SpendingModelCategory>();
 
     public virtual ICollection<CategorySubcategory> CategorySubcategories { get; set; } = new List<CategorySubcategory>();

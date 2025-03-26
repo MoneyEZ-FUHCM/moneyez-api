@@ -31,13 +31,15 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IClaimsService _claimsService;
         private readonly INotificationService _notificationService;
         private readonly ITransactionNotificationService _transactionNotificationService;
+        private readonly IGoalPredictionService _goalPredictionService;
 
         public FinancialGoalService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             IClaimsService claimsService,
             INotificationService notificationService,
-            ITransactionNotificationService transactionNotificationService)
+            ITransactionNotificationService transactionNotificationService,
+            IGoalPredictionService goalPredictionService)
 
         {
             _unitOfWork = unitOfWork;
@@ -45,6 +47,7 @@ namespace MoneyEz.Services.Services.Implements
             _claimsService = claimsService;
             _notificationService = notificationService;
             _transactionNotificationService = transactionNotificationService;
+            _goalPredictionService = goalPredictionService;
         }
 
         #region Personal
@@ -72,9 +75,10 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var categoryIds = spendingModelCategories.Select(smc => smc.CategoryId).ToList();
+
             var categorySubcategories = await _unitOfWork.CategorySubcategoryRepository.GetByConditionAsync(
                 filter: cs => categoryIds.Contains(cs.CategoryId),
-                include: cs => cs.Include(cs => cs.Subcategory)
+                include: cs => cs.Include(cs => cs.Subcategory).Include(cs => cs.Category)
             );
 
             if (!categorySubcategories.Any())
@@ -88,6 +92,8 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Danh mục con đã chọn không thuộc mô hình chi tiêu hiện tại.",
                     MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL);
             }
+
+            var isSaving = categorySubcategories.Where(cs => cs.SubcategoryId == model.SubcategoryId).First().Category.IsSaving;
 
             var availableBudget = await CalculateMaximumTargetAmountSubcategory(model.SubcategoryId, user.Id);
             if (model.TargetAmount > availableBudget)
@@ -130,6 +136,7 @@ namespace MoneyEz.Services.Services.Implements
             financialGoal.Name = categorySubcategories.First(cs => cs.SubcategoryId == model.SubcategoryId).Subcategory.Name;
             financialGoal.NameUnsign = StringUtils.ConvertToUnSign(financialGoal.Name);
             financialGoal.CreatedBy = user.Email;
+            financialGoal.IsSaving = isSaving;
 
             // scan existing transactions to calculate current amount
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
@@ -153,24 +160,18 @@ namespace MoneyEz.Services.Services.Implements
 
                 await _transactionNotificationService.NotifyGoalAchievedAsync(user, financialGoal);
                 _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
-
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status201Created,
-                    Message = "Tạo mục tiêu tài chính thành công."
-                };
             }
             else
             {
                 await _transactionNotificationService.NotifyGoalProgressTrackingAsync(user, financialGoal);
                 _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
-
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status201Created,
-                    Message = "Tạo mục tiêu tài chính thành công."
-                };
             }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status201Created,
+                Message = "Tạo mục tiêu tài chính thành công."
+            };
         }
         public async Task<BaseResultModel> GetPersonalFinancialGoalsAsync(PaginationParameter paginationParameter, FinancialGoalFilter filter)
         {
@@ -213,7 +214,11 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
-            var mappedGoal = _mapper.Map<PersonalFinancialGoalModel>(financialGoal.First());
+            var goal = financialGoal.First();
+            var mappedGoal = _mapper.Map<PersonalFinancialGoalModel>(goal);
+
+            // Add prediction data
+            mappedGoal.Prediction = await _goalPredictionService.PredictGoalCompletion(id, goal.IsSaving);
 
             return new BaseResultModel
             {
@@ -403,8 +408,8 @@ namespace MoneyEz.Services.Services.Implements
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
-                var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
-                transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+                var transactionImages = images.Where(i => i.EntityId == transactionModel.Id).ToList();
+                transactionModel.Images = transactionImages.Select(i => i.ImageUrl).ToList();
             }
 
             // Create paginated result
