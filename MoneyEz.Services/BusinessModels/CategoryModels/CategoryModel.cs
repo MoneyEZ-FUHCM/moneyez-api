@@ -11,6 +11,7 @@ namespace MoneyEz.Services.BusinessModels.CategoryModels
         public string? Code { get; set; }
         public string? Icon { get; set; }
         public string? Type { get; set; }
+        public bool? IsSaving { get; set; }
         public List<SubcategoryModel> Subcategories { get; set; } = new List<SubcategoryModel>();
     }
 }

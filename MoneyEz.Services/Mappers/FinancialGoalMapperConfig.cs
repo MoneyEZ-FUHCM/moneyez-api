@@ -15,7 +15,8 @@ namespace MoneyEz.Services.Mappers
             CreateMap<FinancialGoal, PersonalFinancialGoalModel>()
                 .ForMember(dest => dest.SubcategoryName, opt => opt.MapFrom(src => src.Subcategory.Name))
                 .ForMember(dest => dest.SubcategoryIcon, opt => opt.MapFrom(src => src.Subcategory.Icon))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status)); 
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+                .ForMember(dest => dest.Prediction, opt => opt.Ignore());
 
             CreateMap<AddPersonalFinancialGoalModel, FinancialGoal>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => FinancialGoalStatus.ACTIVE))  

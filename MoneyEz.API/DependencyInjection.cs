@@ -181,8 +181,9 @@ namespace MoneyEz.API
             //config financial goal
             services.AddScoped<IFinancialGoalRepository, FinancialGoalRepository>();
             services.AddScoped<IFinancialGoalService, FinancialGoalService>();
+            services.AddScoped<IGoalPredictionService, GoalPredictionService>();
 
-            //financial repỏtt
+            //financial report
             services.AddScoped<IFinancialReportRepository, FinancialReportRepository>();
             services.AddScoped<IFinancialReportService, FinancialReportService>();
 
@@ -263,6 +264,14 @@ namespace MoneyEz.API
             services.AddHttpClient("WebhookClient");
             services.AddScoped<IWebhookHttpClient, WebhookHttpClient>();
             services.AddScoped<IWebhookService, WebhookService>();
+
+            // config quiz service
+            services.AddScoped<IQuizService, QuizService>();
+            services.AddScoped<IQuizRepository, QuizRepository>();
+            services.AddScoped<IUserQuizAnswerRepository, UserQuizAnswerRepository>();
+            services.AddScoped<IUserQuizResultRepository, UserQuizResultRepository>();
+            services.AddScoped<IAnswerOptionRepository, AnswerOptionRepository>();
+            services.AddScoped<IQuestionRepository, QuestionRepository>();
             #endregion
 
             #region config database

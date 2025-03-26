@@ -73,6 +73,13 @@ namespace MoneyEz.Repositories.UnitOfWork
         // bank account
         private IBankAccountRepository _bankAccountRepository;
 
+        // quiz
+        private IQuizRepository _quizRepository;
+        private IAnswerOptionRepository _answerOptionRepository;
+        private IUserQuizResultRepository _userQuizResultRepository;
+        private IQuestionRepository _questionRepository;
+        private IUserQuizAnswerRepository _userQuizAnswerRepository;
+
         public UnitOfWork(MoneyEzContext context)
         {
             _context = context;
@@ -253,6 +260,46 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _bankAccountRepository ??= new BankAccountRepository(_context);
+            }
+        }
+
+        public IQuizRepository QuizRepository
+        {
+            get
+            {
+                return _quizRepository ??= new QuizRepository(_context);
+            }
+        }
+
+        public IAnswerOptionRepository AnswerOptionRepository
+        {
+            get
+            {
+                return _answerOptionRepository ??= new AnswerOptionRepository(_context);
+            }
+        }
+
+        public IUserQuizResultRepository UserQuizResultRepository
+        {
+            get
+            {
+                return _userQuizResultRepository ??= new UserQuizResultRepository(_context);
+            }
+        }
+
+        public IQuestionRepository QuestionRepository
+        {
+            get
+            {
+                return _questionRepository ??= new QuestionRepository(_context);
+            }
+        }
+
+        public IUserQuizAnswerRepository UserQuizAnswerRepository
+        {
+            get
+            {
+                return _userQuizAnswerRepository ??= new UserQuizAnswerRepository(_context);
             }
         }
 
