@@ -69,6 +69,13 @@ namespace MoneyEz.Repositories.UnitOfWork
         // bank account
         IBankAccountRepository BankAccountRepository { get; }
 
+        // quiz
+        IQuizRepository QuizRepository { get; }
+        IAnswerOptionRepository AnswerOptionRepository { get; }
+        IUserQuizResultRepository UserQuizResultRepository { get; }
+        IQuestionRepository QuestionRepository { get; }
+        IUserQuizAnswerRepository UserQuizAnswerRepository { get; }
+
         int Save();
         void Commit();
         void Rollback();
