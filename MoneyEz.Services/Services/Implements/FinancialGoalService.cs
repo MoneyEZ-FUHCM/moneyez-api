@@ -30,18 +30,21 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
         private readonly INotificationService _notificationService;
+        private readonly ITransactionNotificationService _transactionNotificationService;
 
         public FinancialGoalService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             IClaimsService claimsService,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ITransactionNotificationService transactionNotificationService)
 
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
             _notificationService = notificationService;
+            _transactionNotificationService = transactionNotificationService;
         }
 
         #region Personal
@@ -128,14 +131,46 @@ namespace MoneyEz.Services.Services.Implements
             financialGoal.NameUnsign = StringUtils.ConvertToUnSign(financialGoal.Name);
             financialGoal.CreatedBy = user.Email;
 
+            // scan existing transactions to calculate current amount
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id
+                            && t.SubcategoryId == model.SubcategoryId
+                            && t.CreatedDate >= activeSpendingModel.StartDate
+                            && t.CreatedDate <= activeSpendingModel.EndDate
+                            && t.Status == TransactionStatus.APPROVED
+                            && !t.IsDeleted
+            );
+
+            financialGoal.CurrentAmount = transactions.Sum(t => t.Amount);
+
             await _unitOfWork.FinancialGoalRepository.AddAsync(financialGoal);
             await _unitOfWork.SaveAsync();
 
-            return new BaseResultModel
+            if (model.TargetAmount <= financialGoal.CurrentAmount)
             {
-                Status = StatusCodes.Status201Created,
-                Message = "Tạo mục tiêu tài chính thành công."
-            };
+                financialGoal.Status = FinancialGoalStatus.ARCHIVED;
+                financialGoal.ApprovalStatus = ApprovalStatus.APPROVED;
+
+                await _transactionNotificationService.NotifyGoalAchievedAsync(user, financialGoal);
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status201Created,
+                    Message = "Tạo mục tiêu tài chính thành công."
+                };
+            }
+            else
+            {
+                await _transactionNotificationService.NotifyGoalProgressTrackingAsync(user, financialGoal);
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status201Created,
+                    Message = "Tạo mục tiêu tài chính thành công."
+                };
+            }
         }
         public async Task<BaseResultModel> GetPersonalFinancialGoalsAsync(PaginationParameter paginationParameter, FinancialGoalFilter filter)
         {
