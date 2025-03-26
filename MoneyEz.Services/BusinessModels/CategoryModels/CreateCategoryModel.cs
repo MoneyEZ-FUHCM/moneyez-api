@@ -23,6 +23,7 @@ namespace MoneyEz.Services.BusinessModels.CategoryModels
         public required string Icon { get; set; }
         public string? Description { get; set; }
         public TransactionType Type { get; set; }
+        public bool IsSaving { get; set; } = false;
 
         public string NameUnsign => StringUtils.ConvertToUnSign(Name);
     }
