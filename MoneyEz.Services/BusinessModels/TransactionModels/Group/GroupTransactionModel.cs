@@ -21,6 +21,6 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Group
         public bool ApprovalRequired { get; set; }
         public string? RequestCode { get; set; }
         public string? InsertType { get; set; }
-        public string? AvartarUrl { get; set; }
+        public string? AvatarUrl { get; set; }
     }
 }

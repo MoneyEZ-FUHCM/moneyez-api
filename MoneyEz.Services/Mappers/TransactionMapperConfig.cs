@@ -33,7 +33,7 @@ namespace MoneyEz.Services.Mappers
                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
                .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.User.FullName))
-               .ForMember(dest => dest.AvartarUrl, opt => opt.MapFrom(src => src.User.AvatarUrl))
+               .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.User.AvatarUrl))
                .ForMember(dest => dest.Images, opt => opt.Ignore()); 
 
             CreateMap<CreateGroupTransactionModel, Transaction>();
