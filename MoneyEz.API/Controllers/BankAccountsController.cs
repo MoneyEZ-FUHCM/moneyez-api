@@ -68,7 +68,8 @@ namespace MoneyEz.API.Controllers
         [Authorize]
         public Task<IActionResult> RegisterWebhook([FromBody] WebhookRegisterModel model)
         {
-            return ValidateAndExecute(() => _webhookService.RegisterWebhookAsync(model.AccountBankId));
+            var serverUri = HttpContext.Request.Host.ToString();
+            return ValidateAndExecute(() => _webhookService.RegisterWebhookAsync(model.AccountBankId, serverUri));
         }
     }
 }

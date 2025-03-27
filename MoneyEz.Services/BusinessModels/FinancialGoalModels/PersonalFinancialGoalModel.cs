@@ -13,6 +13,9 @@ namespace MoneyEz.Services.BusinessModels.FinancialGoalModels
         public decimal TargetAmount { get; set; }
         public decimal CurrentAmount { get; set; } = 0;
         public string? Status { get; set; }
-        public DateTime Deadline { get; set; }
+        public bool IsSaving { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? Deadline { get; set; }
+        public GoalPredictionModel Prediction { get; set; }
     }
 }

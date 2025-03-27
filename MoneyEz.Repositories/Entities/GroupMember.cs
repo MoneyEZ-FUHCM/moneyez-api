@@ -19,7 +19,5 @@ public partial class GroupMember : BaseEntity
 
     public virtual GroupFund Group { get; set; }
 
-    public virtual ICollection<GroupMemberLog> GroupMemberLogs { get; set; } = new List<GroupMemberLog>();
-
     public virtual User User { get; set; }
 }

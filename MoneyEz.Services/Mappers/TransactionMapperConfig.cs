@@ -3,6 +3,7 @@ using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.TransactionModels;
+using MoneyEz.Services.BusinessModels.TransactionModels.Group;
 using MoneyEz.Services.Utils;
 
 namespace MoneyEz.Services.Mappers
@@ -25,10 +26,23 @@ namespace MoneyEz.Services.Mappers
 
             CreateMap<UpdateTransactionModel, Transaction>()
                 .ForMember(dest => dest.Type, opt => opt.Ignore())
-                .ForMember(dest => dest.UserSpendingModelId, opt => opt.Ignore());
+                .ForMember(dest => dest.UserSpendingModelId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore());
+
+            CreateMap<Transaction, GroupTransactionModel>()
+               .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+               .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.User.FullName))
+               .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.User.AvatarUrl))
+               .ForMember(dest => dest.Images, opt => opt.Ignore()); 
+
+            CreateMap<CreateGroupTransactionModel, Transaction>();
+
+            CreateMap<UpdateGroupTransactionModel, Transaction>();
 
             CreateMap<Pagination<Transaction>, Pagination<TransactionModel>>()
                 .ConvertUsing<PaginationConverter<Transaction, TransactionModel>>();
         }
     }
 }
+

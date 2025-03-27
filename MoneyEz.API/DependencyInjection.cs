@@ -182,8 +182,9 @@ namespace MoneyEz.API
             //config financial goal
             services.AddScoped<IFinancialGoalRepository, FinancialGoalRepository>();
             services.AddScoped<IFinancialGoalService, FinancialGoalService>();
+            services.AddScoped<IGoalPredictionService, GoalPredictionService>();
 
-            //financial repỏtt
+            //financial report
             services.AddScoped<IFinancialReportRepository, FinancialReportRepository>();
             services.AddScoped<IFinancialReportService, FinancialReportService>();
 
@@ -206,6 +207,8 @@ namespace MoneyEz.API
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<ITransactionNotificationService, TransactionNotificationService>();
 
+            // vote
+            services.AddScoped<ITransactionVoteRepository, TransactionVoteRepository>();
             // config image service
             services.AddScoped<IImageRepository, ImageRepository>();
 
@@ -225,7 +228,6 @@ namespace MoneyEz.API
             //config group member service
             services.AddScoped<IGroupMemberRepository, GroupMemberRepository>();
             services.AddScoped<IGroupMemberService, GroupMemberService>();
-            services.AddScoped<IGroupMemberLogRepository, GroupMemberLogRepository>();
 
             // config chat service
             services.AddScoped<IChatHistoryRepository, ChatHistoryRepository>();
@@ -267,6 +269,14 @@ namespace MoneyEz.API
             services.AddHttpClient("WebhookClient");
             services.AddScoped<IWebhookHttpClient, WebhookHttpClient>();
             services.AddScoped<IWebhookService, WebhookService>();
+
+            // config quiz service
+            services.AddScoped<IQuizService, QuizService>();
+            services.AddScoped<IQuizRepository, QuizRepository>();
+            services.AddScoped<IUserQuizAnswerRepository, UserQuizAnswerRepository>();
+            services.AddScoped<IUserQuizResultRepository, UserQuizResultRepository>();
+            services.AddScoped<IAnswerOptionRepository, AnswerOptionRepository>();
+            services.AddScoped<IQuestionRepository, QuestionRepository>();
             #endregion
 
             #region config database

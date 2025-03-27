@@ -10,12 +10,6 @@ namespace MoneyEz.Repositories.Commons.Filters
 {
     public class TransactionFilter : FilterBase
     {
-        [FromQuery(Name = "group_id")]
-        public Guid? GroupId { get; set; }
-
-        [FromQuery(Name = "user_id")]
-        public Guid? UserId { get; set; }
-
         [FromQuery(Name = "category_id")]
         public Guid? SubcategoryId { get; set; }
 
@@ -27,5 +21,8 @@ namespace MoneyEz.Repositories.Commons.Filters
 
         [FromQuery(Name = "to_date")]
         public DateTime? ToDate { get; set; }
+
+        [FromQuery(Name = "status")]
+        public string? Status { get; set; }
     }
 }

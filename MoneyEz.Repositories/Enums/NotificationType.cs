@@ -12,5 +12,7 @@ namespace MoneyEz.Repositories.Enums
         USER,
         GROUP,
         GROUP_INVITE,
+        FINANCIAL_GOAL_PERSONAL,
+        FINANCIAL_GOAL_GROUP,
     }
 }

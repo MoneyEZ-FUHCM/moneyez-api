@@ -72,6 +72,7 @@ namespace MoneyEz.Services.Constants
         public const string START_DATE_CANNOT_BE_IN_PAST = "StartDateCannotBeInPast";
         public const string END_DATE_MUST_BE_AFTER_START_DATE = "EndDateMustBeAfterStartDate";
         public const string CANNOT_SELECT_FUTURE_MODEL_WHEN_ACTIVE = "CannotSelectFutureModelWhenActive";
+        public const string USER_SPENDING_MODEL_ACCESS_DENY = "UserSpendingModelAccessDeny";
 
         //financial goal
         public const string USER_HAS_NO_ACTIVE_SPENDING_MODEL = "UserHasNoActiveSpendingModel";
@@ -188,6 +189,13 @@ namespace MoneyEz.Services.Constants
         public const string SPENDING_MODEL_OVER_LIMIT = "SpendingModelOverLimit";
         public const string TRANSACTION_AMOUNT_INVALID = "TransactionAmountInvalid";
 
+        //vote
+        public const string VOTE_ALREADY_EXISTS = "VoteAlreadyExists";
+        public const string VOTE_UPDATED = "VoteUpdated";
+        public const string VOTE_SUCCESS = "VoteSuccess";
+        public const string VOTE_NOT_FOUND = "VoteNotFound";
+        public const string VOTE_DELETED = "VoteDeleted";
+        public const string PERMISSION_DENIED = "PermissionDenied.";
 
         // group
         public const string GROUP_CREATE_SUCCESS_MESSAGE = "Group created successfully";

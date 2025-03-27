@@ -15,10 +15,10 @@ namespace MoneyEz.Services.Mappers
             CreateMap<FinancialGoal, PersonalFinancialGoalModel>()
                 .ForMember(dest => dest.SubcategoryName, opt => opt.MapFrom(src => src.Subcategory.Name))
                 .ForMember(dest => dest.SubcategoryIcon, opt => opt.MapFrom(src => src.Subcategory.Icon))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status)); 
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+                .ForMember(dest => dest.Prediction, opt => opt.Ignore());
 
             CreateMap<AddPersonalFinancialGoalModel, FinancialGoal>()
-                .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => StringUtils.ConvertToUnSign(src.Name)))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => FinancialGoalStatus.ACTIVE))  
                 .ForMember(dest => dest.ApprovalStatus, opt => opt.MapFrom(src => ApprovalStatus.APPROVED)); 
 
@@ -45,6 +45,12 @@ namespace MoneyEz.Services.Mappers
                 .ForMember(dest => dest.NameUnsign, opt => opt.MapFrom(src => StringUtils.ConvertToUnSign(src.Name)))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => FinancialGoalStatus.PENDING))  
                 .ForMember(dest => dest.ApprovalStatus, opt => opt.MapFrom(src => ApprovalStatus.PENDING));
+
+            CreateMap<FinancialGoal, GroupFinancialGoalDetailModel>()
+                .IncludeBase<FinancialGoal, GroupFinancialGoalModel>()
+                .ForMember(dest => dest.MemberContributions, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalCurrentAmount, opt => opt.Ignore())
+                .ForMember(dest => dest.CompletionPercentage, opt => opt.Ignore());
 
             CreateMap<Pagination<FinancialGoal>, Pagination<GroupFinancialGoalModel>>()
                 .ConvertUsing<PaginationConverter<FinancialGoal, GroupFinancialGoalModel>>();
