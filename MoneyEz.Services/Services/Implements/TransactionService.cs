@@ -688,7 +688,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var group = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(transaction.GroupId.Value, q => q.Include(g => g.GroupFundLogs));
-            await LogGroupFundChange(group, $"Giao dịch '{transaction.Description}' đã bị xóa.", GroupAction.DELETED, transaction.UpdatedBy);
+            await LogGroupFundChange(group, $"Giao dịch '{transaction.Description}' đã bị xóa.", GroupAction.TRANSACTION_DELETED, transaction.UpdatedBy);
 
             _unitOfWork.TransactionsRepository.PermanentDeletedAsync(transaction);
             await _unitOfWork.SaveAsync();
@@ -904,7 +904,7 @@ namespace MoneyEz.Services.Services.Implements
             {
                 GroupId = group.Id,
                 ChangeDescription = description,
-                Action = action,
+                Action = action.ToString(),
                 CreatedDate = CommonUtils.GetCurrentTime(),
                 CreatedBy = userEmail
             };

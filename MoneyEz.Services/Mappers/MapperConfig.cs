@@ -55,9 +55,6 @@ namespace MoneyEz.Services.Mappers
 
             // group fund log
             GroupFundLogConfig();
-
-            // group mem log
-            GroupMemLogConfig();
         }
 
         partial void UserMapperConfig();
@@ -79,7 +76,6 @@ namespace MoneyEz.Services.Mappers
 
         partial void ImageMapperConfig();
         partial void GroupFundLogConfig();
-        partial void GroupMemLogConfig();
     }
 
     public class PaginationConverter<TSource, TDestination> : ITypeConverter<Pagination<TSource>, Pagination<TDestination>>

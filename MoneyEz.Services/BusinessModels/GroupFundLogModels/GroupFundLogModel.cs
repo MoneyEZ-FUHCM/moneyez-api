@@ -12,8 +12,12 @@ namespace MoneyEz.Services.BusinessModels.GroupFundLogModels
     {
         public Guid GroupId { get; set; }
 
+        public string? ChangedBy { get; set; }
+
         public string? ChangeDescription { get; set; }
 
         public string? Action { get; set; }
+
+        public string? ImageUrl { get; set; }
     }
 }
