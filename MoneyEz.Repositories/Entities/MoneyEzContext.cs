@@ -28,8 +28,6 @@ public partial class MoneyEzContext : DbContext
 
     public virtual DbSet<GroupMember> GroupMembers { get; set; }
 
-    public virtual DbSet<GroupMemberLog> GroupMemberLogs { get; set; }
-
     public virtual DbSet<Notification> Notifications { get; set; }
 
     public virtual DbSet<Payment> Payments { get; set; }
@@ -240,6 +238,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.ChangeDescription).IsRequired();
+            entity.Property(e => e.Action).HasMaxLength(40);
 
             entity.HasOne(d => d.Group).WithMany(p => p.GroupFundLogs)
                 .HasForeignKey(d => d.GroupId)
@@ -265,22 +264,6 @@ public partial class MoneyEzContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__GroupMemb__UserI__778AC167");
-        });
-
-        modelBuilder.Entity<GroupMemberLog>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__GroupMem__3214EC0785A93823");
-
-            entity.ToTable("GroupMemberLog");
-
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
-
-            entity.Property(e => e.ChangeDiscription).HasMaxLength(250);
-
-            entity.HasOne(d => d.GroupMember).WithMany(p => p.GroupMemberLogs)
-                .HasForeignKey(d => d.GroupMemberId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("FK__GroupMemb__Group__787EE5A0");
         });
 
         modelBuilder.Entity<Notification>(entity =>
