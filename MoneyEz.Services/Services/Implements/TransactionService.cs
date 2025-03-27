@@ -482,6 +482,7 @@ namespace MoneyEz.Services.Services.Implements
             var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
                 transactionFilter,
+                condition: t => t.GroupId == groupId,
                 include: query => query.Include(t => t.Subcategory).Include(t => t.User)
             );
 
