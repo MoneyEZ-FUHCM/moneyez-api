@@ -880,7 +880,10 @@ namespace MoneyEz.Services.Services.Implements
                     activeGoal.CurrentAmount = activeGoal.TargetAmount;
                     activeGoal.Status = FinancialGoalStatus.COMPLETED;
 
-                    await _transactionNotificationService.NotifyGoalCompletedAsync(activeGoal);
+                    // get user
+                    var user = await _unitOfWork.UsersRepository.GetByIdAsync(activeGoal.UserId);
+
+                    await _transactionNotificationService.NotifyGoalAchievedAsync(user, activeGoal);
                 }
 
                 _unitOfWork.FinancialGoalRepository.UpdateAsync(activeGoal);
