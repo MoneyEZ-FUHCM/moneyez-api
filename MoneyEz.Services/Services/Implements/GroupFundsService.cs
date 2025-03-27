@@ -1278,7 +1278,7 @@ namespace MoneyEz.Services.Services.Implements
             return leader;
         }
         
-        public async Task<BaseResultModel> GetGroupFundLogs(PaginationParameter paginationParameters, GetGroupFundModel getGroupFundModel)
+        public async Task<BaseResultModel> GetGroupFundLogs(Guid groupId, PaginationParameter paginationParameters, GroupLogFilter filter)
         {
             var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
             if (currentUser == null)
@@ -1287,19 +1287,20 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Kiểm tra xem user có thuộc nhóm quỹ không
-            var isMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
-                filter: gm => gm.GroupId == getGroupFundModel.GroupId && gm.UserId == currentUser.Id
+            var groupMembers = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == groupId && gm.UserId == currentUser.Id,
+                include: gm => gm.Include(gm => gm.User)
             );
 
-            if (!isMember.Any())
+            if (!groupMembers.Any())
             {
                 throw new DefaultException("You can not access this group.", MessageConstants.GROUP_ACCESS_DENIED);
             }
 
-            var logsPagination = await _unitOfWork.GroupFundLogRepository.ToPaginationIncludeAsync(
+            var logsPagination = await _unitOfWork.GroupFundLogRepository.GetGroupFundLogsFilter(
                    paginationParameters,
-                   filter: log => log.GroupId == getGroupFundModel.GroupId,
-                   orderBy: q => q.OrderByDescending(log => log.CreatedDate)
+                   filter,
+                   condition: log => log.GroupId == groupId
              );
 
             var groupFundLogModels = _mapper.Map<List<GroupFundLogModel>>(logsPagination);
