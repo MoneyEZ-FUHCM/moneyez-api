@@ -124,11 +124,11 @@ namespace MoneyEz.API.Controllers
         //    return await ValidateAndExecute(() => _groupFundsService.ResponsePendingTransaction(model));
         //}
 
-        [HttpGet("group-logs")]
+        [HttpGet("logs/{id}")]
         [Authorize]
-        public async Task<IActionResult> GetGroupFundLogs([FromQuery]PaginationParameter paginationParameters, [FromQuery]GetGroupFundModel getGroupFundModel)
+        public async Task<IActionResult> GetGroupFundLogs(Guid id, [FromQuery]PaginationParameter paginationParameters, [FromQuery]GroupLogFilter filter)
         {
-            return await ValidateAndExecute(() => _groupFundsService.GetGroupFundLogs(paginationParameters, getGroupFundModel));
+            return await ValidateAndExecute(() => _groupFundsService.GetGroupFundLogs(id, paginationParameters, filter));
         }
     }
 }
