@@ -288,5 +288,7 @@ namespace MoneyEz.Services.Constants
         // external service
         public const string INVALID_EXTERNAL_SECRET = "InvalidExternalSecret";
         public const string INVALID_COMMAND = "InvalidCommand";
+        public const string MISSING_PARAMETER = "MissingParameter";
+        public const string INVALID_PARAMETER_FORMAT = "InvalidParameterFormat";
     }
 }

@@ -16,16 +16,19 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ITransactionService _transactionService;
+        private readonly IChatHistoryService _chatHistoryService;
 
         public ExternalApiService(HttpClient httpClient, 
             IConfiguration configuration, 
             IHttpContextAccessor httpContextAccessor,
-            ITransactionService transactionService)
+            ITransactionService transactionService,
+            IChatHistoryService chatHistoryService)
         {
             _httpClient = httpClient;
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
             _transactionService = transactionService;
+            _chatHistoryService = chatHistoryService;
             // Configure base URL from settings if needed
             // _httpClient.BaseAddress = new Uri(_configuration["ExternalApi:BaseUrl"]);
         }
@@ -53,6 +56,27 @@ namespace MoneyEz.Services.Services.Implements
                     };
                     // Call service to create transaction
                     return await _transactionService.CreateTransactionPythonService(createTransactionModel);
+                case "get_chat_messages":
+                    // Extract userId from query parameter (e.g., user_id=abc)
+                    if (string.IsNullOrEmpty(model.Query))
+                    {
+                        throw new DefaultException("Missing user_id parameter", MessageConstants.MISSING_PARAMETER);
+                    }
+
+                    // Parse the query string to get the userId
+                    string userIdStr = model.Query;
+                    if (model.Query.Contains("user_id="))
+                    {
+                        userIdStr = model.Query.Split('=')[1];
+                    }
+
+                    if (!Guid.TryParse(userIdStr, out Guid userId))
+                    {
+                        throw new DefaultException("Invalid user_id format", MessageConstants.INVALID_PARAMETER_FORMAT);
+                    }
+
+                    // Call service to get chat messages for the user
+                    return await _chatHistoryService.GetChatMessageHistoriesExternalByUser(userId);
                 default:
                     throw new DefaultException("Invalid command", MessageConstants.INVALID_COMMAND);
             }
