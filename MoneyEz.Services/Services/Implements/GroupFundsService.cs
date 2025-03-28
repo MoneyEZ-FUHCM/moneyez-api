@@ -627,7 +627,7 @@ namespace MoneyEz.Services.Services.Implements
                 string defaultDescription = $"Bạn đã được '{currentUser.FullName}' mời vào nhóm '{groupFund.Name}'. Ấn vào link để tham gia: {invitationLink}";
 
                 string emailBody = SendInviteGroupMember
-                    .EmailSendInviteGroupMember(invitedUser.FullName, currentUser.FullName, groupFund.Name, 
+                    .EmailSendInviteGroupMember(currentUser.FullName, invitedUser.FullName, groupFund.Name, 
                         string.IsNullOrEmpty(inviteMemberModel.Description) ? defaultDescription : inviteMemberModel.Description, invitationLink);
 
                 // send mail
