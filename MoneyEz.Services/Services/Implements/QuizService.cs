@@ -94,7 +94,7 @@ namespace MoneyEz.Services.Services.Implements
                 UserId = user.Id,
                 QuizId = quizAttemptModel.QuizId,
                 TakenAt = CommonUtils.GetCurrentTime(),
-                RecommendedModel = string.Empty
+                RecommendedModel = "50-30-20" // TODO: goi AI
             };
 
             await _unitOfWork.UserQuizResultRepository.AddAsync(quizResult);

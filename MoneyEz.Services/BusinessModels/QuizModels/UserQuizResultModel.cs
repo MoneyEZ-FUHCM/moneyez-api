@@ -16,9 +16,6 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         [Required(ErrorMessage = "Quiz ID không được để trống")]
         public Guid QuizId { get; set; }
 
-        [Required(ErrorMessage = "Điểm số không được để trống")]
-        public int Score { get; set; }
-
         public List<CreateUserQuizAnswerModel> UserQuizAnswers { get; set; } = new();
     }
 
@@ -32,8 +29,7 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         [Required(ErrorMessage = "Quiz ID không được để trống")]
         public Guid QuizId { get; set; }
 
-        [Required(ErrorMessage = "Điểm số không được để trống")]
-        public int Score { get; set; }
+        public string RecommendedModel { get; set; }
 
         public List<UserQuizAnswerModel> UserAnswers { get; set; } = new List<UserQuizAnswerModel>();
     }
