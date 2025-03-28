@@ -30,6 +30,7 @@ using MoneyEz.Services.BusinessModels.GroupFundLogModels;
 using MoneyEz.Services.BusinessModels.FinancialReportModels;
 using MoneyEz.Services.BusinessModels.GroupMemLogModels;
 using MoneyEz.Services.BusinessModels.TransactionModels.Group;
+using MoneyEz.Services.Utils.Email;
 namespace MoneyEz.Services.Services.Implements
 {
     public class GroupFundsService : IGroupFundsService
@@ -623,14 +624,18 @@ namespace MoneyEz.Services.Services.Implements
                 };
                 await _redisService.SetAsync(redisKey, groupInviteRedisModel, TimeSpan.FromDays(1));
 
+                string defaultDescription = $"Bạn đã được '{currentUser.FullName}' mời vào nhóm '{groupFund.Name}'. Ấn vào link để tham gia: {invitationLink}";
+
+                string emailBody = SendInviteGroupMember
+                    .EmailSendInviteGroupMember(invitedUser.FullName, currentUser.FullName, groupFund.Name, 
+                        string.IsNullOrEmpty(inviteMemberModel.Description) ? defaultDescription : inviteMemberModel.Description, invitationLink);
+
                 // send mail
                 MailRequest newEmail = new MailRequest()
                 {
                     ToEmail = invitedUser.Email,
                     Subject = $"[MoneyEz] Lời mời tham gia nhóm {groupFund.Name}",
-                    Body = string.IsNullOrEmpty(inviteMemberModel.Description) ? 
-                        $"Bạn đã được '{currentUser.FullName}' mời vào nhóm '{groupFund.Name}'. Ấn vào link để tham gia: {invitationLink}"
-                        : $"{inviteMemberModel.Description} Ấn vào link để tham gia: {invitationLink}"
+                    Body = emailBody,
                 };
 
                 // send mail
