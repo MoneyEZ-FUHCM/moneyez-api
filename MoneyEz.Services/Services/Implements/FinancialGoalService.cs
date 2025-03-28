@@ -658,7 +658,7 @@ namespace MoneyEz.Services.Services.Implements
 
                     groupedData.Add(new GoalChartDataPoint
                     {
-                        Label = month.Date.ToString("MMM yyyy"),
+                        Label = month.Date.ToString("MM/yy"),
                         Amount = runningTotal,
                         Date = month.Date
                     });
@@ -708,7 +708,7 @@ namespace MoneyEz.Services.Services.Implements
 
                     groupedData.Add(new GoalChartDataPoint
                     {
-                        Label = $"{weekStart:dd/MM} - {weekEnd:dd/MM}",
+                        Label = $"{weekStart:dd/MM}-{weekEnd:dd/MM}",
                         Amount = runningTotal,
                         Date = weekStart
                     });
