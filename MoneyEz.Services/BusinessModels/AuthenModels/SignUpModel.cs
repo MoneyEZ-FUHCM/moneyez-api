@@ -21,7 +21,9 @@ namespace MoneyEz.Services.BusinessModels.AuthenModels
         [Required(ErrorMessage = "Vui lòng nhập mật khẩu")]
         [Display(Name = "Password")]
         [DataType(DataType.Password)]
-        [StringLength(20, MinimumLength = 4, ErrorMessage = "Mật khẩu phải có từ 4 đến 20 kí tự.")]
+        [StringLength(20, MinimumLength = 8, ErrorMessage = "Mật khẩu phải có từ 8 đến 20 ký tự.")]
+        [RegularExpression(@"^(?=.*\d)(?=.*[A-Z])(?=.*[\W_]).{8,20}$",
+        ErrorMessage = "Mật khẩu phải có ít nhất một chữ số, một chữ in hoa và một ký tự đặc biệt.")]
         public string Password { get; set; } = "";
 
         [Display(Name = "Phone Number")]
