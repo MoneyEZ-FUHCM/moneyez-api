@@ -94,6 +94,16 @@ namespace MoneyEz.Services.Services.Implements
                     MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL);
             }
 
+            // Check if there's already an active goal for this subcategory
+            var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(user.Id, model.SubcategoryId);
+            if (existingGoal != null)
+            {
+                throw new DefaultException(
+                    "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
+                    MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
+                );
+            }
+
             var isSaving = categorySubcategories.Where(cs => cs.SubcategoryId == model.SubcategoryId).First().Category.IsSaving;
 
             var availableBudget = await CalculateMaximumTargetAmountSubcategory(model.SubcategoryId, user.Id);
@@ -1435,15 +1445,15 @@ namespace MoneyEz.Services.Services.Implements
                     MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL
                 );
 
-            // Check if there's already an active goal for this subcategory
-            var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(userId, subcategoryId);
-            if (existingGoal != null)
-            {
-                throw new DefaultException(
-                    "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
-                    MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
-                );
-            }
+            //// Check if there's already an active goal for this subcategory
+            //var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(userId, subcategoryId);
+            //if (existingGoal != null)
+            //{
+            //    throw new DefaultException(
+            //        "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
+            //        MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
+            //    );
+            //}
 
             // Get the spending model category to get the percentage
             var spendingModelCategory = await _unitOfWork.SpendingModelCategoryRepository
