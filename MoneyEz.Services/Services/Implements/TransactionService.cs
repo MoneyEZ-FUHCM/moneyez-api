@@ -21,6 +21,7 @@ using MoneyEz.Services.BusinessModels.WebhookModels;
 using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.TransactionModels.Group;
+using MoneyEz.Services.BusinessModels.GroupFund;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -537,6 +538,12 @@ namespace MoneyEz.Services.Services.Implements
                 model.GroupId, q => q.Include(g => g.GroupMembers).Include(g => g.GroupFundLogs))
                 ?? throw new NotExistException(MessageConstants.GROUP_NOT_EXIST);
 
+            var groupBankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(group.AccountBankId.Value);
+            if (groupBankAccount == null)
+            {
+                throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            }
+
             var groupMember = group.GroupMembers.FirstOrDefault(m => m.UserId == user.Id)
                 ?? throw new DefaultException(MessageConstants.USER_NOT_IN_GROUP);
 
@@ -553,9 +560,6 @@ namespace MoneyEz.Services.Services.Implements
             if (model.TransactionDate < now.AddYears(-5) || model.TransactionDate > now.AddMonths(1))
                 throw new DefaultException("Ngày giao dịch không hợp lệ.");
 
-            if (model.Images != null && model.Images.Any(url => string.IsNullOrWhiteSpace(url)))
-                throw new DefaultException("Ảnh đính kèm không được rỗng.");
-
             if (model.Description?.Length > 1000)
                 throw new DefaultException("Mô tả giao dịch quá dài (tối đa 1000 ký tự).");
 
@@ -567,16 +571,26 @@ namespace MoneyEz.Services.Services.Implements
                 transactionStatus = TransactionStatus.PENDING;
             }
 
+            // Generate random 10-digit code
+            var requestCode = StringUtils.GenerateRandomUppercaseString(8);
+
+            // Format final request code with bank short name
+            var finalRequestCode = $"{requestCode}_{groupBankAccount.BankShortName}";
+
             var transaction = _mapper.Map<Transaction>(model);
             transaction.UserId = user.Id;
             transaction.Status = transactionStatus;
             transaction.ApprovalRequired = requiresApproval;
             transaction.CreatedBy = user.Email;
+            transaction.RequestCode = finalRequestCode;
 
             await _unitOfWork.TransactionsRepository.AddAsync(transaction);
             await _unitOfWork.SaveAsync();
 
-            await LogGroupFundChange(group, $"{user.FullName} đã tạo giao dịch: {transaction.Description}.", GroupAction.CREATED, user.Email);
+            //string action = transaction.Type == TransactionType.INCOME ? "góp quỹ" : "rút quỹ";
+            //string message = $"{user.FullName} đã tạo yêu cầu {action}: {transaction.Description}.";
+
+            //await LogGroupFundChange(group, message, GroupAction.CREATED, user.Email);
 
             if (model.Images?.Any() == true)
             {
@@ -600,14 +614,39 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
+                // update financial goal and balance
+                await UpdateFinancialGoalAndBalance(transaction, transaction.Amount);
                 await _transactionNotificationService.NotifyTransactionCreatedAsync(group, transaction, user);
             }
 
-            return new BaseResultModel
+
+            if (transaction.Type == TransactionType.INCOME)
             {
-                Status = StatusCodes.Status201Created,
-                Message = MessageConstants.TRANSACTION_CREATED_SUCCESS
-            };
+                // get info transaction fundraising request
+
+                var response = new FundraisingTransactionResponse
+                {
+                    RequestCode = transaction.RequestCode,
+                    Amount = transaction.Amount,
+                    Status = transaction.Status.ToString(),
+                    BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
+                };
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = "Fundraising request created successfully",
+                    Data = response
+                };
+            }
+            else
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = "Fundraising request created successfully",
+                    Data = _mapper.Map<TransactionModel>(transaction)
+                };
+            }
         }
 
         public async Task<BaseResultModel> UpdateGroupTransactionAsync(UpdateGroupTransactionModel model)
@@ -648,7 +687,7 @@ namespace MoneyEz.Services.Services.Implements
             await UpdateFinancialGoalAndBalance(transaction, model.Amount ?? transaction.Amount);
 
             var group = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(transaction.GroupId.Value, q => q.Include(g => g.GroupFundLogs));
-            await LogGroupFundChange(group, $"Giao dịch '{transaction.Description}' đã được cập nhật.", GroupAction.UPDATED, transaction.UpdatedBy);
+            await LogGroupFundChange(group, $"Giao dịch '{transaction.Description}' đã được cập nhật.", GroupAction.TRANSACTION_UPDATED, transaction.UpdatedBy);
 
             var oldImages = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             _unitOfWork.ImageRepository.PermanentDeletedListAsync(oldImages);
@@ -904,13 +943,16 @@ namespace MoneyEz.Services.Services.Implements
 
         private async Task LogGroupFundChange(GroupFund group, string description, GroupAction action, string userEmail)
         {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+                ?? throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
             var log = new GroupFundLog
             {
                 GroupId = group.Id,
+                ChangedBy = user.FullName,
                 ChangeDescription = description,
                 Action = action.ToString(),
                 CreatedDate = CommonUtils.GetCurrentTime(),
-                CreatedBy = userEmail
+                CreatedBy = user.Email,
             };
 
             await _unitOfWork.GroupFundLogRepository.AddAsync(log);

@@ -1,4 +1,5 @@
-﻿using MoneyEz.Repositories.Entities;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.Services.Interfaces;
@@ -120,12 +121,14 @@ namespace MoneyEz.Services.Services.Implements
         public async Task NotifyTransactionApprovalRequestAsync(GroupFund group, Transaction transaction, User requester)
         {
             var leader = group.GroupMembers.FirstOrDefault(m => m.Role == RoleGroup.LEADER);
+            string action = transaction.Type == TransactionType.INCOME ? "góp quỹ" : "rút quỹ";
+
             if (leader != null)
             {
                 await _notificationService.AddNotificationByUserId(leader.UserId, new Notification
                 {
-                    Title = "Yêu cầu phê duyệt giao dịch",
-                    Message = $"Thành viên {requester.FullName} vừa tạo giao dịch cần phê duyệt: {transaction.Description}.",
+                    Title = $"Giao dịch mới trong nhóm [{group.Name}]",
+                    Message = $"{requester.FullName} đã tạo yêu cầu {action} trong nhóm '{group.Name}': '{transaction.Description}'.",
                     Type = NotificationType.GROUP,
                     EntityId = transaction.Id
                 });
@@ -134,12 +137,14 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task NotifyTransactionCreatedAsync(GroupFund group, Transaction transaction, User creator)
         {
+            string action = transaction.Type == TransactionType.INCOME ? "đã góp" : "đã rút";
+
             foreach (var member in group.GroupMembers)
             {
                 await _notificationService.AddNotificationByUserId(member.UserId, new Notification
                 {
-                    Title = "Giao dịch mới",
-                    Message = $"Giao dịch '{transaction.Description}' đã được tạo bởi {creator.FullName}.",
+                    Title = transaction.Type == TransactionType.INCOME ? "Góp quỹ thành công" : "Rút quỹ thành công",
+                    Message = $"{creator.FullName} {action} {transaction.Amount:N0} vào {group.Name} với lời nhắn \"{transaction.Description}\"",
                     Type = NotificationType.GROUP,
                     EntityId = transaction.Id
                 });
