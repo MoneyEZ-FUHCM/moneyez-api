@@ -16,13 +16,16 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> DeleteQuizAsync(Guid quizId);
         Task<BaseResultModel> GetQuestionsByQuizIdAsync(Guid quizId);
         Task<BaseResultModel> CreateQuestionAsync(Guid quizId, CreateQuestionModel questionModel);
-        Task<BaseResultModel> UpdateQuestionAsync(Guid questionId, QuestionModel questionModel);
+        Task<BaseResultModel> UpdateQuestionAsync(QuestionModel questionModel);
         Task<BaseResultModel> DeleteQuestionAsync(Guid questionId);
         Task<BaseResultModel> CreateAnswerOptionAsync(Guid questionId, CreateAnswerOptionModel answerOptionModel);
-        Task<BaseResultModel> UpdateAnswerOptionAsync(Guid answerOptionId, AnswerOptionModel answerOptionModel);
+        Task<BaseResultModel> UpdateAnswerOptionAsync(AnswerOptionModel answerOptionModel);
         Task<BaseResultModel> DeleteAnswerOptionAsync(Guid answerOptionId);
         Task<BaseResultModel> GetAllUserQuizResultsAsync(PaginationParameter paginationParameter);
         Task<BaseResultModel> GetUserQuizResultByIdAsync(Guid id);
         Task<BaseResultModel> GetUserQuizResultsByUserIdAsync(PaginationParameter paginationParameter);
+        
+        Task<BaseResultModel> SetActiveQuizAsync(Guid quizId);
+        Task<BaseResultModel> GetActiveQuizAsync();
     }
 }

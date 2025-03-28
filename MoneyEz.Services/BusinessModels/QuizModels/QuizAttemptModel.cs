@@ -12,8 +12,9 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         public Guid QuizId { get; set; }
         public List<CreateUserQuizAnswerModel> Answers { get; set; } = new();
     }
-    public class QuizAttemptModel : BaseEntity
+    public class QuizAttemptModel
     {
+        public Guid Id { get; set; }
         public Guid QuizId { get; set; }
         public List<UserQuizAnswerModel> Answers { get; set; } = new();
     }

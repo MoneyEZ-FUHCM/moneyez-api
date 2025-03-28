@@ -22,8 +22,10 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         public List<CreateUserQuizAnswerModel> UserQuizAnswers { get; set; } = new();
     }
 
-    public class UserQuizResultModel : BaseEntity
+    public class UserQuizResultModel
     {
+        public Guid Id { get; set; }
+
         [Required(ErrorMessage = "User ID không được để trống")]
         public Guid UserId { get; set; }
 
