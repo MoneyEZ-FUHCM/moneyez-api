@@ -612,8 +612,8 @@ namespace MoneyEz.Services.Services.Implements
                 // hash token use hmac sha256
                 var hashedToken = StringUtils.HashToken(rawToken);
 
-                var invitationLink = $"https://easymoney.anttravel.online/api/v1/groups/invite-member/email/accept?token={HttpUtility.UrlEncode(hashedToken)}";
-                //var invitationLink = $"https://localhost:7262/api/groups/{inviteMemberModel.GroupId}/accept-invitation?token={HttpUtility.UrlEncode(invitationToken)}";
+                var invitationLink = $"https://easymoney.anttravel.online/moneyez-web/accept-invitation?token={HttpUtility.UrlEncode(hashedToken)}";
+                //var invitationLink = $"http://localhost:3000/moneyez-web/accept-invitation?token={HttpUtility.UrlEncode(invitationToken)}";
 
                 // Save the invitation token to Redis
                 var redisKey = hashedToken;

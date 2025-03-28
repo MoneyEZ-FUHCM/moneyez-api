@@ -85,7 +85,7 @@ namespace MoneyEz.Services.Utils.Email
                         display: block;
                         width: 100%;
                         background: linear-gradient(135deg, #609084 0%, #4a7a6e 100%);
-                        color: white;
+                        color: white !important;
                         text-align: center;
                         padding: 15px 20px;
                         text-decoration: none;
@@ -150,7 +150,7 @@ namespace MoneyEz.Services.Utils.Email
             #region body
             string body = $@"
 
-            < !DOCTYPE html>
+            <!DOCTYPE html>
             <html lang=""vi"">
             <head>
                 <meta charset=""UTF-8"">
@@ -174,11 +174,6 @@ namespace MoneyEz.Services.Utils.Email
                         </div>
             
                         <a href=""{linkInvite}"" class=""invitation-link"">Tham Gia Ngay</a>
-            
-                        <div class=""link-section"">
-                            <p style=""font-size: 0.9em;"">Nếu nút không hoạt động, sao chép liên kết sau:</p>
-                            <small style=""color: #609084; word-break: break-all;"">{linkInvite}</small>
-                        </div>
                     </div>
                     <div class=""footer"">
                         <p>© 2025 <a target=""_blank"" href=""https://easymoney.anttravel.online/moneyez-web/"">MoneyEz</a>. Mọi quyền được bảo lưu.</p>
