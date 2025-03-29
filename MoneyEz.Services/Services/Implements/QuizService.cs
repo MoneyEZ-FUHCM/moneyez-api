@@ -3,6 +3,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
+using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.QuizModels;
@@ -37,6 +38,13 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var quiz = _mapper.Map<Quiz>(createQuizModel);
+            
+            // If the new quiz should be active, deactivate all other quizzes first
+            if (quiz.Status == CommonsStatus.ACTIVE)
+            {
+                await _unitOfWork.QuizRepository.DeactivateAllQuizzesAsync();
+            }
+            
             await _unitOfWork.QuizRepository.AddAsync(quiz);
 
             foreach (var createQuestionModel in createQuizModel.Questions)
@@ -86,7 +94,7 @@ namespace MoneyEz.Services.Services.Implements
                 UserId = user.Id,
                 QuizId = quizAttemptModel.QuizId,
                 TakenAt = CommonUtils.GetCurrentTime(),
-                RecommendedModel = string.Empty
+                RecommendedModel = "50-30-20" // TODO: goi AI
             };
 
             await _unitOfWork.UserQuizResultRepository.AddAsync(quizResult);
@@ -150,9 +158,20 @@ namespace MoneyEz.Services.Services.Implements
             {
                 throw new NotExistException("", "Quiz not found.");
             }
+            
+            bool activationChanged = quiz.Status != quizModel.Status && quizModel.Status == CommonsStatus.ACTIVE;
+            
             _mapper.Map(quizModel, quiz);
+            
+            if (activationChanged)
+            {
+                await _unitOfWork.QuizRepository.DeactivateAllQuizzesAsync();
+                quiz.Status = CommonsStatus.ACTIVE; 
+            }
+            
             _unitOfWork.QuizRepository.UpdateAsync(quiz);
             await _unitOfWork.SaveAsync();
+            
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -229,17 +248,17 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> UpdateQuestionAsync(Guid questionId, QuestionModel questionModel)
+        public async Task<BaseResultModel> UpdateQuestionAsync(QuestionModel questionModel)
         {
-            if (questionId == Guid.Empty)
+            if (questionModel.Id == Guid.Empty)
             {
-                throw new ArgumentException("QuestionId is invalid.", nameof(questionId));
+                throw new ArgumentException("QuestionId is invalid.", nameof(questionModel.Id));
             }
             if (questionModel == null)
             {
                 throw new ArgumentException("Question model is null.", nameof(questionModel));
             }
-            var question = await _unitOfWork.QuestionRepository.GetByIdAsync(questionId);
+            var question = await _unitOfWork.QuestionRepository.GetByIdAsync(questionModel.Id);
             if (question == null)
             {
                 throw new NotExistException("", "Question not found.");
@@ -308,17 +327,17 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> UpdateAnswerOptionAsync(Guid answerOptionId, AnswerOptionModel answerOptionModel)
+        public async Task<BaseResultModel> UpdateAnswerOptionAsync(AnswerOptionModel answerOptionModel)
         {
-            if (answerOptionId == Guid.Empty)
+            if (answerOptionModel.Id == Guid.Empty)
             {
-                throw new ArgumentException("AnswerOptionId is invalid.", nameof(answerOptionId));
+                throw new ArgumentException("AnswerOptionId is invalid.", nameof(answerOptionModel.Id));
             }
             if (answerOptionModel == null)
             {
                 throw new ArgumentException("Answer option model is null.", nameof(answerOptionModel));
             }
-            var answerOption = await _unitOfWork.AnswerOptionRepository.GetByIdAsync(answerOptionId);
+            var answerOption = await _unitOfWork.AnswerOptionRepository.GetByIdAsync(answerOptionModel.Id);
             if (answerOption == null)
             {
                 throw new NotExistException("", "Answer option not found.");
@@ -387,6 +406,54 @@ namespace MoneyEz.Services.Services.Implements
                 Status = StatusCodes.Status200OK,
                 Data = resultData,
                 Message = "User quiz results retrieved successfully."
+            };
+        }
+
+        public async Task<BaseResultModel> SetActiveQuizAsync(Guid quizId)
+        {
+            if (quizId == Guid.Empty)
+            {
+                throw new ArgumentException("QuizId is invalid.", nameof(quizId));
+            }
+            
+            var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(quizId);
+            if (quiz == null)
+            {
+                throw new NotExistException("", "Quiz not found.");
+            }
+            
+            // Deactivate all quizzes first
+            await _unitOfWork.QuizRepository.DeactivateAllQuizzesAsync();
+            
+            // Set the specified quiz as active
+            quiz.Status = CommonsStatus.ACTIVE;
+            _unitOfWork.QuizRepository.UpdateAsync(quiz);
+            await _unitOfWork.SaveAsync();
+            
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Quiz activated successfully."
+            };
+        }
+
+        public async Task<BaseResultModel> GetActiveQuizAsync()
+        {
+            var quiz = await _unitOfWork.QuizRepository.GetActiveQuizAsync();
+            if (quiz == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = "No active quiz found."
+                };
+            }
+            
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = _mapper.Map<QuizModel>(quiz),
+                Message = "Active quiz retrieved successfully."
             };
         }
     }

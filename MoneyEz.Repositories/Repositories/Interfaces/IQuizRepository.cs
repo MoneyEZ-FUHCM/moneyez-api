@@ -11,6 +11,7 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
     {
         Task<Pagination<Quiz>> GetAllAsyncPagingInclude(PaginationParameter paginationParameter);
         Task<Quiz?> GetByIdAsyncInclude(Guid id);
-        
+        Task<Quiz?> GetActiveQuizAsync();
+        Task DeactivateAllQuizzesAsync();
     }
 }
