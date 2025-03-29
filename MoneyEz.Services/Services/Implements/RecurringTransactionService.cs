@@ -149,6 +149,39 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        public async Task<BaseResultModel> GetRecurringDatesInCurrentMonthAsync()
+        {
+            var user = await GetCurrentUserAsync();
+            DateTime today = CommonUtils.GetCurrentTime();
+            var startOfMonth = new DateTime(today.Year, today.Month, 1);
+            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+
+            var recurrings = await _unitOfWork.RecurringTransactionRepository.GetByConditionAsync(
+                 filter: rt => rt.UserId == user.Id
+                     && rt.Status == CommonsStatus.ACTIVE
+                     && rt.StartDate <= endOfMonth
+                     && (!rt.EndDate.HasValue || rt.EndDate.Value >= startOfMonth)
+                );
+
+            HashSet<int> recurringDays = new();
+
+            foreach (var rt in recurrings)
+            {
+                var dates = GetRecurringDatesInRange(rt, startOfMonth, endOfMonth);
+                foreach (var date in dates)
+                {
+                    recurringDays.Add(date.Day);
+                }
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Fetched recurring transaction days successfully.",
+                Data = recurringDays.OrderBy(d => d).ToList()
+            };
+        }
+
         #region helper
         private async Task<User> GetCurrentUserAsync()
         {
@@ -194,11 +227,33 @@ namespace MoneyEz.Services.Services.Implements
 
             return transaction;
         }
+        private List<DateTime> GetRecurringDatesInRange(RecurringTransaction rt, DateTime from, DateTime to)
+        {
+            List<DateTime> result = new();
+            DateTime current = rt.StartDate > from ? rt.StartDate : from;
+            DateTime end = rt.EndDate.HasValue && rt.EndDate < to ? rt.EndDate.Value : to;
+
+            int interval = rt.Interval <= 0 ? 1 : rt.Interval;
+
+            while (current <= end)
+            {
+                if (current >= from && current <= to)
+                    result.Add(current);
+
+                current = rt.FrequencyType switch
+                {
+                    FrequencyType.DAILY => current.AddDays(interval),
+                    FrequencyType.WEEKLY => current.AddDays(7 * interval),
+                    FrequencyType.MONTHLY => current.AddMonths(interval),
+                    FrequencyType.YEARLY => current.AddYears(interval),
+                    _ => current.AddDays(interval)
+                };
+            }
+
+            return result;
+        }
 
         #endregion helper
-
-
-
 
         #region job
 

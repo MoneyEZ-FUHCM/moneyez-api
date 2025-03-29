@@ -55,5 +55,12 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _recurringTransactionService.DeleteRecurringTransactionAsync(recurringTransactionId));
         }
+
+        [Authorize(Roles = nameof(RolesEnum.USER))]
+        [HttpGet("calendar")]
+        public async Task<IActionResult> GetRecurringTransactionDatesInCurrentMonth()
+        {
+            return await ValidateAndExecute(() => _recurringTransactionService.GetRecurringDatesInCurrentMonthAsync());
+        }
     }
 }
