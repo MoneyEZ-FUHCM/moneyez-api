@@ -161,6 +161,17 @@ namespace MoneyEz.Services.Services.Implements
                 EntityId = goal.Id
             });
         }
+
+        public async Task NotifyGoalDueAsync(FinancialGoal goal)
+        {
+            await _notificationService.AddNotificationByUserId(goal.UserId, new Notification
+            {
+                Title = "Mục tiêu tài chính kết thúc!",
+                Message = $"Mục tiêu '{goal.Name}' đã kết thúc!",
+                Type = NotificationType.USER,
+                EntityId = goal.Id
+            });
+        }
     }
 
 }

@@ -1495,5 +1495,36 @@ namespace MoneyEz.Services.Services.Implements
 
             return availableBudget;
         }
+        public async Task ScanAndChangeStatusWithDueGoalAsync()
+        {
+            var currentDate = CommonUtils.GetCurrentTime();
+
+            var dueGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.Status == FinancialGoalStatus.ACTIVE
+                            && fg.Deadline <= currentDate
+                            && !fg.IsDeleted
+            );
+
+            foreach (var goal in dueGoals)
+            {
+                goal.Status = FinancialGoalStatus.ARCHIVED;
+                goal.ApprovalStatus = ApprovalStatus.APPROVED;
+                goal.UpdatedDate = currentDate;
+
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(goal);
+
+                var user = await _unitOfWork.UsersRepository.GetByIdAsync(goal.UserId);
+                if (user != null)
+                {
+                    await _transactionNotificationService.NotifyGoalDueAsync(goal);
+                }
+            }
+
+            await _unitOfWork.SaveAsync();
+        }
+
+        #region job
+
+        #endregion job
     }
 }
