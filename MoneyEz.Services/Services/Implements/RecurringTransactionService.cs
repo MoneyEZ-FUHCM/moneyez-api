@@ -36,12 +36,9 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> AddRecurringTransactionAsync(CreateRecurringTransactionModel model)
         {
             var user = await GetCurrentUserAsync();
-
-            var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId)
-                ?? throw new NotExistException(MessageConstants.SUBCATEGORY_NOT_FOUND);
-
-            var category = await _unitOfWork.CategorySubcategoryRepository.GetCategoryBySubcategoryId(subcategory.Id)
-                ?? throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
+            var subcategory = await GetSubcategoryAsync(model.SubcategoryId);
+            var category = await GetCategoryBySubcategoryIdAsync(subcategory.Id);
+            await ValidateSubcategoryInCurrentSpendingModelAsync(user.Id, model.SubcategoryId);
 
             var entity = _mapper.Map<RecurringTransaction>(model);
             entity.UserId = user.Id;
@@ -117,19 +114,15 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> UpdateRecurringTransactionAsync(UpdateRecurringTransactionModel model)
         {
             var user = await GetCurrentUserAsync();
-
-            var transaction = await _unitOfWork.RecurringTransactionRepository.GetByIdAsync(model.Id)
-                ?? throw new NotExistException(MessageConstants.RECURRING_TRANSACTION_NOT_FOUND);
-
-            if (transaction.UserId != user.Id)
-            {
-                throw new DefaultException("You cannot update another user's recurring transaction.",
-                    MessageConstants.RECURRING_TRANSACTION_ACCESS_DENIED);
-            }
+            var transaction = await GetTransactionByIdAsync(model.Id, user.Id);
+            var subcategory = await GetSubcategoryAsync(model.SubcategoryId);
+            var category = await GetCategoryBySubcategoryIdAsync(subcategory.Id);
+            await ValidateSubcategoryInCurrentSpendingModelAsync(user.Id, model.SubcategoryId);
 
             _mapper.Map(model, transaction);
             transaction.UpdatedDate = CommonUtils.GetCurrentTime();
             transaction.UpdatedBy = user.Email;
+            transaction.Type = category.Type ?? throw new DefaultException("Category is missing transaction type.", MessageConstants.CATEGORY_TYPE_INVALID);
 
             _unitOfWork.RecurringTransactionRepository.UpdateAsync(transaction);
             await _unitOfWork.SaveAsync();
@@ -144,15 +137,7 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> DeleteRecurringTransactionAsync(Guid id)
         {
             var user = await GetCurrentUserAsync();
-
-            var transaction = await _unitOfWork.RecurringTransactionRepository.GetByIdAsync(id)
-                ?? throw new NotExistException(MessageConstants.RECURRING_TRANSACTION_NOT_FOUND);
-
-            if (transaction.UserId != user.Id)
-            {
-                throw new DefaultException("You cannot delete another user's recurring transaction.",
-                    MessageConstants.RECURRING_TRANSACTION_DELETE_DENIED);
-            }
+            var transaction = await GetTransactionByIdAsync(id, user.Id);
 
             _unitOfWork.RecurringTransactionRepository.SoftDeleteAsync(transaction);
             await _unitOfWork.SaveAsync();
@@ -164,11 +149,51 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        #region helper
         private async Task<User> GetCurrentUserAsync()
         {
             var email = _claimsService.GetCurrentUserEmail;
             return await _unitOfWork.UsersRepository.GetUserByEmailAsync(email)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
         }
+
+        private async Task<Subcategory> GetSubcategoryAsync(Guid subcategoryId)
+        {
+            return await _unitOfWork.SubcategoryRepository.GetByIdAsync(subcategoryId)
+                ?? throw new NotExistException(MessageConstants.SUBCATEGORY_NOT_FOUND);
+        }
+
+        private async Task<Category> GetCategoryBySubcategoryIdAsync(Guid subcategoryId)
+        {
+            return await _unitOfWork.CategorySubcategoryRepository.GetCategoryBySubcategoryId(subcategoryId)
+                ?? throw new NotExistException(MessageConstants.CATEGORY_NOT_FOUND);
+        }
+
+        private async Task ValidateSubcategoryInCurrentSpendingModelAsync(Guid userId, Guid subcategoryId)
+        {
+            var currentSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(userId)
+                ?? throw new DefaultException("Không tìm thấy UserSpendingModel đang hoạt động.", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+
+            var allowedSubcategories = await _unitOfWork.CategorySubcategoryRepository.GetSubcategoriesBySpendingModelId(currentSpendingModel.SpendingModelId.Value);
+            if (!allowedSubcategories.Any(s => s.Id == subcategoryId))
+            {
+                throw new DefaultException("Subcategory không nằm trong SpendingModel hiện tại.", MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL);
+            }
+        }
+
+        private async Task<RecurringTransaction> GetTransactionByIdAsync(Guid transactionId, Guid userId)
+        {
+            var transaction = await _unitOfWork.RecurringTransactionRepository.GetByIdAsync(transactionId)
+                ?? throw new NotExistException(MessageConstants.RECURRING_TRANSACTION_NOT_FOUND);
+
+            if (transaction.UserId != userId)
+            {
+                throw new DefaultException("You cannot modify another user's recurring transaction.",
+                    MessageConstants.RECURRING_TRANSACTION_ACCESS_DENIED);
+            }
+
+            return transaction;
+        }
+        #endregion helper
     }
 }
