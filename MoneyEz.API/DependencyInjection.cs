@@ -206,6 +206,10 @@ namespace MoneyEz.API
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<ITransactionNotificationService, TransactionNotificationService>();
 
+            //recurring transaction
+            services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
+            services.AddScoped<IRecurringTransactionRepository, RecurringTransactionRepository>();
+
             // vote
             services.AddScoped<ITransactionVoteRepository, TransactionVoteRepository>();
             // config image service

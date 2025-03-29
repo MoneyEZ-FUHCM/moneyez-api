@@ -44,6 +44,9 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //transaction
         private ITransactionRepository _transactionsRepository;
+
+        //recurring transaction
+        private IRecurringTransactionRepository _recurringTransactionRepository;
         //vote
         private ITransactionVoteRepository _transactionVoteRepository;
 
@@ -159,6 +162,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _transactionsRepository ??= new TransactionRepository(_context);
+            }
+        }
+
+        public IRecurringTransactionRepository RecurringTransactionRepository
+        {
+            get
+            {
+                return _recurringTransactionRepository ??= new RecurringTransactionRepository(_context);
             }
         }
 

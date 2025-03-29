@@ -1,4 +1,5 @@
 ﻿#nullable disable
+using MoneyEz.Repositories.Enums;
 using System;
 using System.Collections.Generic;
 
@@ -10,13 +11,13 @@ public partial class RecurringTransaction : BaseEntity
 
     public Guid SubcategoryId { get; set; }
 
-    public int? Type { get; set; }
+    public TransactionType Type { get; set; }
 
     public string Tags { get; set; }
 
     public decimal Amount { get; set; }
 
-    public int? FrequencyType { get; set; }
+    public FrequencyType FrequencyType { get; set; }
 
     public int Interval { get; set; }
 
@@ -26,7 +27,7 @@ public partial class RecurringTransaction : BaseEntity
 
     public string Description { get; set; }
 
-    public int? Status { get; set; }
+    public CommonsStatus Status { get; set; }
 
     public virtual Subcategory Subcategory { get; set; }
 
