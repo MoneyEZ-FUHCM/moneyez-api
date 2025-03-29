@@ -125,7 +125,8 @@ namespace MoneyEz.Services.Services.Implements
         }
         public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model, string email)
         {
-            var user = await GetCurrentUserAsync();
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email)
+                ?? throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             await ValidateSubcategoryInCurrentSpendingModel(model.SubcategoryId, user.Id);
 
             var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId)
@@ -166,7 +167,8 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status201Created,
-                Message = MessageConstants.TRANSACTION_CREATED_SUCCESS
+                Message = MessageConstants.TRANSACTION_CREATED_SUCCESS,
+                Data = _mapper.Map<TransactionModel>(transaction)
             };
         }
         public async Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model)
@@ -1049,14 +1051,6 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> CreateTransactionPythonService(CreateTransactionPythonModel model)
         {
-            // Get secret key from header
-            var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-Webhook-Secret"].ToString();
-
-            if (string.IsNullOrEmpty(secretKey) || secretKey != "thisIsSerectKeyPythonService")
-            {
-                throw new DefaultException("Invalid webhook secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
-            }
-
             // get info user
             var user = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId);
             if (user == null)
@@ -1066,7 +1060,7 @@ namespace MoneyEz.Services.Services.Implements
 
             // search subcategory
             var subcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(filter: sc => sc.Code == model.SubcategoryCode && !sc.IsDeleted);
-            if (subcategory.Any())
+            if (!subcategory.Any())
             {
                 throw new NotExistException("Subcategory not found", MessageConstants.SUBCATEGORY_NOT_FOUND);
             }

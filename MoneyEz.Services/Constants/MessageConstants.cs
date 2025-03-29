@@ -284,5 +284,11 @@ namespace MoneyEz.Services.Constants
         public const string WEBHOOK_SERVER_ERROR = "WebhookServerError";
         public const string WEBHOOK_NOT_SUPPORTED = "WebhookNotSupported";
         public const string INVALID_WEBHOOK_SECRET = "InvalidWebhookSecret";
+
+        // external service
+        public const string INVALID_EXTERNAL_SECRET = "InvalidExternalSecret";
+        public const string INVALID_COMMAND = "InvalidCommand";
+        public const string MISSING_PARAMETER = "MissingParameter";
+        public const string INVALID_PARAMETER_FORMAT = "InvalidParameterFormat";
     }
 }

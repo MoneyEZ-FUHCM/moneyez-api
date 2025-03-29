@@ -899,14 +899,6 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetSubCategoriesCurrentSpendingModelByUserIdAsync(Guid userId)
         {
-            // Get secret key from header
-            var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-Webhook-Secret"].ToString();
-
-            if (string.IsNullOrEmpty(secretKey) || secretKey != "thisIsSerectKeyPythonService")
-            {
-                throw new DefaultException("Invalid webhook secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
-            }
-
             var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
             if (user == null)
             {
