@@ -1,4 +1,5 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
+using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using MoneyEz.Services.BusinessModels.ChatModels;
@@ -8,6 +9,7 @@ using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
 using Newtonsoft.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -84,7 +86,12 @@ namespace MoneyEz.Services.Services.Implements
                         }
 
                         // Call service to get chat messages for the user
-                        return await _chatHistoryService.GetChatMessageHistoriesExternalByUser(userId);
+                        var messages = await _chatHistoryService.GetChatMessageHistoriesExternalByUser(userId);
+                        return new BaseResultModel
+                        {
+                            Status = StatusCodes.Status200OK,
+                            Data = messages
+                        };
                     }
                         
                 case "get_subcategories":
@@ -124,18 +131,40 @@ namespace MoneyEz.Services.Services.Implements
         {
             try
             {
-                // TODO: Replace with your actual API endpoint
-                var response = await _httpClient.PostAsJsonAsync("/api/chat", request);
-                
+                // Clear and set new headers
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("X-External-Secret", "thisIsSerectKeyPythonService");
+
+                var response = await _httpClient.PostAsJsonAsync("http://178.128.118.171:8888/api/receive_message", request);
+                //var response = await _httpClient.PostAsJsonAsync("http://localhost:8000/api/receive_message", request);
+
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = await response.Content.ReadFromJsonAsync<ChatMessageExternalResponse>();
-                    return result ?? new ChatMessageExternalResponse { HttpCode = 200, Message = "Empty response" };
+                    var result = await response.Content.ReadFromJsonAsync<BaseResultModel>();
+
+                    if (result != null)
+                    {
+                        // Extract the first text content from the message
+                        var parsedDataJson = result.Data?.ToString();
+                        var jsonData = JsonConvert.DeserializeObject<ChatMessageResponseModel>(parsedDataJson);
+
+                        return new ChatMessageExternalResponse
+                        {
+                            IsSuccess = true,
+                            Message = jsonData.Message.Content.First().Text,
+                        };
+                    }
+
+                    return new ChatMessageExternalResponse
+                    {
+                        IsSuccess = true,
+                        Message = "Empty response"
+                    };
                 }
 
                 return new ChatMessageExternalResponse
                 {
-                    HttpCode = 400,
+                    IsSuccess = false,
                     Message = $"API Error: {response.StatusCode}"
                 };
             }
@@ -143,7 +172,7 @@ namespace MoneyEz.Services.Services.Implements
             {
                 return new ChatMessageExternalResponse
                 {
-                    HttpCode = 400,
+                    IsSuccess = false,
                     Message = $"Service Error: {ex.Message}"
                 };
             }
