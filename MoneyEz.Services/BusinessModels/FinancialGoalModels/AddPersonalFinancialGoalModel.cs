@@ -1,4 +1,5 @@
-﻿using MoneyEz.Services.Utils;
+﻿using MoneyEz.Repositories.Enums;
+using MoneyEz.Services.Utils;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -10,17 +11,14 @@ namespace MoneyEz.Services.BusinessModels.FinancialGoalModels
         public Guid SubcategoryId { get; set; }
 
         [Required]
-        public required string Name { get; set; }
-
-        public string NameUnsign => StringUtils.ConvertToUnSign(Name);
-
-        [Required]
         [Range(0.01, double.MaxValue, ErrorMessage = "Target amount must be greater than 0.")]
         public decimal TargetAmount { get; set; }
 
-        public decimal CurrentAmount { get; set; } = 0;
+        public decimal CurrentAmount = 0;
 
-        [Required]
-        public DateTime Deadline { get; set; }
+        public FinancialGoalStatus Status = FinancialGoalStatus.ACTIVE; 
+
+        public ApprovalStatus ApprovalStatus = ApprovalStatus.APPROVED; 
     }
+
 }

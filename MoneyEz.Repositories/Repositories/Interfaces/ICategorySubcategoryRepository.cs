@@ -4,5 +4,10 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
 {
     public interface ICategorySubcategoryRepository : IGenericRepository<CategorySubcategory>
     {
+        Task<List<Subcategory>> GetSubcategoriesBySpendingModelId(Guid spendingModelId);
+        Task<Category?> GetCategoryBySubcategoryId(Guid subcategoryId);
+        Task<Category?> GetCategoryInCurrentSpendingModel(Guid subcategoryId, Guid spendingModelId);
+
     }
+
 }

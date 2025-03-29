@@ -1,4 +1,5 @@
 ﻿#nullable disable
+using MoneyEz.Repositories.Enums;
 using System;
 using System.Collections.Generic;
 
@@ -20,7 +21,15 @@ public partial class FinancialGoal : BaseEntity
 
     public decimal CurrentAmount { get; set; }
 
+    public DateTime StartDate { get; set; }
+
     public DateTime Deadline { get; set; }
+
+    public FinancialGoalStatus Status { get; set; }
+
+    public ApprovalStatus ApprovalStatus { get; set; }
+
+    public bool IsSaving { get; set; } = false;
 
     public virtual GroupFund Group { get; set; }
 

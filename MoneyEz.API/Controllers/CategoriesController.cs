@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Services.Services.Interfaces;
@@ -21,12 +22,11 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpGet]
-        public Task<IActionResult> GetCategories([FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetCategories([FromQuery] PaginationParameter paginationParameter, [FromQuery] CategoryFilter categoryFilter)
         {
-            return ValidateAndExecute(() => _categoryService.GetCategoryPaginationAsync(paginationParameter));
+            return ValidateAndExecute(() => _categoryService.GetCategoryPaginationAsync(paginationParameter, categoryFilter));
         }
 
-        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpGet("{id}")]
         public Task<IActionResult> GetCategoryById(Guid id)
         {

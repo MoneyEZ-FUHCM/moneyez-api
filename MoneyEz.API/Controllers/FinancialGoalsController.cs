@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.FinancialGoalModels;
 using MoneyEz.Services.Services.Interfaces;
@@ -33,16 +34,51 @@ namespace MoneyEz.API.Controllers
 
         [HttpGet("personal")]
 
-        public Task<IActionResult> GetPersonalFinancialGoals([FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetPersonalFinancialGoals([FromQuery] PaginationParameter paginationParameter, [FromQuery] FinancialGoalFilter filter)
         {
-            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalsAsync(paginationParameter));
+            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalsAsync(paginationParameter, filter));
         }
 
-        [HttpPost("personal/detail")]
+        [HttpGet("personal/limit-budget/subcategory/{subcategoryId}")]
 
-        public Task<IActionResult> GetPersonalFinancialGoalById([FromBody] GetPersonalFinancialGoalDetailModel model)
+        public Task<IActionResult> GetUserLimitBugdetSubcategoryAsync(Guid subcategoryId)
         {
-            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalByIdAsync(model));
+            return ValidateAndExecute(() => _financialGoalService.GetUserLimitBugdetSubcategoryAsync(subcategoryId));
+        }
+
+        [HttpGet("personal/transaction/{goalId}")]
+
+        public Task<IActionResult> GetUserTransactionsGoalAsync(Guid goalId, [FromQuery] PaginationParameter paginationParameter)
+        {
+            return ValidateAndExecute(() => _financialGoalService.GetUserTransactionsGoalAsync(goalId, paginationParameter));
+        }
+
+        [HttpGet("personal/{goalId}")]
+
+        public Task<IActionResult> GetPersonalFinancialGoalById(Guid goalId)
+        {
+            return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalByIdAsync(goalId));
+        }
+
+        [HttpGet("personal/chart/{goalId}")]
+
+        public Task<IActionResult> GetChartPersonalFinacialGoalByIdAsync(Guid goalId, string type)
+        {
+            return ValidateAndExecute(() => _financialGoalService.GetChartPersonalFinacialGoalByIdAsync(goalId, type));
+        }
+
+        [HttpGet("personal/user-spending-model/{id}")]
+
+        public Task<IActionResult> GetPersonalFinancialGoalBySpendingModelAsync(Guid id, [FromQuery] PaginationParameter paginationParameter, [FromQuery] FinancialGoalFilter filter)
+        {
+            return ValidateAndExecute(() => _financialGoalService.GetUserFinancialGoalBySpendingModelAsync(id, paginationParameter, filter));
+        }
+
+        [HttpGet("personal/create/available-categories")]
+
+        public Task<IActionResult> GetAvailableCategoriesCreateGoalUserAsync()
+        {
+            return ValidateAndExecute(() => _financialGoalService.GetAvailableCategoriesCreateGoalPersonalAsync());
         }
 
         [HttpPut("personal")]
@@ -75,8 +111,8 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _financialGoalService.GetGroupFinancialGoalsAsync(model));
         }
 
-        [HttpPost("group/detail")]
-        public Task<IActionResult> GetGroupFinancialGoalById([FromBody] GetGroupFinancialGoalDetailModel model)
+        [HttpGet("group/detail")]
+        public Task<IActionResult> GetGroupFinancialGoalById([FromQuery] GetGroupFinancialGoalDetailModel model)
         {
             return ValidateAndExecute(() => _financialGoalService.GetGroupFinancialGoalByIdAsync(model));
         }
@@ -91,6 +127,12 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> DeleteGroupFinancialGoal([FromBody] DeleteFinancialGoalModel model)
         {
             return ValidateAndExecute(() => _financialGoalService.DeleteGroupFinancialGoalAsync(model));
+        }
+
+        [HttpPost("approve-group-goal")]
+        public Task<IActionResult> ApproveGroupFinancialGoal([FromBody] ApproveGroupFinancialGoalRequestModel model)
+        {
+            return ValidateAndExecute(() => _financialGoalService.ApproveGroupFinancialGoalAsync(model));
         }
 
         #endregion

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
@@ -23,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -144,7 +146,7 @@ namespace MoneyEz.Services.Services.Implements
                 Body = EmailCreateAccount.EmailSendCreateAccount(model.Email, password, model.FullName)
             };
 
-            await _mailService.SendEmailAsync(passwordEmail);
+            await _mailService.SendEmailAsync_v2(passwordEmail);
 
             return new BaseResultModel
             {
@@ -214,27 +216,12 @@ namespace MoneyEz.Services.Services.Implements
             }
         }
 
-        public async Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetUserPaginationAsync(PaginationParameter paginationParameter, UserFilter userFilter)
         {
-            var userList = await _unitOfWork.UsersRepository.ToPagination(paginationParameter);
-            var userModels = _mapper.Map<List<UserModel>>(userList);
+            var users = await _unitOfWork.UsersRepository.GetUsersByFilter(paginationParameter, userFilter);
 
-            //var users = new Pagination<UserModel>(userModels,
-            //    userList.TotalCount,
-            //    userList.CurrentPage,
-            //    userList.PageSize);
-
-            //var metaData = new
-            //{
-            //    userList.TotalCount,
-            //    userList.PageSize,
-            //    userList.CurrentPage,
-            //    userList.TotalPages,
-            //    userList.HasNext,
-            //    userList.HasPrevious
-            //};
-
-            var paginatedResult = PaginationHelper.GetPaginationResult(userList, userModels);
+            var userModels = _mapper.Map<List<UserModel>>(users);
+            var paginatedResult = PaginationHelper.GetPaginationResult(users, userModels);
 
             return new BaseResultModel
             {

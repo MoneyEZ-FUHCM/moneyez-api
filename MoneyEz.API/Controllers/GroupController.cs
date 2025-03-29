@@ -9,6 +9,7 @@ using MoneyEz.Services.BusinessModels.GroupFund;
 using Microsoft.AspNetCore.Authorization;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.GroupFund.GroupInvite;
+using MoneyEz.Repositories.Commons.Filters;
 
 namespace MoneyEz.API.Controllers
 {
@@ -83,9 +84,9 @@ namespace MoneyEz.API.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> GetAllGroupFunds([FromQuery] PaginationParameter paginationParameters)
+        public async Task<IActionResult> GetAllGroupFunds([FromQuery] PaginationParameter paginationParameters, [FromQuery] GroupFilter groupFilter)
         {
-            return await ValidateAndExecute(() => _groupFundsService.GetAllGroupFunds(paginationParameters));
+            return await ValidateAndExecute(() => _groupFundsService.GetAllGroupFunds(paginationParameters, groupFilter));
         }
 
         [HttpGet("{id}")]
@@ -109,18 +110,33 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundsService.SetGroupContribution(setGroupContributionModel));
         }
 
-        [HttpPost("funds/request")]
+        [HttpPost("fund-rasising/request")]
         [Authorize]
         public async Task<IActionResult> CreateFundraisingRequest([FromBody] CreateFundraisingModel model)
         {
             return await ValidateAndExecute(() => _groupFundsService.CreateFundraisingRequest(model));
         }
 
-        [HttpPost("funds/response")]
+        [HttpPost("fund-withdraw/request")]
         [Authorize]
-        public async Task<IActionResult> ResponseTransactionRequest([FromBody] UpdateGroupTransactionModel model)
+        public async Task<IActionResult> CreateFundWithdrawalRequest([FromBody] CreateFundWithdrawalModel model)
         {
-            return await ValidateAndExecute(() => _groupFundsService.ResponsePendingTransaction(model));
+            return await ValidateAndExecute(() => _groupFundsService.CreateFundWithdrawalRequest(model));
+        }
+
+
+        //[HttpPost("funds/response")]
+        //[Authorize]
+        //public async Task<IActionResult> ResponseTransactionRequest([FromBody] UpdateGroupTransactionModel model)
+        //{
+        //    return await ValidateAndExecute(() => _groupFundsService.ResponsePendingTransaction(model));
+        //}
+
+        [HttpGet("logs/{id}")]
+        [Authorize]
+        public async Task<IActionResult> GetGroupFundLogs(Guid id, [FromQuery]PaginationParameter paginationParameters, [FromQuery]GroupLogFilter filter)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.GetGroupFundLogs(id, paginationParameters, filter));
         }
     }
 }

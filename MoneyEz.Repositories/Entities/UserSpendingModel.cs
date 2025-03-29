@@ -1,4 +1,4 @@
-﻿#nullable disable
+﻿using MoneyEz.Repositories.Enums;
 using System;
 using System.Collections.Generic;
 
@@ -18,7 +18,9 @@ public partial class UserSpendingModel : BaseEntity
 
     public DateTime? EndDate { get; set; }
 
-    public virtual SpendingModel SpendingModel { get; set; }
+    public UserSpendingModelStatus? Status { get; set; } = UserSpendingModelStatus.ACTIVE;
 
-    public virtual User User { get; set; }
+    public virtual SpendingModel? SpendingModel { get; set; }
+
+    public virtual User? User { get; set; }
 }

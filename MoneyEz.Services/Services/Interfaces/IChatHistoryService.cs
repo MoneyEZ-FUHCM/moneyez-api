@@ -19,5 +19,7 @@ namespace MoneyEz.Services.Services.Interfaces
         public Task<BaseResultModel> GetChatHistoriesPaging(PaginationParameter paginationParameter);
 
         public Task<BaseResultModel> GetChatMessageConversation(PaginationParameter paginationParameter, string email);
+
+        public Task<BaseResultModel> GetChatMessageHistoriesExternalByUser(Guid userId);
     }
 }

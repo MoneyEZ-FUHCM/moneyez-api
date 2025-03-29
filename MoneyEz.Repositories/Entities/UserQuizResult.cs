@@ -10,9 +10,13 @@ public partial class UserQuizResult : BaseEntity
 
     public Guid? QuizId { get; set; }
 
-    public string QuizData { get; set; }
+    public string RecommendedModel { get; set; }
+
+    public DateTime TakenAt { get; set; }
 
     public virtual Quiz Quiz { get; set; }
 
     public virtual User User { get; set; }
+
+    public virtual ICollection<UserQuizAnswer> UserQuizAnswers { get; set; } = new List<UserQuizAnswer>();
 }

@@ -8,10 +8,14 @@ using System.Threading.Tasks;
 
 namespace MoneyEz.Repositories.Repositories.Implements
 {
-    public class GroupMemberLogRepository : GenericRepository<GroupMemberLog>, IGroupMemberLogRepository
+    public class AnswerOptionRepository : GenericRepository<AnswerOption>, IAnswerOptionRepository
     {
-        public GroupMemberLogRepository(MoneyEzContext context) : base(context)
+        private readonly MoneyEzContext _context;
+
+        public AnswerOptionRepository(MoneyEzContext context) : base(context)
         {
+            _context = context;
         }
+
     }
 }

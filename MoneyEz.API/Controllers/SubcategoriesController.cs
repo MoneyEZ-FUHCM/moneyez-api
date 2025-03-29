@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.SubcategoryModels;
 using MoneyEz.Services.Services.Interfaces;
@@ -24,12 +25,11 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpGet]
-        public Task<IActionResult> GetSubcategories([FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetSubcategories([FromQuery] PaginationParameter paginationParameter, [FromQuery] SubcategoryFilter subcategoryFilter)
         {
-            return ValidateAndExecute(() => _subcategoryService.GetSubcategoriesPaginationAsync(paginationParameter));
+            return ValidateAndExecute(() => _subcategoryService.GetSubcategoriesPaginationAsync(paginationParameter, subcategoryFilter));
         }
 
-        [Authorize(Roles = nameof(RolesEnum.ADMIN))]
         [HttpGet("{id}")]
         public Task<IActionResult> GetSubcategoryById(Guid id)
         {

@@ -23,7 +23,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         ISpendingModelCategoryRepository SpendingModelCategoryRepository { get; }
 
         //financialgoal
-        IFinancialGoalRepository FinancialGoalRepository { get; } 
+        IFinancialGoalRepository FinancialGoalRepository { get; }
+        //financial report
+        IFinancialReportRepository FinancialReportRepository { get; }
 
         //category
         ICategoriesRepository CategoriesRepository { get; }
@@ -36,12 +38,17 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //transaction
         ITransactionRepository TransactionsRepository { get; }
+        
+        //vote
+        ITransactionVoteRepository TransactionVoteRepository { get; }
+
+        //image
+        IImageRepository ImageRepository { get; }
 
         //group
         IGroupFundRepository GroupFundRepository { get; }
         IGroupFundLogRepository GroupFundLogRepository { get; }
         IGroupMemberRepository GroupMemberRepository { get; }
-        IGroupMemberLogRepository GroupMemberLogRepository { get; }
 
         //asset and liability
         IAssetRepository AssetRepository { get; }
@@ -60,6 +67,13 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         // bank account
         IBankAccountRepository BankAccountRepository { get; }
+
+        // quiz
+        IQuizRepository QuizRepository { get; }
+        IAnswerOptionRepository AnswerOptionRepository { get; }
+        IUserQuizResultRepository UserQuizResultRepository { get; }
+        IQuestionRepository QuestionRepository { get; }
+        IUserQuizAnswerRepository UserQuizAnswerRepository { get; }
 
         int Save();
         void Commit();

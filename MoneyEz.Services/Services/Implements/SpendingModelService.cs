@@ -67,6 +67,7 @@ namespace MoneyEz.Services.Services.Implements
                 id,
                 include: query => query.Include(sm => sm.SpendingModelCategories)
                                        .ThenInclude(smc => smc.Category)
+                                       .ThenInclude(smsc => smsc.CategorySubcategories).ThenInclude(sm => sm.Subcategory)
             );
 
             if (spendingModel == null || spendingModel.IsDeleted)

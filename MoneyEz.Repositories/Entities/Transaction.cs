@@ -24,7 +24,11 @@ public partial class Transaction : BaseEntity
 
     public string? RequestCode { get; set; }
 
-    public TransactionStatus Status { get; set; } = TransactionStatus.PENDING; // Mặc định là PENDING
+    public TransactionStatus Status { get; set; } = TransactionStatus.PENDING; // default is PENDING
+
+    public Guid? UserSpendingModelId { get; set; }
+
+    public InsertType InsertType { get; set; } = InsertType.MANUAL; // default is MANUAL
 
     public virtual GroupFund? Group { get; set; }
 
