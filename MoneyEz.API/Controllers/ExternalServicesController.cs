@@ -19,13 +19,13 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpPost]
-        public Task<IActionResult> CreateTransactionPythonService(ExternalReciveRequestModel model)
+        public Task<IActionResult> RequestPostFromExternalService([FromBody] ExternalReciveRequestModel model)
         {
             return ValidateAndExecute(() => _externalApiService.ExecuteReceiveExternalService(model));
         }
 
         [HttpGet]
-        public Task<IActionResult> GetChatMessageHistoriesPython([FromQuery] ExternalReciveRequestModel model)
+        public Task<IActionResult> RequestGetFromExternalService([FromQuery] ExternalReciveRequestModel model)
         {
             return ValidateAndExecute(() => _externalApiService.ExecuteReceiveExternalService(model));
         }

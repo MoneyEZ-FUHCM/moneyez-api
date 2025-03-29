@@ -7,6 +7,7 @@ using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
+using Newtonsoft.Json;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -17,18 +18,21 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ITransactionService _transactionService;
         private readonly IChatHistoryService _chatHistoryService;
+        private readonly IUserSpendingModelService _userSpendingModelService;
 
         public ExternalApiService(HttpClient httpClient, 
             IConfiguration configuration, 
             IHttpContextAccessor httpContextAccessor,
             ITransactionService transactionService,
-            IChatHistoryService chatHistoryService)
+            IChatHistoryService chatHistoryService,
+            IUserSpendingModelService userSpendingModelService)
         {
             _httpClient = httpClient;
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
             _transactionService = transactionService;
             _chatHistoryService = chatHistoryService;
+            _userSpendingModelService = userSpendingModelService;
             // Configure base URL from settings if needed
             // _httpClient.BaseAddress = new Uri(_configuration["ExternalApi:BaseUrl"]);
         }
@@ -40,6 +44,7 @@ namespace MoneyEz.Services.Services.Implements
 
             if (string.IsNullOrEmpty(secretKey) || secretKey != "thisIsSerectKeyPythonService")
             {
+           
                 throw new DefaultException("Invalid external secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
             }
 
@@ -47,12 +52,14 @@ namespace MoneyEz.Services.Services.Implements
             {
                 case "create_transaction":
                     var data = model.Data as dynamic;
+                    var parsedDataJson = data?.ToString();
+                    var jsonData = JsonConvert.DeserializeObject<dynamic>(parsedDataJson);
                     var createTransactionModel = new CreateTransactionPythonModel
                     {
-                        Amount = data?.Amount ?? 0,
-                        SubcategoryCode = data?.SubcategoryCode ?? string.Empty,
-                        Description = data?.Description ?? string.Empty,
-                        UserId = data?.UserId ?? Guid.Empty
+                        Amount = jsonData?.Amount ?? 0,
+                        SubcategoryCode = jsonData?.SubcategoryCode ?? string.Empty,
+                        Description = jsonData?.Description ?? string.Empty,
+                        UserId = jsonData?.UserId ?? Guid.Empty
                     };
                     // Call service to create transaction
                     return await _transactionService.CreateTransactionPythonService(createTransactionModel);
@@ -61,22 +68,48 @@ namespace MoneyEz.Services.Services.Implements
                     if (string.IsNullOrEmpty(model.Query))
                     {
                         throw new DefaultException("Missing user_id parameter", MessageConstants.MISSING_PARAMETER);
-                    }
-
-                    // Parse the query string to get the userId
-                    string userIdStr = model.Query;
-                    if (model.Query.Contains("user_id="))
+                    } 
+                    else
                     {
-                        userIdStr = model.Query.Split('=')[1];
-                    }
+                        // Parse the query string to get the userId
+                        string userIdStr = model.Query;
+                        if (model.Query.Contains("user_id="))
+                        {
+                            userIdStr = model.Query.Split('=')[1];
+                        }
 
-                    if (!Guid.TryParse(userIdStr, out Guid userId))
+                        if (!Guid.TryParse(userIdStr, out Guid userId))
+                        {
+                            throw new DefaultException("Invalid user_id format", MessageConstants.INVALID_PARAMETER_FORMAT);
+                        }
+
+                        // Call service to get chat messages for the user
+                        return await _chatHistoryService.GetChatMessageHistoriesExternalByUser(userId);
+                    }
+                        
+                case "get_subcategories":
+                    // Extract userId from query parameter (e.g., user_id=abc)
+                    if (string.IsNullOrEmpty(model.Query))
                     {
-                        throw new DefaultException("Invalid user_id format", MessageConstants.INVALID_PARAMETER_FORMAT);
+                        throw new DefaultException("Missing user_id parameter", MessageConstants.MISSING_PARAMETER);
                     }
+                    else
+                    {
+                        // Parse the query string to get the userId
+                        string userIdStr = model.Query;
+                        if (model.Query.Contains("user_id="))
+                        {
+                            userIdStr = model.Query.Split('=')[1];
+                        }
 
-                    // Call service to get chat messages for the user
-                    return await _chatHistoryService.GetChatMessageHistoriesExternalByUser(userId);
+                        if (!Guid.TryParse(userIdStr, out Guid userId))
+                        {
+                            throw new DefaultException("Invalid user_id format", MessageConstants.INVALID_PARAMETER_FORMAT);
+                        }
+
+                        // Call service to get subcategories for the user
+                        return await _userSpendingModelService.GetSubCategoriesCurrentSpendingModelByUserIdAsync(userId);
+                    }
                 default:
                     throw new DefaultException("Invalid command", MessageConstants.INVALID_COMMAND);
             }
