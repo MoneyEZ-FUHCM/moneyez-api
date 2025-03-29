@@ -142,6 +142,7 @@ namespace MoneyEz.API
 
             services.ConfigureOptions<SampleJobSetup>();
             services.ConfigureOptions<ScanUserSpendingModelJobSetup>();
+            services.ConfigureOptions<RecurringTransactionJobSetup>();
             #endregion
 
             // config webhook setting
@@ -283,8 +284,6 @@ namespace MoneyEz.API
 
             services.AddDbContext<MoneyEzContext>(options =>
             {
-                //options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
-                options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
             });
 
             #endregion

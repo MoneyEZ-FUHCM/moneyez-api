@@ -17,5 +17,6 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetRecurringTransactionByIdAsync(Guid id);
         Task<BaseResultModel> UpdateRecurringTransactionAsync(UpdateRecurringTransactionModel model);
         Task<BaseResultModel> DeleteRecurringTransactionAsync(Guid id);
+        Task GenerateTransactionsFromRecurringAsync();
     }
 }

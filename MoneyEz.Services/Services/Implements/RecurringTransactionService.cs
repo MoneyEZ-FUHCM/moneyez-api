@@ -194,6 +194,97 @@ namespace MoneyEz.Services.Services.Implements
 
             return transaction;
         }
+
         #endregion helper
+
+
+
+
+        #region job
+
+        /*
+            today == StartDate + n × interval (theo frequency)
+
+            today >= StartDate
+
+            today <= EndDate (nếu có)
+         
+         */
+
+        public async Task GenerateTransactionsFromRecurringAsync()
+        {
+            DateTime today = CommonUtils.GetCurrentTime().Date;
+
+            var recurrings = await _unitOfWork.RecurringTransactionRepository.GetByConditionAsync(
+                filter: rt => rt.Status == CommonsStatus.ACTIVE
+                    && rt.StartDate <= today
+                    && (!rt.EndDate.HasValue || rt.EndDate.Value >= today),
+                include: q => q.Include(r => r.Subcategory)
+            );
+
+            foreach (var rt in recurrings)
+            {
+                if (!IsRecurringDueToday(rt, today)) continue;
+
+                var existing = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                    filter: t => t.InsertType == InsertType.RECURRENCE &&
+                                 t.TransactionDate.HasValue && t.TransactionDate.Value.Date == today &&
+                                 t.UserId.HasValue && t.UserId.Value == rt.UserId &&
+                                 t.SubcategoryId.HasValue && t.SubcategoryId.Value == rt.SubcategoryId &&
+                                 t.Description == $"[Recurring] {rt.Description}" &&
+                                 t.Amount == rt.Amount
+                );
+
+                if (existing.Any()) continue;
+
+                var transaction = new Transaction
+                {
+                    Amount = rt.Amount,
+                    Description = $"[Recurring] {rt.Description}",
+                    TransactionDate = today,
+                    Status = TransactionStatus.APPROVED,
+                    Type = rt.Type,
+                    SubcategoryId = rt.SubcategoryId,
+                    UserId = rt.UserId,
+                    CreatedDate = today,
+                    CreatedBy = "RecurringJob",
+                    ApprovalRequired = false,
+                    InsertType = InsertType.RECURRENCE
+                };
+
+                await _unitOfWork.TransactionsRepository.AddAsync(transaction);
+            }
+
+            await _unitOfWork.SaveAsync();
+        }
+
+        private bool IsRecurringDueToday(RecurringTransaction rt, DateTime today)
+        {
+            var start = rt.StartDate.Date;
+            if (today < start) return false;
+            if (rt.EndDate.HasValue && today > rt.EndDate.Value.Date) return false;
+
+            int interval = rt.Interval <= 0 ? 1 : rt.Interval;
+
+            return rt.FrequencyType switch
+            {
+                FrequencyType.DAILY => (today - start).Days % interval == 0,
+
+                FrequencyType.WEEKLY => ((today - start).Days / 7) % interval == 0,
+
+                FrequencyType.MONTHLY => MonthsBetween(start, today) % interval == 0,
+
+                FrequencyType.YEARLY => (today.Year - start.Year) % interval == 0,
+
+                _ => false
+            };
+        }
+
+        private int MonthsBetween(DateTime from, DateTime to)
+        {
+            return (to.Year - from.Year) * 12 + (to.Month - from.Month);
+        }
+
+        #endregion job
     }
 }

@@ -17,6 +17,7 @@ namespace MoneyEz.Services.BusinessModels.RecurringTransactionModels
         public FrequencyType FrequencyType { get; set; }
 
         [Required]
+        [Range(1, int.MaxValue, ErrorMessage = "Interval must be greater than 0 and positive")]
         public int Interval { get; set; }
 
         [Required]
