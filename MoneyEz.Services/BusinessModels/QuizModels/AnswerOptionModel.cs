@@ -14,8 +14,9 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         public string? Type { get; set; }
     }
 
-    public class AnswerOptionModel : BaseEntity
+    public class AnswerOptionModel
     {
+        public Guid Id { get; set; }
         public string Content { get; set; }
         public string? Type { get; set; }
     }

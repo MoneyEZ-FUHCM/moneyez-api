@@ -16,8 +16,10 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         [MinLength(2, ErrorMessage = "Phải có ít nhất 2 câu trả lời cho câu hỏi")]
         public List<CreateAnswerOptionModel> AnswerOptions { get; set; } = new();
     }
-    public class QuestionModel : BaseEntity
+    public class QuestionModel
     {
+        public Guid Id { get; set; }
+
         [Required(ErrorMessage = "Nội dung câu hỏi không được để trống")]
         public string Content { get; set; }
 
