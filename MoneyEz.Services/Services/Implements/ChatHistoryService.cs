@@ -155,5 +155,36 @@ namespace MoneyEz.Services.Services.Implements
             throw new NotExistException("Not found conversation", MessageConstants.CHAT_USER_NOT_EXIST);
             
         }
+
+        public async Task<BaseResultModel> GetChatMessageHistoriesExternalByUser(Guid userId)
+        {
+            var userChats = await _unitOfWork.ChatHistoryRepository.GetByConditionAsync(
+                include: query => query.Include(x => x.ChatMessages), 
+                filter: x => x.UserId == userId);
+
+            if (userChats.Any())
+            {
+                var messages = await _unitOfWork.ChatMessageRepository
+                    .ToPaginationIncludeAsync(new PaginationParameter
+                    {
+                        PageIndex = 1,
+                        PageSize = 50
+                    },
+                    filter: q => q.ChatHistoryId == userChats.FirstOrDefault().Id,
+                    orderBy: d => d.OrderByDescending(x => x.CreatedDate));
+
+                var messageModels = _mapper.Map<List<SendChatToExternalModel>>(messages);
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = messageModels
+                };
+            }
+            else
+            {
+                throw new NotExistException("Not found conversation", MessageConstants.CHAT_USER_NOT_EXIST);
+            }
+
+        }
     }
 }

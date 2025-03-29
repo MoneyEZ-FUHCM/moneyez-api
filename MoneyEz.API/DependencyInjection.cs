@@ -108,6 +108,7 @@ namespace MoneyEz.API
                         .AllowAnyHeader()
                         .WithExposedHeaders("X-Pagination")
                         .WithExposedHeaders("X-Webhook-Secret")
+                        .WithExposedHeaders("X-External-Secret")
                         .AllowAnyMethod();
                     });
             });
@@ -248,6 +249,11 @@ namespace MoneyEz.API
             services.AddScoped<IBankAccountService, BankAccountService>();
             // config chat service
             services.AddScoped<IChatService, ChatService>();
+
+            // config external service
+            services.AddScoped<IExternalApiService, ExternalApiService>();
+            services.AddScoped<IAIKnowledgeService, AIKnowledgeService>();
+
             // Register HTTP client with optional configuration
             services.AddHttpClient<IExternalApiService, ExternalApiService>(client =>
             {
