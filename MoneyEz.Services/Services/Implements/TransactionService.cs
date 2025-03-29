@@ -643,7 +643,7 @@ namespace MoneyEz.Services.Services.Implements
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status200OK,
-                    Message = "Fundraising request created successfully",
+                    Message = "Withdraw request created successfully",
                     Data = _mapper.Map<TransactionModel>(transaction)
                 };
             }

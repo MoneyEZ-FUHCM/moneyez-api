@@ -1256,6 +1256,55 @@ namespace MoneyEz.Services.Services.Implements
             return members;
         }
 
+        public async Task<BaseResultModel> CreateFundWithdrawalRequest(CreateFundWithdrawalModel createFundWithdrawalModel)
+        {
+            // Get and verify current user
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
 
+            // Get group with bank account info
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                createFundWithdrawalModel.GroupId,
+                include: q => q.Include(g => g.GroupMembers));
+
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            var groupBankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(groupFund.AccountBankId.Value);
+            if (groupBankAccount == null)
+            {
+                throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            }
+
+            // Verify user is a member of the group
+            var isMember = groupFund.GroupMembers.Any(member =>
+                member.UserId == currentUser.Id &&
+                member.Status == GroupMemberStatus.ACTIVE);
+
+            if (!isMember)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
+            }
+
+            var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
+
+            // Create a new fundraising request
+            var newFundraisingRequest = new CreateGroupTransactionModel
+            {
+                GroupId = createFundWithdrawalModel.GroupId,
+                Description = createFundWithdrawalModel.Description,
+                Amount = createFundWithdrawalModel.Amount,
+                Type = TransactionType.EXPENSE,
+                TransactionDate = CommonUtils.GetCurrentTime(),
+                Images = createFundWithdrawalModel.Images
+            };
+
+            return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest);
+        }
     }
 }
