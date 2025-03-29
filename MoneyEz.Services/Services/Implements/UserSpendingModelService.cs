@@ -771,6 +771,124 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        public async Task<BaseResultModel> NotifyUpcomingExpiredSpendingModel()
+        {
+            var currentTime = CommonUtils.GetCurrentTime();
+            var threeDaysBeforeExpiry = currentTime.AddDays(3);
+            var oneDayBeforeExpiry = currentTime.AddDays(1);
+
+            var upcomingExpiredModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
+                new PaginationParameter { PageSize = int.MaxValue, PageIndex = 1 },
+                filter: usm => usm.EndDate <= threeDaysBeforeExpiry
+                    && usm.EndDate > currentTime
+                    && !usm.IsDeleted
+            );
+
+            if (!upcomingExpiredModels.Any())
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = "No upcoming expired models found to notify."
+                };
+            }
+
+            foreach (var model in upcomingExpiredModels)
+            {
+                var user = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId.Value);
+                if (user != null)
+                {
+                    var daysUntilExpiry = (model.EndDate - currentTime)?.Days ?? 0;
+                    string title, message;
+
+                    if (daysUntilExpiry == 3)
+                    {
+                        title = "Thời gian sử dụng mô hình chi tiêu sắp hết hạn";
+                        message = $"Mô hình chi tiêu '{model.SpendingModel.Name}' mà bạn đang sử dụng sẽ kết thúc vào ngày {model.EndDate:yyyy-MM-dd}. Hãy gia hạn hoặc chọn một mô hình chi tiêu phù hợp.";
+                    }
+                    else if (daysUntilExpiry == 1)
+                    {
+                        title = "Mô hình chi tiêu sắp hết hạn";
+                        message = $"Mô hình chi tiêu '{model.SpendingModel.Name}' mà bạn đang sử dụng sẽ kết thúc vào ngày mai. Hãy chọn một mô hình chi tiêu mới trước khi hết hạn.";
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    var notification = new Notification
+                    {
+                        UserId = user.Id,
+                        Title = title,
+                        Message = message,
+                        CreatedDate = currentTime
+                    };
+
+                    await _unitOfWork.NotificationRepository.AddAsync(notification);
+                }
+            }
+
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = $"Thông báo thành công tới {upcomingExpiredModels.Count()} người dùng về mô hình đang sử dụng sắp hết hạn."
+            };
+        }
+
+        public async Task<BaseResultModel> RenewUserSpendingModelAsync(Guid userId)
+        {
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
+            var lastUsedModel = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == user.Id && usm.Status == UserSpendingModelStatus.EXPIRED,
+                orderBy: query => query.OrderByDescending(usm => usm.EndDate)
+            );
+
+            var lastModel = lastUsedModel.FirstOrDefault();
+            if (lastModel == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.SPENDING_MODEL_NOT_FOUND,
+                    Message = "No previous spending model found to renew."
+                };
+            }
+
+            var newModel = new UserSpendingModel
+            {
+                UserId = user.Id,
+                SpendingModelId = lastModel.SpendingModelId,
+                PeriodUnit = lastModel.PeriodUnit,
+                PeriodValue = lastModel.PeriodValue ?? 0,
+                StartDate = CommonUtils.GetCurrentTime(),
+                EndDate = CalculateEndDate(CommonUtils.GetCurrentTime(), (PeriodUnit)lastModel.PeriodUnit, lastModel.PeriodValue ?? 0)
+            };
+
+            await _unitOfWork.UserSpendingModelRepository.AddAsync(newModel);
+            _unitOfWork.Save();
+
+            var notification = new Notification
+            {
+                UserId = user.Id,
+                Title = "Tự động gia hạn mô hình thành công",
+                Message = $"Mô hình '{lastModel.SpendingModel.Name}' đã được tự động lựa chọn cho chu kì mới.",
+                CreatedDate = CommonUtils.GetCurrentTime()
+            };
+
+            await _unitOfWork.NotificationRepository.AddAsync(notification);
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status201Created,
+                Message = "Spending model renewed successfully."
+            };
+        }
+
         public async Task<BaseResultModel> GetSubCategoriesCurrentSpendingModelAsync(CategoryCurrentSpendingModelFiter filter)
         {
             // Get current user
