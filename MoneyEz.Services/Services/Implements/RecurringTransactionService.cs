@@ -67,8 +67,8 @@ namespace MoneyEz.Services.Services.Implements
                 paginationParameter,
                 filter: t => t.UserId == user.Id
                     && (!filter.SubcategoryId.HasValue || t.SubcategoryId == filter.SubcategoryId)
-                    && (!filter.FromDate.HasValue || t.StartDate >= filter.FromDate)
-                    && (!filter.ToDate.HasValue || t.StartDate <= filter.ToDate)
+                    && (!filter.FromDate.HasValue || t.StartDate >= filter.FromDate.Value)
+                    && (!filter.ToDate.HasValue || t.StartDate <= filter.ToDate.Value)
                     && (!filter.IsActive.HasValue || (filter.IsActive.Value
                         ? t.Status == (int)CommonsStatus.ACTIVE
                         : t.Status != (int)CommonsStatus.ACTIVE)),

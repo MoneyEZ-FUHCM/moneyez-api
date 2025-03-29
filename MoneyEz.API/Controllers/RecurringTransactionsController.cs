@@ -22,35 +22,35 @@ namespace MoneyEz.API.Controllers
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
-        [HttpPost("user")]
+        [HttpPost]
         public Task<IActionResult> AddRecurringTransaction([FromBody] CreateRecurringTransactionModel model)
         {
             return ValidateAndExecute(() => _recurringTransactionService.AddRecurringTransactionAsync(model));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
-        [HttpGet("user")]
+        [HttpGet]
         public Task<IActionResult> GetAllRecurringTransactions([FromQuery] PaginationParameter paginationParameter, [FromQuery] RecurringTransactionFilter filter)
         {
             return ValidateAndExecute(() => _recurringTransactionService.GetAllRecurringTransactionsAsync(paginationParameter, filter));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
-        [HttpGet("user/{recurringTransactionId}")]
+        [HttpGet("{recurringTransactionId}")]
         public Task<IActionResult> GetRecurringTransactionById(Guid recurringTransactionId)
         {
             return ValidateAndExecute(() => _recurringTransactionService.GetRecurringTransactionByIdAsync(recurringTransactionId));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
-        [HttpPut("user")]
+        [HttpPut]
         public Task<IActionResult> UpdateRecurringTransaction([FromBody] UpdateRecurringTransactionModel model)
         {
             return ValidateAndExecute(() => _recurringTransactionService.UpdateRecurringTransactionAsync(model));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
-        [HttpDelete("user/{recurringTransactionId}")]
+        [HttpDelete("{recurringTransactionId}")]
         public Task<IActionResult> DeleteRecurringTransaction(Guid recurringTransactionId)
         {
             return ValidateAndExecute(() => _recurringTransactionService.DeleteRecurringTransactionAsync(recurringTransactionId));
