@@ -12,6 +12,8 @@ namespace MoneyEz.Services.BusinessModels.GroupFund.GroupInvite
         [Required]
         public Guid GroupId { get; set; }
 
-        public string? Email { get; set; } = "";
+        public List<string> Emails { get; set; } = [];
+
+        public string? Description { get; set; } = "";
     }
 }

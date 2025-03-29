@@ -9,6 +9,7 @@ using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.CategoryModels;
+using MoneyEz.Services.BusinessModels.ChartModels;
 using MoneyEz.Services.BusinessModels.FinancialGoalModels;
 using MoneyEz.Services.BusinessModels.FinancialGoalModels.CreatePersonnalGoal;
 using MoneyEz.Services.BusinessModels.ResultModels;
@@ -91,6 +92,16 @@ namespace MoneyEz.Services.Services.Implements
             {
                 throw new DefaultException("Danh mục con đã chọn không thuộc mô hình chi tiêu hiện tại.",
                     MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL);
+            }
+
+            // Check if there's already an active goal for this subcategory
+            var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(user.Id, model.SubcategoryId);
+            if (existingGoal != null)
+            {
+                throw new DefaultException(
+                    "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
+                    MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
+                );
             }
 
             var isSaving = categorySubcategories.Where(cs => cs.SubcategoryId == model.SubcategoryId).First().Category.IsSaving;
@@ -545,6 +556,184 @@ namespace MoneyEz.Services.Services.Implements
                 Data = availableCategories
             };
         }
+
+        public async Task<BaseResultModel> GetChartPersonalFinacialGoalByIdAsync(Guid id, string type)
+        {
+            // Validate chart type
+            if (string.IsNullOrEmpty(type) || (type.ToLower() != "month" && type.ToLower() != "week"))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = "INVALID_CHART_TYPE",
+                    Message = "Chart type must be 'month' or 'week'."
+                };
+            }
+
+            // Get current user
+            string userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
+            // Get financial goal
+            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByIdIncludeAsync(
+                id,
+                filter: fg => fg.UserId == user.Id
+                            && fg.GroupId == null
+                            && !fg.IsDeleted,
+                include: fg => fg.Include(fg => fg.Subcategory)
+            );
+
+            if (financialGoal == null)
+            {
+                throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
+            }
+
+            // Set time range based on chart type
+            DateTime endDate = CommonUtils.GetCurrentTime();
+            DateTime startDate;
+
+            if (type.ToLower() == "month")
+            {
+                // Last 5 months including current month
+                startDate = new DateTime(endDate.Year, endDate.Month, 1).AddMonths(-4);
+            }
+            else // "week"
+            {
+                // Last 5 weeks including current week
+                // Calculate start of current week (Monday)
+                int diff = (7 + (endDate.DayOfWeek - DayOfWeek.Monday)) % 7;
+                var currentWeekStart = endDate.Date.AddDays(-diff);
+                startDate = currentWeekStart.AddDays(-28); // 4 weeks back from current week
+            }
+
+            // Get transactions for this subcategory within the time range
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id
+                          && t.SubcategoryId == financialGoal.SubcategoryId
+                          && t.TransactionDate >= startDate
+                          && t.TransactionDate <= endDate
+                          && t.Status == TransactionStatus.APPROVED
+                          && !t.IsDeleted,
+                orderBy: t => t.OrderBy(t => t.TransactionDate)
+            );
+
+            var groupedData = new List<GoalChartDataPoint>();
+
+            if (type.ToLower() == "month")
+            {
+                // Generate all 5 month periods
+                var months = new List<(int Year, int Month, DateTime Date)>();
+                var currentDate = startDate;
+
+                while (currentDate <= endDate)
+                {
+                    months.Add((currentDate.Year, currentDate.Month, new DateTime(currentDate.Year, currentDate.Month, 1)));
+                    currentDate = currentDate.AddMonths(1);
+                }
+
+                // Take only the last 5 months
+                months = months.TakeLast(5).ToList();
+
+                // Group transactions by month
+                var transactionsByMonth = new Dictionary<(int Year, int Month), decimal>();
+
+                foreach (var transaction in transactions)
+                {
+                    var key = (transaction.TransactionDate.Value.Year, transaction.TransactionDate.Value.Month);
+                    if (!transactionsByMonth.ContainsKey(key))
+                        transactionsByMonth[key] = 0;
+
+                    transactionsByMonth[key] += transaction.Amount;
+                }
+
+                // Create data points for each month, with running total
+                decimal runningTotal = 0;
+                foreach (var month in months)
+                {
+                    var key = (month.Year, month.Month);
+                    decimal monthAmount = transactionsByMonth.ContainsKey(key) ? transactionsByMonth[key] : 0;
+
+                    runningTotal += monthAmount;
+
+                    groupedData.Add(new GoalChartDataPoint
+                    {
+                        Label = month.Date.ToString("MM/yy"),
+                        Amount = runningTotal,
+                        Date = month.Date
+                    });
+                }
+            }
+            else // "week"
+            {
+                // Generate all 5 week periods
+                var weeks = new List<(DateTime Start, DateTime End)>();
+                var currentDate = startDate;
+
+                while (currentDate <= endDate)
+                {
+                    weeks.Add((currentDate, currentDate.AddDays(6)));
+                    currentDate = currentDate.AddDays(7);
+                }
+
+                // Take only the last 5 weeks
+                weeks = weeks.TakeLast(5).ToList();
+
+                // Group transactions by week
+                var transactionsByWeek = new Dictionary<DateTime, decimal>();
+
+                foreach (var transaction in transactions)
+                {
+                    // Find which week this transaction belongs to
+                    foreach (var (weekStart, weekEnd) in weeks)
+                    {
+                        if (transaction.TransactionDate >= weekStart && transaction.TransactionDate <= weekEnd)
+                        {
+                            if (!transactionsByWeek.ContainsKey(weekStart))
+                                transactionsByWeek[weekStart] = 0;
+
+                            transactionsByWeek[weekStart] += transaction.Amount;
+                            break;
+                        }
+                    }
+                }
+
+                // Create data points for each week, with running total
+                decimal runningTotal = 0;
+                foreach (var (weekStart, weekEnd) in weeks)
+                {
+                    decimal weekAmount = transactionsByWeek.ContainsKey(weekStart) ? transactionsByWeek[weekStart] : 0;
+
+                    runningTotal += weekAmount;
+
+                    groupedData.Add(new GoalChartDataPoint
+                    {
+                        Label = $"{weekStart:dd/MM}-{weekEnd:dd/MM}",
+                        Amount = runningTotal,
+                        Date = weekStart
+                    });
+                }
+            }
+
+            // Create chart model
+            var chartModel = new GoalChartModel
+            {
+                GoalName = financialGoal.Name,
+                TargetAmount = financialGoal.TargetAmount,
+                CurrentAmount = financialGoal.CurrentAmount,
+                CompletionPercentage = financialGoal.TargetAmount > 0
+                    ? Math.Min(100, (financialGoal.CurrentAmount / financialGoal.TargetAmount) * 100)
+                    : 0,
+                ChartData = groupedData
+            };
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = chartModel
+            };
+        }
+
         #endregion Personal
 
         #region Group
@@ -1256,15 +1445,15 @@ namespace MoneyEz.Services.Services.Implements
                     MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL
                 );
 
-            // Check if there's already an active goal for this subcategory
-            var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(userId, subcategoryId);
-            if (existingGoal != null)
-            {
-                throw new DefaultException(
-                    "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
-                    MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
-                );
-            }
+            //// Check if there's already an active goal for this subcategory
+            //var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(userId, subcategoryId);
+            //if (existingGoal != null)
+            //{
+            //    throw new DefaultException(
+            //        "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
+            //        MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
+            //    );
+            //}
 
             // Get the spending model category to get the percentage
             var spendingModelCategory = await _unitOfWork.SpendingModelCategoryRepository
