@@ -168,7 +168,7 @@ namespace MoneyEz.Services.Services.Implements
                     .ToPaginationIncludeAsync(new PaginationParameter
                     {
                         PageIndex = 1,
-                        PageSize = 50
+                        PageSize = 25
                     },
                     filter: q => q.ChatHistoryId == userChats.FirstOrDefault().Id,
                     orderBy: d => d.OrderByDescending(x => x.CreatedDate));
