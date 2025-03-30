@@ -20,6 +20,7 @@ namespace MoneyEz.Services.Mappers
             CreateMap<ChatHistory, ChatHistoryModel>().ForMember(dest => dest.ChatMessages, opt => opt.MapFrom(src => src.ChatMessages));
             CreateMap<Pagination<ChatHistory>, Pagination<ChatHistoryModel>>().ConvertUsing<PaginationConverter<ChatHistory, ChatHistoryModel>>();
             CreateMap<ChatMessage, SendChatToExternalModel>()
+                .ForMember(dest => dest.ConversationId, opt => opt.MapFrom(src => src.ChatHistoryId))
                 .ForMember(dest => dest.Content, opt => opt.MapFrom(src => src.Message))
                 .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Type.ToString()))
                 .ForMember(dest => dest.Timestamp, opt => opt.MapFrom(src => src.CreatedDate));

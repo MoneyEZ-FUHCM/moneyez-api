@@ -156,7 +156,7 @@ namespace MoneyEz.Services.Services.Implements
             
         }
 
-        public async Task<BaseResultModel> GetChatMessageHistoriesExternalByUser(Guid userId)
+        public async Task<List<SendChatToExternalModel>> GetChatMessageHistoriesExternalByUser(Guid userId)
         {
             var userChats = await _unitOfWork.ChatHistoryRepository.GetByConditionAsync(
                 include: query => query.Include(x => x.ChatMessages), 
@@ -174,11 +174,7 @@ namespace MoneyEz.Services.Services.Implements
                     orderBy: d => d.OrderByDescending(x => x.CreatedDate));
 
                 var messageModels = _mapper.Map<List<SendChatToExternalModel>>(messages);
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status200OK,
-                    Data = messageModels
-                };
+                return messageModels;
             }
             else
             {
