@@ -10,6 +10,8 @@ using MoneyEz.Repositories.Commons;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using MoneyEz.Services.BusinessModels.CategoryModels;
+using MoneyEz.Repositories.Commons.Filters;
+using MoneyEz.Services.Utils;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -24,39 +26,25 @@ namespace MoneyEz.Services.Services.Implements
             _mapper = mapper;
         }
 
-        public async Task<BaseResultModel> GetSpendingModelsPaginationAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetSpendingModelsPaginationAsync(PaginationParameter paginationParameter, SpendingModelFilter filter)
         {
             // Lấy SpendingModel cùng các danh mục liên kết
-            var spendingModels = await _unitOfWork.SpendingModelRepository.ToPaginationIncludeAsync(
+            var spendingModels = await _unitOfWork.SpendingModelRepository.GetSpendingModelsFilterAsync(
                 paginationParameter,
+                filter,
                 include: query => query.Include(sm => sm.SpendingModelCategories)
                                        .ThenInclude(smc => smc.Category)
             );
 
-            // Map từ SpendingModel sang SpendingModelModel
-            var result = _mapper.Map<Pagination<SpendingModelModel>>(spendingModels);
-
-            // Chuẩn bị metadata
-            var response = new ModelPaging
-            {
-                Data = result,
-                MetaData = new
-                {
-                    result.TotalCount,
-                    result.PageSize,
-                    result.CurrentPage,
-                    result.TotalPages,
-                    result.HasNext,
-                    result.HasPrevious
-                }
-            };
+            var spendingModelModels = _mapper.Map<Pagination<SpendingModelModel>>(spendingModels);
+            var result = PaginationHelper.GetPaginationResult(spendingModels, spendingModelModels);
 
             // Trả về BaseResultModel
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = MessageConstants.SPENDING_MODEL_LIST_FETCHED_SUCCESS,
-                Data = response
+                Data = result
             };
         }
 
