@@ -50,7 +50,7 @@ namespace MoneyEz.Services.Hubs
 
             await _chatHistoryService.CreateAndUpdateConversation(botMessage);
 
-            await Clients.Caller.SendAsync("ReceiveMessage", "MoneyEzAssistant", agentResponse, CommonUtils.GetCurrentTime());
+            await Clients.Caller.SendAsync("ReceiveMessage", "MoneyEzAssistant", agentResponse.Message, CommonUtils.GetCurrentTime());
         }
 
         private string ProcessMessage(string message)
