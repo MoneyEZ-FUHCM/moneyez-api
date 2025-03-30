@@ -30,6 +30,8 @@ namespace MoneyEz.Services.Mappers
             SubcategoryMapperConfig();
             //transaction mapper
             TransactionMapperConfig();
+            //recuringtransaction mapper
+            RecurringTransactionMapperConfig();
             // group fund mapper
             GroupFundConfig();
 
@@ -65,6 +67,7 @@ namespace MoneyEz.Services.Mappers
         partial void CategoryMapperConfig();
         partial void SubcategoryMapperConfig();
         partial void TransactionMapperConfig();
+        partial void RecurringTransactionMapperConfig();
         partial void GroupFundConfig();
         partial void ChatMapperConfig();
         partial void AssetMapperConfig();

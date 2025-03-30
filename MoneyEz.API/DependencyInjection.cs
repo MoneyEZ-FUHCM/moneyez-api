@@ -143,6 +143,7 @@ namespace MoneyEz.API
 
             services.ConfigureOptions<SampleJobSetup>();
             services.ConfigureOptions<ScanUserSpendingModelJobSetup>();
+            services.ConfigureOptions<RecurringTransactionJobSetup>();
             #endregion
 
             // config webhook setting
@@ -206,6 +207,10 @@ namespace MoneyEz.API
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<ITransactionNotificationService, TransactionNotificationService>();
+
+            //recurring transaction
+            services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
+            services.AddScoped<IRecurringTransactionRepository, RecurringTransactionRepository>();
 
             // vote
             services.AddScoped<ITransactionVoteRepository, TransactionVoteRepository>();
@@ -285,8 +290,6 @@ namespace MoneyEz.API
 
             services.AddDbContext<MoneyEzContext>(options =>
             {
-                //options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
-                options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
             });
 
             #endregion

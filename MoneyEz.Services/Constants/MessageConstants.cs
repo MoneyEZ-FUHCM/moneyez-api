@@ -45,6 +45,17 @@ namespace MoneyEz.Services.Constants
         public const string ACCOUNT_BAN_SUCCESS_MESSAGE = "Banned user successfully";
         public const string ACCOUNT_UPDATE_TOKEN_SUCCESS_MESSAGE = "Update device token successfully";
 
+        //recurring transaction
+        public const string RECURRING_TRANSACTION_CREATED_SUCCESS = "RecurringTransactionCreatedSuccess";
+        public const string RECURRING_TRANSACTION_UPDATED_SUCCESS = "RecurringTransactionUpdatedSuccess";
+        public const string RECURRING_TRANSACTION_DELETED_SUCCESS = "RecurringTransactionDeletedSuccess";
+        public const string RECURRING_TRANSACTION_FETCHED_SUCCESS = "RecurringTransactionFetchedSuccess";
+        public const string RECURRING_TRANSACTION_LIST_FETCHED_SUCCESS = "RecurringTransactionListFetchedSuccess";
+        public const string RECURRING_TRANSACTION_NOT_FOUND = "RecurringTransactionNotFound";
+        public const string RECURRING_TRANSACTION_ACCESS_DENIED = "RecurringTransactionAccessDenied";
+        public const string RECURRING_TRANSACTION_DELETE_DENIED = "RecurringTransactionDeleteDenied";
+
+
         // Spending model
         public const string SPENDING_MODEL_LIST_FETCHED_SUCCESS = "SpendingModelListFetched"; //Spending model list fetched successfully.
         public const string SPENDING_MODEL_FETCHED_SUCCESS = "SpendingModelFetched"; // Spending model details fetched successfully."
