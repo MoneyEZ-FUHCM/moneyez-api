@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using System.Net.WebSockets;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -135,8 +136,14 @@ namespace MoneyEz.Services.Services.Implements
                 _httpClient.DefaultRequestHeaders.Clear();
                 _httpClient.DefaultRequestHeaders.Add("X-External-Secret", "thisIsSerectKeyPythonService");
 
-                var response = await _httpClient.PostAsJsonAsync("http://178.128.118.171:8888/api/receive_message", request);
-                //var response = await _httpClient.PostAsJsonAsync("http://localhost:8000/api/receive_message", request);
+                var jsonString = JsonConvert.SerializeObject(request);
+                Console.WriteLine("JSON payload: " + jsonString);
+
+                var response = await _httpClient.PostAsJsonAsync("http://178.128.118.171:8888/api/receive_message", new
+                {
+                    data = jsonString
+                });
+                //var response = await _httpClient.PostAsJsonAsync("http://127.0.0.1:8000/api/receive_message", request);
 
                 if (response.IsSuccessStatusCode)
                 {

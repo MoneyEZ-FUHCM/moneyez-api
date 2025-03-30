@@ -42,7 +42,7 @@ namespace MoneyEz.Services.Services.Implements
                     UserId = userId,
                     Message = message,
                     ConversationId = chatHistories.FirstOrDefault().ConversationId,
-                    PreviousMessage = chatHistories
+                    PreviousMessages = chatHistories
                 });
 
                 if (apiResponse.IsSuccess == false)

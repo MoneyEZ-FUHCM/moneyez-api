@@ -7,7 +7,7 @@ namespace MoneyEz.Services.BusinessModels.ChatModels
         public string Message { get; set; } = "";
         public Guid UserId { get; set; }
         public Guid ConversationId { get; set; }
-        public List<SendChatToExternalModel> PreviousMessage = new List<SendChatToExternalModel>();
+        public List<SendChatToExternalModel> PreviousMessages = new List<SendChatToExternalModel>();
     }
 
     public class ChatMessageResponse
