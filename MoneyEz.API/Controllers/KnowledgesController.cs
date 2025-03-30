@@ -7,7 +7,7 @@ using MoneyEz.Services.Services.Interfaces;
 
 namespace MoneyEz.API.Controllers
 {
-    [Route("api/knowledges")]
+    [Route("api/v1/knowledges")]
     [ApiController]
     public class KnowledgesController : BaseController
     {

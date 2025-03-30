@@ -38,7 +38,8 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //transaction
         ITransactionRepository TransactionsRepository { get; }
-        
+        //recurring transaction
+        IRecurringTransactionRepository RecurringTransactionRepository { get; }
         //vote
         ITransactionVoteRepository TransactionVoteRepository { get; }
 
