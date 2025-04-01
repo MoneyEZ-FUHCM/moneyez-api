@@ -34,6 +34,8 @@ namespace MoneyEz.Repositories.Repositories.Implements
 
             if (groupId.HasValue)
                 query = query.Where(t => t.GroupId == groupId.Value);
+            else
+                query = query.Where(t => t.GroupId == null);
 
             return await query.SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
@@ -48,6 +50,8 @@ namespace MoneyEz.Repositories.Repositories.Implements
 
             if (groupId.HasValue)
                 query = query.Where(t => t.GroupId == groupId.Value);
+            else
+                query = query.Where(t => t.GroupId == null);
 
             return await query.SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
