@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
+using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.Repositories.Interfaces;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Services.BusinessModels;
@@ -66,6 +67,35 @@ namespace MoneyEz.Services.Services.Implements
             var accounts = await _unitOfWork.BankAccountRepository
                 .ToPaginationIncludeAsync(paginationParameter, filter: uid => uid.UserId == user.Id);
             var accountModels = _mapper.Map<List<BankAccountModel>>(accounts);
+            
+            // Check if user is a leader in any groups
+            var groupsAsLeader = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: m => m.UserId == user.Id && 
+                            m.Role == RoleGroup.LEADER && 
+                            m.Status == GroupMemberStatus.ACTIVE && 
+                            !m.IsDeleted);
+            
+            if (groupsAsLeader.Any())
+            {
+                // Get all group funds where the user is a leader
+                var groupIds = groupsAsLeader.Select(g => g.GroupId).ToList();
+                var groupFunds = await _unitOfWork.GroupFundRepository.GetByConditionAsync(
+                    filter: gf => groupIds.Contains(gf.Id) && 
+                                 gf.AccountBankId != null);
+                
+                // Create a hashset for faster lookups
+                var accountsInGroups = groupFunds
+                    .Where(gf => gf.AccountBankId.HasValue)
+                    .Select(gf => gf.AccountBankId.Value)
+                    .ToHashSet();
+                
+                // Update IsHasGroup property for each account
+                foreach (var account in accountModels)
+                {
+                    account.IsHasGroup = accountsInGroups.Contains(account.Id);
+                }
+            }
+            
             var paginatedResult = PaginationHelper.GetPaginationResult(accounts, accountModels);
 
             return new BaseResultModel
