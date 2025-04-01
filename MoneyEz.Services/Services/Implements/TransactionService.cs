@@ -608,8 +608,6 @@ namespace MoneyEz.Services.Services.Implements
 
             await _unitOfWork.SaveAsync();
 
-            await UpdateFinancialGoalAndBalance(transaction, model.Amount);
-
             if (requiresApproval)
             {
                 await _transactionNotificationService.NotifyTransactionApprovalRequestAsync(group, transaction, user);
