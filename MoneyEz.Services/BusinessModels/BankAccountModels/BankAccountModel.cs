@@ -17,5 +17,6 @@ namespace MoneyEz.Services.BusinessModels.BankAccountModels
         public string AccountHolderName { get; set; } = null!;
         public CommonsStatus? Status { get; set; }
         public bool IsLinked { get; set; } = false;
+        public bool IsHasGroup { get; set; } = false;
     }
 }
