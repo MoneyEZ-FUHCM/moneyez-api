@@ -661,10 +661,10 @@ namespace MoneyEz.Services.Services.Implements
                 var newNotification = new Notification
                 {
                     UserId = invitedUser.Id,
-                    Title = $"Lời mời tham gia nhóm {groupFund.Name}",
+                    Title = $"Lời mời tham gia nhóm [{groupFund.Name}]",
                     Message = string.IsNullOrEmpty(inviteMemberModel.Description) ?
-                        $"Bạn đã được '{currentUser.FullName}' mời vào nhóm '{groupFund.Name}'. Ấn vào link để tham gia: {invitationLink}"
-                        : $"{inviteMemberModel.Description} Ấn vào link để tham gia: {invitationLink}",
+                        $"Bạn đã được '{currentUser.FullName}' mời vào nhóm '{groupFund.Name}'. Tham gia ngay!"
+                        : $"{inviteMemberModel.Description}",
                     EntityId = groupFund.Id,
                     Href = invitationLink,
                     Type = NotificationType.GROUP_INVITE,
