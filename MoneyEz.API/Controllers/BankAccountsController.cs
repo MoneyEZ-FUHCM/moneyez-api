@@ -71,5 +71,13 @@ namespace MoneyEz.API.Controllers
             var serverUri = HttpContext.Request.Host.ToString();
             return ValidateAndExecute(() => _webhookService.RegisterWebhookAsync(model.AccountBankId, serverUri));
         }
+
+        [HttpPost("cancel-webhook")]
+        [Authorize]
+        public Task<IActionResult> CancelWebhook([FromBody] WebhookRegisterModel model)
+        {
+            var serverUri = HttpContext.Request.Host.ToString();
+            return ValidateAndExecute(() => _webhookService.CancelWebhookAsync(model.AccountBankId, serverUri));
+        }
     }
 }

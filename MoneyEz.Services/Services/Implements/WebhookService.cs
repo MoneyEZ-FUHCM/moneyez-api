@@ -27,6 +27,11 @@ namespace MoneyEz.Services.Services.Implements
             _settings = settings.Value;
         }
 
+        public Task<BaseResultModel> CancelWebhookAsync(Guid accountBankId, string serverUri)
+        {
+            throw new DefaultException("Not implemented", "MethodNotImplement");
+        }
+
         public async Task<BaseResultModel> RegisterWebhookAsync(Guid accountBankId, string serverUri)
         {
             // Get bank account
