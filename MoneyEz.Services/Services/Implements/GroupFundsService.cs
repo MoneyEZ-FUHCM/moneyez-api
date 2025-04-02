@@ -817,7 +817,7 @@ namespace MoneyEz.Services.Services.Implements
             {
                 invitationCode = StringUtils.GenerateInviteCode();
                 var existingCode = await _redisService.GetAsync<GroupInviteRedisModel>(invitationCode);
-                if (existingCode != null)
+                if (existingCode == null)
                 {
                     break;
                 }
