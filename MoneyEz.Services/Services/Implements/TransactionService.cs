@@ -577,7 +577,7 @@ namespace MoneyEz.Services.Services.Implements
             var requestCode = StringUtils.GenerateRandomUppercaseString(8);
 
             // Format final request code with bank short name
-            var finalRequestCode = $"{requestCode}_{groupBankAccount.BankShortName}";
+            var finalRequestCode = model.Type == TransactionType.INCOME ? $"GOPQUY-{requestCode}" : $"RUTQUY-{requestCode}";
 
             var transaction = _mapper.Map<Transaction>(model);
             transaction.UserId = user.Id;
