@@ -40,7 +40,13 @@ namespace MoneyEz.Services.Services.Implements
             var otpExist = await _redisService.GetAsync<OtpModel>(key);
             if (otpExist != null)
             {
-                throw new DefaultException("Otp has been sent to your email. Please check your email.", MessageConstants.OTP_HAS_SENT);
+                var remainingTime = (otpExist.ExpiryTime - CommonUtils.GetCurrentTime()).TotalSeconds;
+                if (remainingTime > 0)
+                {
+                    throw new DefaultException(
+                        $"Mã OTP đã được gửi trước đó. Vui lòng thử lại sau {Math.Ceiling(remainingTime)} giây.",
+                        MessageConstants.OTP_HAS_SENT);
+                }
             }
 
             // default ExpiryTime otp is 5 minutes
