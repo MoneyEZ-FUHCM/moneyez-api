@@ -26,7 +26,11 @@ using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.BusinessModels.ImageModels;
 using MoneyEz.Repositories.Commons.Filters;
 using Microsoft.AspNetCore.Http.HttpResults;
-
+using MoneyEz.Services.BusinessModels.GroupFundLogModels;
+using MoneyEz.Services.BusinessModels.FinancialReportModels;
+using MoneyEz.Services.BusinessModels.GroupMemLogModels;
+using MoneyEz.Services.BusinessModels.TransactionModels.Group;
+using MoneyEz.Services.Utils.Email;
 namespace MoneyEz.Services.Services.Implements
 {
     public class GroupFundsService : IGroupFundsService
@@ -37,13 +41,15 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IRedisService _redisService;
         private readonly IMailService _mailService;
         private readonly INotificationService _notificationService;
+        private readonly ITransactionService _transactionService;
 
         public GroupFundsService(IMapper mapper,
             IUnitOfWork unitOfWork,
             IClaimsService claimsService,
             IRedisService redisService,
             IMailService mailService,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ITransactionService transactionService)
         {
             _mapper = mapper;
             _unitOfWork = unitOfWork;
@@ -51,6 +57,7 @@ namespace MoneyEz.Services.Services.Implements
             _redisService = redisService;
             _mailService = mailService;
             _notificationService = notificationService;
+            _transactionService = transactionService;
         }
 
         public async Task<BaseResultModel> CreateGroupFundsAsync(CreateGroupModel model)
@@ -85,24 +92,16 @@ namespace MoneyEz.Services.Services.Implements
                     Status = GroupMemberStatus.ACTIVE,
                     CreatedDate = CommonUtils.GetCurrentTime(),
                     CreatedBy = user.Email,
-                    GroupMemberLogs = new List<GroupMemberLog>
-                    {
-                        new GroupMemberLog
-                        {
-                            ChangeDiscription = $"{user.FullName} đã tham gia nhóm",
-                            ChangeType = GroupAction.JOINED,
-                            CreatedDate = CommonUtils.GetCurrentTime(),
-                            CreatedBy = user.Email
-                        }
-                    }
                 }
             };
+
             groupFund.GroupFundLogs = new List<GroupFundLog>
             {
                 new GroupFundLog
                 {
-                    ChangeDescription = $"{user.FullName} đã tạo nhóm",
-                    Action = GroupAction.CREATED,
+                    ChangedBy = user.FullName,
+                    ChangeDescription = "đã tạo nhóm",
+                    Action = GroupAction.CREATED.ToString(),
                     CreatedDate = CommonUtils.GetCurrentTime(),
                     CreatedBy = user.Email
                 }
@@ -219,7 +218,7 @@ namespace MoneyEz.Services.Services.Implements
             var groupFund = await _unitOfWork.GroupFundRepository
                 .GetByIdIncludeAsync(groupId, include: q => q
                     .Include(x => x.GroupFundLogs)
-                    .Include(x => x.GroupMembers).ThenInclude(gm => gm.GroupMemberLogs));
+                    .Include(x => x.GroupMembers));
             if (groupFund == null)
             {
                 return new BaseResultModel
@@ -252,8 +251,9 @@ namespace MoneyEz.Services.Services.Implements
                 // Add a log entry for the disband group action
                 groupFund.GroupFundLogs.Add(new GroupFundLog
                 {
-                    ChangeDescription = $"Quỹ đã được đóng bởi {currentUser.FullName}",
-                    Action = GroupAction.DELETED,
+                    ChangedBy = currentUser.FullName,
+                    ChangeDescription = $"đã chuyển nhóm vào chế độ lưu trữ",
+                    Action = GroupAction.DISBANDED.ToString(),
                     CreatedDate = CommonUtils.GetCurrentTime(),
                     CreatedBy = currentUser.Email
                 });
@@ -267,12 +267,6 @@ namespace MoneyEz.Services.Services.Implements
 
                 // get group member
                 var groupMembers = groupFund.GroupMembers;
-
-                // delete member logs
-                foreach (var member in groupMembers)
-                {
-                    _unitOfWork.GroupMemberLogRepository.PermanentDeletedListAsync(member.GroupMemberLogs.ToList());
-                }
 
                 // delete member
                 _unitOfWork.GroupMemberRepository.PermanentDeletedListAsync(groupMembers.ToList());
@@ -365,10 +359,11 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
-                memberToRemove.GroupMemberLogs.Add(new GroupMemberLog
+                groupFund.GroupFundLogs.Add(new GroupFundLog
                 {
-                    ChangeDiscription = $"{removeMember.FullName} đã rời khỏi nhóm",
-                    ChangeType = GroupAction.DELETED,
+                    ChangedBy = removeMember.FullName,
+                    ChangeDescription = $"đã rời khỏi nhóm",
+                    Action = GroupAction.LEFT.ToString(),
                     CreatedDate = CommonUtils.GetCurrentTime(),
                     CreatedBy = currentUser.Email
                 });
@@ -463,9 +458,10 @@ namespace MoneyEz.Services.Services.Implements
             // Add a log entry for the role change action
             groupFund.GroupFundLogs.Add(new GroupFundLog
             {
-                ChangeDescription = $"{currentUser.FullName} đã thay đổi vai trò của " +
+                ChangedBy = currentUser.FullName,
+                ChangeDescription = $"đã thay đổi vai trò của " +
                     $"{memberUpdateInfo.FullName} thành {setRoleGroupModel.RoleGroup.ToString()}",
-                Action = GroupAction.UPDATED,
+                Action = GroupAction.UPDATED.ToString(),
                 CreatedDate = CommonUtils.GetCurrentTime(),
                 CreatedBy = currentUser.Email
             });
@@ -576,92 +572,108 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            // check invite member
-            var inviteUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(inviteMemberModel.Email);
-            if (inviteUser == null)
+            var users = await _unitOfWork.UsersRepository.GetAllAsync();
+            var emailSet = new HashSet<string>(inviteMemberModel.Emails);
+
+            var invitedUsers = users.Where(u => emailSet.Contains(u.Email)).ToList();
+
+            if (invitedUsers.Count != emailSet.Count)
             {
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
 
-            // check member is exist in group
-            var memberExist = groupFund.GroupMembers.FirstOrDefault(member => member.UserId == inviteUser.Id);
-            if (memberExist != null && memberExist.Status == GroupMemberStatus.ACTIVE)
+            // check list member
+            foreach (var invitedUser in invitedUsers) 
             {
-                throw new DefaultException("", MessageConstants.GROUP_MEMBER_EXIST);
-            }
-            else if (memberExist == null)
-            {
-                // Add the member to the group with a pending status
-                var pendingMember = new GroupMember
+                // check member is exist in group
+                var memberExist = groupFund.GroupMembers.FirstOrDefault(member => member.UserId == invitedUser.Id);
+                if (memberExist != null && memberExist.Status == GroupMemberStatus.ACTIVE)
                 {
-                    UserId = inviteUser.Id,
-                    ContributionPercentage = 0,
-                    Role = RoleGroup.MEMBER,
-                    Status = GroupMemberStatus.PENDING,
-                    CreatedDate = CommonUtils.GetCurrentTime(),
-                    CreatedBy = currentUser.Email,
+                    throw new DefaultException("", MessageConstants.GROUP_MEMBER_EXIST);
+                }
+                else if (memberExist == null)
+                {
+                    // Add the member to the group with a pending status
+                    var pendingMember = new GroupMember
+                    {
+                        UserId = invitedUser.Id,
+                        ContributionPercentage = 0,
+                        Role = RoleGroup.MEMBER,
+                        Status = GroupMemberStatus.PENDING,
+                        CreatedDate = CommonUtils.GetCurrentTime(),
+                        CreatedBy = currentUser.Email,
+                    };
+                    groupFund.GroupMembers.Add(pendingMember);
+                }
+
+                // Generate a raw invitation token
+                var rawToken = Guid.NewGuid().ToString();
+
+                // hash token use hmac sha256
+                var hashedToken = StringUtils.HashToken(rawToken);
+
+                var invitationLink = $"https://easymoney.anttravel.online/moneyez-web/accept-invitation?token={HttpUtility.UrlEncode(hashedToken)}";
+                //var invitationLink = $"http://localhost:3000/moneyez-web/accept-invitation?token={HttpUtility.UrlEncode(invitationToken)}";
+
+                // Save the invitation token to Redis
+                var redisKey = hashedToken;
+                var groupInviteRedisModel = new GroupInviteRedisModel
+                {
+                    GroupId = inviteMemberModel.GroupId,
+                    UserId = invitedUser.Id
                 };
-                groupFund.GroupMembers.Add(pendingMember);
+                await _redisService.SetAsync(redisKey, groupInviteRedisModel, TimeSpan.FromDays(1));
+
+                string defaultDescription = $"Bạn đã được '{currentUser.FullName}' mời vào nhóm '{groupFund.Name}'. Ấn vào link để tham gia: {invitationLink}";
+
+                string emailBody = SendInviteGroupMember
+                    .EmailSendInviteGroupMember(currentUser.FullName, invitedUser.FullName, groupFund.Name, 
+                        string.IsNullOrEmpty(inviteMemberModel.Description) ? defaultDescription : inviteMemberModel.Description, invitationLink);
+
+                // send mail
+                MailRequest newEmail = new MailRequest()
+                {
+                    ToEmail = invitedUser.Email,
+                    Subject = $"[MoneyEz] Lời mời tham gia nhóm {groupFund.Name}",
+                    Body = emailBody,
+                };
+
+                // send mail
+                await _mailService.SendEmailAsync_v2(newEmail);
+
+                // Add a log entry for the invite member action
+                groupFund.GroupFundLogs.Add(new GroupFundLog
+                {
+                    ChangedBy = currentUser.FullName,
+                    ChangeDescription = $"đã mời {invitedUser.FullName} vào nhóm qua email",
+                    Action = GroupAction.INVITED.ToString(),
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = currentUser.Email
+                });
+
+                // Save the changes to the repository
+                groupFund.UpdatedBy = currentUser.Email;
+                _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+
+                await _unitOfWork.SaveAsync();
+
+                // send notification to member
+                var newNotification = new Notification
+                {
+                    UserId = invitedUser.Id,
+                    Title = $"Lời mời tham gia nhóm [{groupFund.Name}]",
+                    Message = string.IsNullOrEmpty(inviteMemberModel.Description) ?
+                        $"Bạn đã được '{currentUser.FullName}' mời vào nhóm '{groupFund.Name}'. Tham gia ngay!"
+                        : $"{inviteMemberModel.Description}",
+                    EntityId = groupFund.Id,
+                    Href = invitationLink,
+                    Type = NotificationType.GROUP_INVITE,
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = currentUser.Email
+                };
+
+                await _notificationService.AddNotificationByUserId(invitedUser.Id, newNotification);
             }
-
-            // Generate a raw invitation token
-            var rawToken = Guid.NewGuid().ToString();
-
-            // Hash the token using BCrypt
-            var hashedToken = StringUtils.HashToken(rawToken);
-
-            var invitationLink = $"https://easymoney.anttravel.online/api/v1/groups/invite-member/email/accept?token={HttpUtility.UrlEncode(hashedToken)}";
-            //var invitationLink = $"https://localhost:7262/api/groups/{inviteMemberModel.GroupId}/accept-invitation?token={HttpUtility.UrlEncode(invitationToken)}";
-
-            // Save the invitation token to Redis
-            var redisKey = hashedToken;
-            var groupInviteRedisModel = new GroupInviteRedisModel
-            {
-                InviteToken = hashedToken,
-                GroupId = inviteMemberModel.GroupId,
-                UserId = inviteUser.Id
-            };
-            await _redisService.SetAsync(redisKey, groupInviteRedisModel, TimeSpan.FromDays(1));
-
-            // send mail
-            MailRequest newEmail = new MailRequest()
-            {
-                ToEmail = inviteMemberModel.Email,
-                Subject = $"[MoneyEz] Lời mời tham gia nhóm {groupFund.Name}",
-                Body = $"Bạn đã được '{currentUser.FullName}' mời vào nhóm '{groupFund.Name}'. Ấn vào link để tham gia: {invitationLink}"
-            };
-
-            // send mail
-            await _mailService.SendEmailAsync_v2(newEmail);
-
-            // Add a log entry for the invite member action
-            groupFund.GroupFundLogs.Add(new GroupFundLog
-            {
-                ChangeDescription = $"{inviteUser.FullName} đã được mời vào nhóm qua Email",
-                Action = GroupAction.INVITED,
-                CreatedDate = CommonUtils.GetCurrentTime(),
-                CreatedBy = currentUser.Email
-            });
-
-            // Save the changes to the repository
-            groupFund.UpdatedBy = currentUser.Email;
-            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
-            await _unitOfWork.SaveAsync();
-
-            // send notification to member
-            var newNotification = new Notification
-            {
-                UserId = inviteUser.Id,
-                Title = $"Lời mời tham gia nhóm {groupFund.Name}",
-                Message = $"Bạn đã được '{currentUser.FullName}' mời vào nhóm '{groupFund.Name}'. Ấn vào thông báo để xem chi tiết.",
-                EntityId = groupFund.Id,
-                Href = invitationLink,
-                Type = NotificationType.GROUP_INVITE,
-                CreatedDate = CommonUtils.GetCurrentTime(),
-                CreatedBy = currentUser.Email
-            };
-
-            await _notificationService.AddNotificationByUserId(inviteUser.Id, newNotification);
 
             // Return a success result
             return new BaseResultModel
@@ -718,16 +730,16 @@ namespace MoneyEz.Services.Services.Implements
                 memberExist.IsDeleted = false;
                 memberExist.Status = GroupMemberStatus.ACTIVE;
                 memberExist.UpdatedDate = CommonUtils.GetCurrentTime();
-                memberExist.GroupMemberLogs = new List<GroupMemberLog>
+
+                // add log
+                groupFund.GroupFundLogs.Add(new GroupFundLog
                 {
-                    new GroupMemberLog
-                    {
-                        ChangeDiscription = $"{userInvite.FullName} đã tham gia nhóm",
-                        ChangeType = GroupAction.JOINED,
-                        CreatedDate = CommonUtils.GetCurrentTime(),
-                        CreatedBy = userInvite.Email
-                    }
-                };
+                    ChangedBy = userInvite.FullName,
+                    ChangeDescription = $"đã tham gia nhóm qua email",
+                    Action = GroupAction.JOINED.ToString(),
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = userInvite.Email
+                });
 
                 // Save the changes to the repository
                 groupFund.UpdatedBy = userInvite.Email;
@@ -799,17 +811,23 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            // Generate a raw invitation token
-            var rawToken = Guid.NewGuid().ToString();
-
-            // Hash the token using BCrypt
-            var hashedToken = StringUtils.HashToken(rawToken);
+            // generate inivitation code
+            var invitationCode = "";
+            while (true)
+            {
+                invitationCode = StringUtils.GenerateInviteCode();
+                var existingCode = await _redisService.GetAsync<GroupInviteRedisModel>(invitationCode);
+                if (existingCode != null)
+                {
+                    break;
+                }
+            }
 
             // Save the invitation token to Redis
-            var redisKey = hashedToken;
+            var redisKey = invitationCode;
             var groupInviteRedisModel = new GroupInviteRedisModel
             {
-                InviteToken = hashedToken,
+                InviteToken = invitationCode,
                 GroupId = inviteMemberModel.GroupId
             };
             await _redisService.SetAsync(redisKey, groupInviteRedisModel, TimeSpan.FromMinutes(10));
@@ -817,8 +835,9 @@ namespace MoneyEz.Services.Services.Implements
             // Add a log entry for the invite member action
             groupFund.GroupFundLogs.Add(new GroupFundLog
             {
-                ChangeDescription = $"{currentUser.FullName} đã tạo liên kết mời vào nhóm",
-                Action = GroupAction.INVITED,
+                ChangedBy = currentUser.FullName,
+                ChangeDescription = $"đã tạo liên kết mời vào nhóm",
+                Action = GroupAction.INVITED.ToString(),
                 CreatedDate = CommonUtils.GetCurrentTime(),
                 CreatedBy = currentUser.Email
             });
@@ -833,7 +852,7 @@ namespace MoneyEz.Services.Services.Implements
                 Status = StatusCodes.Status200OK,
                 Data = new QRCodeInviteModel
                 {
-                    QRCode = hashedToken,
+                    QRCode = invitationCode,
                     ExpiredTime = CommonUtils.GetCurrentTime().AddMinutes(10)
                 },
                 Message = "Đã tạo mã QRCode mời vào nhóm. Mã có hiệu lực trong 10 phút"
@@ -879,16 +898,16 @@ namespace MoneyEz.Services.Services.Implements
                 memberExist.IsDeleted = false;
                 memberExist.Status = GroupMemberStatus.ACTIVE;
                 memberExist.UpdatedDate = CommonUtils.GetCurrentTime();
-                memberExist.GroupMemberLogs = new List<GroupMemberLog>
+
+                // Add a log entry for the invite member action
+                groupFund.GroupFundLogs.Add(new GroupFundLog
                 {
-                    new GroupMemberLog
-                    {
-                        ChangeDiscription = $"{currentUser.FullName} đã tham gia nhóm",
-                        ChangeType = GroupAction.JOINED,
-                        CreatedDate = CommonUtils.GetCurrentTime(),
-                        CreatedBy = currentUser.Email
-                    }
-                };
+                    ChangedBy = currentUser.FullName,
+                    ChangeDescription = $"đã tham gia nhóm qua liên kết mời",
+                    Action = GroupAction.JOINED.ToString(),
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = currentUser.Email
+                });
 
                 // Save the changes to the repository
                 _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
@@ -908,18 +927,17 @@ namespace MoneyEz.Services.Services.Implements
                 ContributionPercentage = 0,
                 Role = RoleGroup.MEMBER,
                 Status = GroupMemberStatus.ACTIVE,
-                CreatedDate = CommonUtils.GetCurrentTime(),
-                GroupMemberLogs = new List<GroupMemberLog>
-                {
-                    new GroupMemberLog
-                    {
-                        ChangeDiscription = $"{currentUser.FullName} đã tham gia nhóm",
-                        ChangeType = GroupAction.JOINED,
-                        CreatedDate = CommonUtils.GetCurrentTime(),
-                        CreatedBy = currentUser.Email
-                    }
-                }
+                CreatedDate = CommonUtils.GetCurrentTime()
             };
+
+            groupFund.GroupFundLogs.Add(new GroupFundLog
+            {
+                ChangedBy = currentUser.FullName,
+                ChangeDescription = $"đã tham gia nhóm qua liên kết mời",
+                Action = GroupAction.JOINED.ToString(),
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
+            });
 
             groupFund.GroupMembers.Add(newMember);
 
@@ -931,7 +949,11 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = MessageConstants.GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE
+                Message = MessageConstants.GROUP_INVITATION_ACCEPT_SUCCESS_MESSAGE,
+                Data = new
+                {
+                    GroupId = groupFund.Id
+                }
             };
         }
 
@@ -980,10 +1002,12 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            memberToRemove.GroupMemberLogs.Add(new GroupMemberLog
+            // add log
+            groupFund.GroupFundLogs.Add(new GroupFundLog
             {
-                ChangeDiscription = $"{currentUser.FullName} đã rời khỏi nhóm",
-                ChangeType = GroupAction.DELETED,
+                ChangedBy = currentUser.FullName,
+                ChangeDescription = $"{currentUser.FullName} đã rời khỏi nhóm",
+                Action = GroupAction.LEFT.ToString(),
                 CreatedDate = CommonUtils.GetCurrentTime(),
                 CreatedBy = currentUser.Email
             });
@@ -1051,8 +1075,9 @@ namespace MoneyEz.Services.Services.Implements
             // Add log entry for contribution update
             groupFund.GroupFundLogs.Add(new GroupFundLog
             {
-                ChangeDescription = $"{currentUser.FullName} đã cập nhật tỷ lệ đóng góp cho các thành viên",
-                Action = GroupAction.UPDATED,
+                ChangedBy = currentUser.FullName,
+                ChangeDescription = $"đã cập nhật tỷ lệ đóng góp cho các thành viên",
+                Action = GroupAction.UPDATED.ToString(),
                 CreatedDate = CommonUtils.GetCurrentTime(),
                 CreatedBy = currentUser.Email
             });
@@ -1119,139 +1144,21 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
             }
 
-            // Generate random 10-digit code
-            var requestCode = StringUtils.GenerateRandomUppercaseString(8);
+            var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
 
-            // Format final request code with bank short name
-            var finalRequestCode = $"{requestCode}_{groupBankAccount.BankShortName}";
-
-            // Create new transaction
-            var transaction = new Transaction
+            // Create a new fundraising request
+            var newFundraisingRequest = new CreateGroupTransactionModel
             {
-                GroupId = groupFund.Id,
-                UserId = currentUser.Id,
-                Amount = createFundraisingModel.Amount,
+                GroupId = createFundraisingModel.GroupId,
                 Description = createFundraisingModel.Description,
+                Amount = createFundraisingModel.Amount,
                 Type = TransactionType.INCOME,
-                Status = TransactionStatus.PENDING,
-                RequestCode = finalRequestCode,
                 TransactionDate = CommonUtils.GetCurrentTime(),
-                CreatedBy = currentUser.Email,
-                ApprovalRequired = true
             };
 
-            await _unitOfWork.TransactionsRepository.AddAsync(transaction);
-            await _unitOfWork.SaveAsync();
-
-            // Create response with bank account info
-            var response = new FundraisingTransactionResponse
-            {
-                RequestCode = finalRequestCode,
-                Amount = transaction.Amount,
-                Status = transaction.Status.ToString(),
-                BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
-            };
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = "Fundraising request created successfully",
-                Data = response
-            };
+            return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest);
         }
 
-        /*        public async Task<BaseResultModel> ResponsePendingTransaction(UpdateGroupTransactionModel updateGroupTransactionModel)
-                {
-                    // Get current user and verify existence
-                    var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
-                    if (currentUser == null)
-                    {
-                        throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
-                    }
-
-                    // Get group with members to verify leadership
-                    var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
-                        updateGroupTransactionModel.GroupId,
-                        include: q => q.Include(g => g.GroupMembers)
-                    );
-
-                    if (groupFund == null)
-                    {
-                        throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
-                    }
-
-                    // Verify user is leader of the group
-                    var isLeader = groupFund.GroupMembers.Any(member =>
-                        member.UserId == currentUser.Id &&
-                        member.Role == RoleGroup.LEADER || member.Role == RoleGroup.MOD &&
-                        member.Status == GroupMemberStatus.ACTIVE);
-
-                    if (!isLeader)
-                    {
-                        throw new DefaultException("", MessageConstants.TRANSACTION_UPDATE_DENIED);
-                    }
-
-                    // Get and verify transaction
-                    var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(updateGroupTransactionModel.TransactionId);
-                    if (transaction == null)
-                    {
-                        throw new NotExistException("", MessageConstants.TRANSACTION_NOT_FOUND);
-                    }
-
-                    // Verify transaction belongs to group
-                    if (transaction.GroupId != updateGroupTransactionModel.GroupId)
-                    {
-                        throw new DefaultException("", MessageConstants.TRANSACTION_NOT_IN_GROUP);
-                    }
-
-                    // Verify transaction is in PENDING status
-                    if (transaction.Status != TransactionStatus.PENDING)
-                    {
-                        throw new DefaultException("", MessageConstants.TRANSACTION_MUST_BE_PENDING);
-                    }
-
-                    // verify transaction is required approval
-                    if (transaction.ApprovalRequired == false)
-                    {
-                        throw new DefaultException("Transaction must be require approval", MessageConstants.TRANSACTION_APPROVE_DENIED);
-                    }
-
-                    // Update transaction status
-                    transaction.Status = updateGroupTransactionModel.Status;
-                    transaction.UpdatedBy = currentUser.Email;
-                    transaction.UpdatedDate = CommonUtils.GetCurrentTime();
-
-                    // Update group balance if transaction is approved
-                    if (updateGroupTransactionModel.Status == TransactionStatus.APPROVED)
-                    {
-                        if (transaction.Type == TransactionType.INCOME)
-                        {
-                            groupFund.CurrentBalance += transaction.Amount;
-                        }
-                        else
-                        {
-                            groupFund.CurrentBalance -= transaction.Amount;
-                        }
-                        groupFund.UpdatedBy = currentUser.Email;
-                        _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
-                    }
-
-                    // Update transaction in repository
-                    _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
-
-                    // push noti to member in group
-
-
-                    await _unitOfWork.SaveAsync();
-
-                    return new BaseResultModel
-                    {
-                        Status = StatusCodes.Status200OK,
-                        Message = MessageConstants.TRANSACTION_RESPONSE_SUCCESS,
-                        Data = _mapper.Map<TransactionModel>(transaction)
-                    };
-                }
-        */
         public async Task<GroupMember> GetGroupLeader(Guid groupId)
         {
             // Get group with members
@@ -1278,7 +1185,54 @@ namespace MoneyEz.Services.Services.Implements
 
             return leader;
         }
+        
+        public async Task<BaseResultModel> GetGroupFundLogs(Guid groupId, PaginationParameter paginationParameters, GroupLogFilter filter)
+        {
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
 
+            // Kiểm tra xem user có thuộc nhóm quỹ không
+            var groupMembers = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == groupId && gm.UserId == currentUser.Id,
+                include: gm => gm.Include(gm => gm.User)
+            );
+
+            if (!groupMembers.Any())
+            {
+                throw new DefaultException("You can not access this group.", MessageConstants.GROUP_ACCESS_DENIED);
+            }
+
+            var logsPagination = await _unitOfWork.GroupFundLogRepository.GetGroupFundLogsFilter(
+                   paginationParameters,
+                   filter,
+                   condition: log => log.GroupId == groupId
+             );
+
+            var groupFundLogModels = _mapper.Map<List<GroupFundLogModel>>(logsPagination);
+
+            var allUser = await _unitOfWork.UsersRepository.GetAllAsync();
+            foreach (var log in groupFundLogModels)
+            {
+                var user = allUser.FirstOrDefault(u => u.Email == log.CreatedBy);
+                if (user != null)
+                {
+                    log.ImageUrl = user.AvatarUrl;
+                }
+            }
+
+            var result = PaginationHelper.GetPaginationResult(logsPagination, groupFundLogModels);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Success",
+                Data = result
+            };
+        }
+        
         public async Task<List<GroupMember>> GetGroupMembers(Guid groupId)
         {
             // Get group with members
@@ -1302,6 +1256,55 @@ namespace MoneyEz.Services.Services.Implements
             return members;
         }
 
+        public async Task<BaseResultModel> CreateFundWithdrawalRequest(CreateFundWithdrawalModel createFundWithdrawalModel)
+        {
+            // Get and verify current user
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
 
+            // Get group with bank account info
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                createFundWithdrawalModel.GroupId,
+                include: q => q.Include(g => g.GroupMembers));
+
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            var groupBankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(groupFund.AccountBankId.Value);
+            if (groupBankAccount == null)
+            {
+                throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            }
+
+            // Verify user is a member of the group
+            var isMember = groupFund.GroupMembers.Any(member =>
+                member.UserId == currentUser.Id &&
+                member.Status == GroupMemberStatus.ACTIVE);
+
+            if (!isMember)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
+            }
+
+            var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id && member.Role == RoleGroup.LEADER);
+
+            // Create a new fundraising request
+            var newFundraisingRequest = new CreateGroupTransactionModel
+            {
+                GroupId = createFundWithdrawalModel.GroupId,
+                Description = createFundWithdrawalModel.Description,
+                Amount = createFundWithdrawalModel.Amount,
+                Type = TransactionType.EXPENSE,
+                TransactionDate = CommonUtils.GetCurrentTime(),
+                Images = createFundWithdrawalModel.Images
+            };
+
+            return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest);
+        }
     }
 }

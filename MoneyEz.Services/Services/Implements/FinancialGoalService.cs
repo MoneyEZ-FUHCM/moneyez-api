@@ -9,6 +9,7 @@ using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.CategoryModels;
+using MoneyEz.Services.BusinessModels.ChartModels;
 using MoneyEz.Services.BusinessModels.FinancialGoalModels;
 using MoneyEz.Services.BusinessModels.FinancialGoalModels.CreatePersonnalGoal;
 using MoneyEz.Services.BusinessModels.ResultModels;
@@ -30,18 +31,24 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
         private readonly INotificationService _notificationService;
+        private readonly ITransactionNotificationService _transactionNotificationService;
+        private readonly IGoalPredictionService _goalPredictionService;
 
         public FinancialGoalService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             IClaimsService claimsService,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ITransactionNotificationService transactionNotificationService,
+            IGoalPredictionService goalPredictionService)
 
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
             _notificationService = notificationService;
+            _transactionNotificationService = transactionNotificationService;
+            _goalPredictionService = goalPredictionService;
         }
 
         #region Personal
@@ -69,9 +76,10 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var categoryIds = spendingModelCategories.Select(smc => smc.CategoryId).ToList();
+
             var categorySubcategories = await _unitOfWork.CategorySubcategoryRepository.GetByConditionAsync(
                 filter: cs => categoryIds.Contains(cs.CategoryId),
-                include: cs => cs.Include(cs => cs.Subcategory)
+                include: cs => cs.Include(cs => cs.Subcategory).Include(cs => cs.Category)
             );
 
             if (!categorySubcategories.Any())
@@ -85,6 +93,18 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Danh mục con đã chọn không thuộc mô hình chi tiêu hiện tại.",
                     MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL);
             }
+
+            // Check if there's already an active goal for this subcategory
+            var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(user.Id, model.SubcategoryId);
+            if (existingGoal != null)
+            {
+                throw new DefaultException(
+                    "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
+                    MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
+                );
+            }
+
+            var isSaving = categorySubcategories.Where(cs => cs.SubcategoryId == model.SubcategoryId).First().Category.IsSaving;
 
             var availableBudget = await CalculateMaximumTargetAmountSubcategory(model.SubcategoryId, user.Id);
             if (model.TargetAmount > availableBudget)
@@ -127,9 +147,36 @@ namespace MoneyEz.Services.Services.Implements
             financialGoal.Name = categorySubcategories.First(cs => cs.SubcategoryId == model.SubcategoryId).Subcategory.Name;
             financialGoal.NameUnsign = StringUtils.ConvertToUnSign(financialGoal.Name);
             financialGoal.CreatedBy = user.Email;
+            financialGoal.IsSaving = isSaving;
+
+            // scan existing transactions to calculate current amount
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id
+                            && t.SubcategoryId == model.SubcategoryId
+                            && t.CreatedDate >= activeSpendingModel.StartDate
+                            && t.CreatedDate <= activeSpendingModel.EndDate
+                            && t.Status == TransactionStatus.APPROVED
+                            && !t.IsDeleted
+            );
+
+            financialGoal.CurrentAmount = transactions.Sum(t => t.Amount);
 
             await _unitOfWork.FinancialGoalRepository.AddAsync(financialGoal);
             await _unitOfWork.SaveAsync();
+
+            if (model.TargetAmount <= financialGoal.CurrentAmount)
+            {
+                financialGoal.Status = FinancialGoalStatus.ARCHIVED;
+                financialGoal.ApprovalStatus = ApprovalStatus.APPROVED;
+
+                await _transactionNotificationService.NotifyGoalAchievedAsync(user, financialGoal);
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
+            }
+            else
+            {
+                await _transactionNotificationService.NotifyGoalProgressTrackingAsync(user, financialGoal);
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
+            }
 
             return new BaseResultModel
             {
@@ -178,7 +225,11 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
-            var mappedGoal = _mapper.Map<PersonalFinancialGoalModel>(financialGoal.First());
+            var goal = financialGoal.First();
+            var mappedGoal = _mapper.Map<PersonalFinancialGoalModel>(goal);
+
+            // Add prediction data
+            mappedGoal.Prediction = await _goalPredictionService.PredictGoalCompletion(id, goal.IsSaving);
 
             return new BaseResultModel
             {
@@ -355,9 +406,9 @@ namespace MoneyEz.Services.Services.Implements
                 paginationParameter,
                 new TransactionFilter
                 {
-                    UserId = user.Id,
                     SubcategoryId = goal.SubcategoryId,
                 },
+                condition: t => t.UserId == user.Id,
                 include: query => query
                     .Include(t => t.Subcategory)
             );
@@ -368,8 +419,8 @@ namespace MoneyEz.Services.Services.Implements
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
-                var transactionImage = images.Where(i => i.EntityId == transactionModel.Id).ToList();
-                transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
+                var transactionImages = images.Where(i => i.EntityId == transactionModel.Id).ToList();
+                transactionModel.Images = transactionImages.Select(i => i.ImageUrl).ToList();
             }
 
             // Create paginated result
@@ -505,6 +556,184 @@ namespace MoneyEz.Services.Services.Implements
                 Data = availableCategories
             };
         }
+
+        public async Task<BaseResultModel> GetChartPersonalFinacialGoalByIdAsync(Guid id, string type)
+        {
+            // Validate chart type
+            if (string.IsNullOrEmpty(type) || (type.ToLower() != "month" && type.ToLower() != "week"))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = "INVALID_CHART_TYPE",
+                    Message = "Chart type must be 'month' or 'week'."
+                };
+            }
+
+            // Get current user
+            string userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
+            // Get financial goal
+            var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByIdIncludeAsync(
+                id,
+                filter: fg => fg.UserId == user.Id
+                            && fg.GroupId == null
+                            && !fg.IsDeleted,
+                include: fg => fg.Include(fg => fg.Subcategory)
+            );
+
+            if (financialGoal == null)
+            {
+                throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
+            }
+
+            // Set time range based on chart type
+            DateTime endDate = CommonUtils.GetCurrentTime();
+            DateTime startDate;
+
+            if (type.ToLower() == "month")
+            {
+                // Last 5 months including current month
+                startDate = new DateTime(endDate.Year, endDate.Month, 1).AddMonths(-4);
+            }
+            else // "week"
+            {
+                // Last 5 weeks including current week
+                // Calculate start of current week (Monday)
+                int diff = (7 + (endDate.DayOfWeek - DayOfWeek.Monday)) % 7;
+                var currentWeekStart = endDate.Date.AddDays(-diff);
+                startDate = currentWeekStart.AddDays(-28); // 4 weeks back from current week
+            }
+
+            // Get transactions for this subcategory within the time range
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id
+                          && t.SubcategoryId == financialGoal.SubcategoryId
+                          && t.TransactionDate >= startDate
+                          && t.TransactionDate <= endDate
+                          && t.Status == TransactionStatus.APPROVED
+                          && !t.IsDeleted,
+                orderBy: t => t.OrderBy(t => t.TransactionDate)
+            );
+
+            var groupedData = new List<GoalChartDataPoint>();
+
+            if (type.ToLower() == "month")
+            {
+                // Generate all 5 month periods
+                var months = new List<(int Year, int Month, DateTime Date)>();
+                var currentDate = startDate;
+
+                while (currentDate <= endDate)
+                {
+                    months.Add((currentDate.Year, currentDate.Month, new DateTime(currentDate.Year, currentDate.Month, 1)));
+                    currentDate = currentDate.AddMonths(1);
+                }
+
+                // Take only the last 5 months
+                months = months.TakeLast(5).ToList();
+
+                // Group transactions by month
+                var transactionsByMonth = new Dictionary<(int Year, int Month), decimal>();
+
+                foreach (var transaction in transactions)
+                {
+                    var key = (transaction.TransactionDate.Value.Year, transaction.TransactionDate.Value.Month);
+                    if (!transactionsByMonth.ContainsKey(key))
+                        transactionsByMonth[key] = 0;
+
+                    transactionsByMonth[key] += transaction.Amount;
+                }
+
+                // Create data points for each month, with running total
+                decimal runningTotal = 0;
+                foreach (var month in months)
+                {
+                    var key = (month.Year, month.Month);
+                    decimal monthAmount = transactionsByMonth.ContainsKey(key) ? transactionsByMonth[key] : 0;
+
+                    runningTotal += monthAmount;
+
+                    groupedData.Add(new GoalChartDataPoint
+                    {
+                        Label = month.Date.ToString("MM/yy"),
+                        Amount = runningTotal,
+                        Date = month.Date
+                    });
+                }
+            }
+            else // "week"
+            {
+                // Generate all 5 week periods
+                var weeks = new List<(DateTime Start, DateTime End)>();
+                var currentDate = startDate;
+
+                while (currentDate <= endDate)
+                {
+                    weeks.Add((currentDate, currentDate.AddDays(6)));
+                    currentDate = currentDate.AddDays(7);
+                }
+
+                // Take only the last 5 weeks
+                weeks = weeks.TakeLast(5).ToList();
+
+                // Group transactions by week
+                var transactionsByWeek = new Dictionary<DateTime, decimal>();
+
+                foreach (var transaction in transactions)
+                {
+                    // Find which week this transaction belongs to
+                    foreach (var (weekStart, weekEnd) in weeks)
+                    {
+                        if (transaction.TransactionDate >= weekStart && transaction.TransactionDate <= weekEnd)
+                        {
+                            if (!transactionsByWeek.ContainsKey(weekStart))
+                                transactionsByWeek[weekStart] = 0;
+
+                            transactionsByWeek[weekStart] += transaction.Amount;
+                            break;
+                        }
+                    }
+                }
+
+                // Create data points for each week, with running total
+                decimal runningTotal = 0;
+                foreach (var (weekStart, weekEnd) in weeks)
+                {
+                    decimal weekAmount = transactionsByWeek.ContainsKey(weekStart) ? transactionsByWeek[weekStart] : 0;
+
+                    runningTotal += weekAmount;
+
+                    groupedData.Add(new GoalChartDataPoint
+                    {
+                        Label = $"{weekStart:dd/MM}-{weekEnd:dd/MM}",
+                        Amount = runningTotal,
+                        Date = weekStart
+                    });
+                }
+            }
+
+            // Create chart model
+            var chartModel = new GoalChartModel
+            {
+                GoalName = financialGoal.Name,
+                TargetAmount = financialGoal.TargetAmount,
+                CurrentAmount = financialGoal.CurrentAmount,
+                CompletionPercentage = financialGoal.TargetAmount > 0
+                    ? Math.Min(100, (financialGoal.CurrentAmount / financialGoal.TargetAmount) * 100)
+                    : 0,
+                ChartData = groupedData
+            };
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = chartModel
+            };
+        }
+
         #endregion Personal
 
         #region Group
@@ -901,25 +1130,24 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var userRole = groupMember.First().Role;
-
             var allowedStatuses = new List<FinancialGoalStatus>();
 
             if (userRole == RoleGroup.LEADER || userRole == RoleGroup.MOD)
             {
                 allowedStatuses.AddRange(new[]
                 {
-            FinancialGoalStatus.PENDING,
-            FinancialGoalStatus.ACTIVE,
-            FinancialGoalStatus.ARCHIVED
-        });
+                    FinancialGoalStatus.PENDING,
+                    FinancialGoalStatus.ACTIVE,
+                    FinancialGoalStatus.ARCHIVED
+                });
             }
             else
             {
                 allowedStatuses.AddRange(new[]
                 {
-            FinancialGoalStatus.ACTIVE,
-            FinancialGoalStatus.ARCHIVED
-        });
+                    FinancialGoalStatus.ACTIVE,
+                    FinancialGoalStatus.ARCHIVED
+                });
             }
 
             var financialGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
@@ -933,7 +1161,72 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
-            var mappedGoal = _mapper.Map<GroupFinancialGoalModel>(financialGoal.First());
+            var goal = financialGoal.First();
+            
+            // Get all group members
+            var groupMembers = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
+                filter: gm => gm.GroupId == model.GroupId && gm.Status == GroupMemberStatus.ACTIVE,
+                include: query => query.Include(gm => gm.User)
+            );
+
+            var memberCount = groupMembers.Count();
+            if (memberCount == 0)
+            {
+                throw new DefaultException("No active members found in the group.", MessageConstants.GROUP_MEMBER_NOT_FOUND);
+            }
+
+            // Calculate default equal planned contribution percentage
+            var defaultPlannedPercentage = 100m / memberCount;
+
+            // Get all transactions related to this financial goal
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == model.GroupId 
+                            && t.CreatedDate >= goal.CreatedDate 
+                            && t.CreatedDate <= goal.Deadline
+            );
+
+            // Calculate member contributions
+            var memberContributions = new List<GroupMemberContributionModel>();
+            var totalCurrentContributions = transactions.Sum(t => t.Amount);
+
+            foreach (var member in groupMembers)
+            {
+                // Calculate actual contributions
+                var memberTransactions = transactions.Where(t => t.UserId == member.UserId);
+                var currentContributionAmount = memberTransactions.Sum(t => t.Amount);
+
+                // Calculate planned amounts
+                var plannedContributionPercentage = defaultPlannedPercentage; // Can be customized per member if needed
+                var plannedTargetAmount = (goal.TargetAmount * plannedContributionPercentage) / 100;
+                
+                // Calculate remaining and completion
+                var remainingAmount = Math.Max(0, plannedTargetAmount - currentContributionAmount);
+                var completionPercentage = plannedTargetAmount > 0 
+                    ? Math.Min(100, (currentContributionAmount / plannedTargetAmount) * 100)
+                    : 0;
+
+                memberContributions.Add(new GroupMemberContributionModel
+                {
+                    UserId = member.UserId,
+                    FullName = member.User?.FullName ?? "Unknown User",
+                    // Actual metrics
+                    CurrentContributionAmount = currentContributionAmount,
+                    // Planned metrics
+                    PlannedContributionPercentage = Math.Round(plannedContributionPercentage, 2),
+                    PlannedTargetAmount = Math.Round(plannedTargetAmount, 2),
+                    // Progress metrics
+                    RemainingAmount = Math.Round(remainingAmount, 2),
+                    CompletionPercentage = Math.Round(completionPercentage, 2)
+                });
+            }
+
+            // Map the goal to the detailed model
+            var mappedGoal = _mapper.Map<GroupFinancialGoalDetailModel>(goal);
+            mappedGoal.MemberContributions = memberContributions;
+            mappedGoal.TotalCurrentAmount = Math.Round(totalCurrentContributions, 2);
+            mappedGoal.CompletionPercentage = goal.TargetAmount > 0 
+                ? Math.Round((totalCurrentContributions / goal.TargetAmount) * 100, 2)
+                : 0;
 
             return new BaseResultModel
             {
@@ -1152,15 +1445,15 @@ namespace MoneyEz.Services.Services.Implements
                     MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL
                 );
 
-            // Check if there's already an active goal for this subcategory
-            var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(userId, subcategoryId);
-            if (existingGoal != null)
-            {
-                throw new DefaultException(
-                    "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
-                    MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
-                );
-            }
+            //// Check if there's already an active goal for this subcategory
+            //var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(userId, subcategoryId);
+            //if (existingGoal != null)
+            //{
+            //    throw new DefaultException(
+            //        "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
+            //        MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
+            //    );
+            //}
 
             // Get the spending model category to get the percentage
             var spendingModelCategory = await _unitOfWork.SpendingModelCategoryRepository
@@ -1202,5 +1495,36 @@ namespace MoneyEz.Services.Services.Implements
 
             return availableBudget;
         }
+        public async Task ScanAndChangeStatusWithDueGoalAsync()
+        {
+            var currentDate = CommonUtils.GetCurrentTime();
+
+            var dueGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.Status == FinancialGoalStatus.ACTIVE
+                            && fg.Deadline <= currentDate
+                            && !fg.IsDeleted
+            );
+
+            foreach (var goal in dueGoals)
+            {
+                goal.Status = FinancialGoalStatus.ARCHIVED;
+                goal.ApprovalStatus = ApprovalStatus.APPROVED;
+                goal.UpdatedDate = currentDate;
+
+                _unitOfWork.FinancialGoalRepository.UpdateAsync(goal);
+
+                var user = await _unitOfWork.UsersRepository.GetByIdAsync(goal.UserId);
+                if (user != null)
+                {
+                    await _transactionNotificationService.NotifyGoalDueAsync(goal);
+                }
+            }
+
+            await _unitOfWork.SaveAsync();
+        }
+
+        #region job
+
+        #endregion job
     }
 }

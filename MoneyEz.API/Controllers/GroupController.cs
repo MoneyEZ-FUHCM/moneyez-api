@@ -110,12 +110,20 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundsService.SetGroupContribution(setGroupContributionModel));
         }
 
-        [HttpPost("funds/request")]
+        [HttpPost("fund-rasising/request")]
         [Authorize]
         public async Task<IActionResult> CreateFundraisingRequest([FromBody] CreateFundraisingModel model)
         {
             return await ValidateAndExecute(() => _groupFundsService.CreateFundraisingRequest(model));
         }
+
+        [HttpPost("fund-withdraw/request")]
+        [Authorize]
+        public async Task<IActionResult> CreateFundWithdrawalRequest([FromBody] CreateFundWithdrawalModel model)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.CreateFundWithdrawalRequest(model));
+        }
+
 
         //[HttpPost("funds/response")]
         //[Authorize]
@@ -123,5 +131,12 @@ namespace MoneyEz.API.Controllers
         //{
         //    return await ValidateAndExecute(() => _groupFundsService.ResponsePendingTransaction(model));
         //}
+
+        [HttpGet("logs/{id}")]
+        [Authorize]
+        public async Task<IActionResult> GetGroupFundLogs(Guid id, [FromQuery]PaginationParameter paginationParameters, [FromQuery]GroupLogFilter filter)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.GetGroupFundLogs(id, paginationParameters, filter));
+        }
     }
 }

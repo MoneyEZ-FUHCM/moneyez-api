@@ -30,6 +30,8 @@ namespace MoneyEz.Services.Mappers
             SubcategoryMapperConfig();
             //transaction mapper
             TransactionMapperConfig();
+            //recuringtransaction mapper
+            RecurringTransactionMapperConfig();
             // group fund mapper
             GroupFundConfig();
 
@@ -52,6 +54,9 @@ namespace MoneyEz.Services.Mappers
 
             // image mapper
             ImageMapperConfig();
+
+            // group fund log
+            GroupFundLogConfig();
         }
 
         partial void UserMapperConfig();
@@ -62,6 +67,7 @@ namespace MoneyEz.Services.Mappers
         partial void CategoryMapperConfig();
         partial void SubcategoryMapperConfig();
         partial void TransactionMapperConfig();
+        partial void RecurringTransactionMapperConfig();
         partial void GroupFundConfig();
         partial void ChatMapperConfig();
         partial void AssetMapperConfig();
@@ -72,6 +78,7 @@ namespace MoneyEz.Services.Mappers
         partial void BankAccountMapperConfig();
 
         partial void ImageMapperConfig();
+        partial void GroupFundLogConfig();
     }
 
     public class PaginationConverter<TSource, TDestination> : ITypeConverter<Pagination<TSource>, Pagination<TDestination>>

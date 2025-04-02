@@ -38,7 +38,8 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //transaction
         ITransactionRepository TransactionsRepository { get; }
-        
+        //recurring transaction
+        IRecurringTransactionRepository RecurringTransactionRepository { get; }
         //vote
         ITransactionVoteRepository TransactionVoteRepository { get; }
 
@@ -49,7 +50,6 @@ namespace MoneyEz.Repositories.UnitOfWork
         IGroupFundRepository GroupFundRepository { get; }
         IGroupFundLogRepository GroupFundLogRepository { get; }
         IGroupMemberRepository GroupMemberRepository { get; }
-        IGroupMemberLogRepository GroupMemberLogRepository { get; }
 
         //asset and liability
         IAssetRepository AssetRepository { get; }
@@ -68,6 +68,13 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         // bank account
         IBankAccountRepository BankAccountRepository { get; }
+
+        // quiz
+        IQuizRepository QuizRepository { get; }
+        IAnswerOptionRepository AnswerOptionRepository { get; }
+        IUserQuizResultRepository UserQuizResultRepository { get; }
+        IQuestionRepository QuestionRepository { get; }
+        IUserQuizAnswerRepository UserQuizAnswerRepository { get; }
 
         int Save();
         void Commit();

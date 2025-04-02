@@ -29,6 +29,8 @@ public partial class FinancialGoal : BaseEntity
 
     public ApprovalStatus ApprovalStatus { get; set; }
 
+    public bool IsSaving { get; set; } = false;
+
     public virtual GroupFund Group { get; set; }
 
     public virtual User User { get; set; }

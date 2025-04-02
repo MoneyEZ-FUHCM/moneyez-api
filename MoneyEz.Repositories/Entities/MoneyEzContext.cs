@@ -28,21 +28,11 @@ public partial class MoneyEzContext : DbContext
 
     public virtual DbSet<GroupMember> GroupMembers { get; set; }
 
-    public virtual DbSet<GroupMemberLog> GroupMemberLogs { get; set; }
-
     public virtual DbSet<Notification> Notifications { get; set; }
 
     public virtual DbSet<Payment> Payments { get; set; }
 
     public virtual DbSet<PlanSetting> PlanSettings { get; set; }
-
-    public virtual DbSet<Quiz> Quizzes { get; set; }
-
-    public virtual DbSet<QuizAnswer> QuizAnswers { get; set; }
-
-    public virtual DbSet<QuizQuestion> QuizQuestions { get; set; }
-
-    public virtual DbSet<QuizSetting> QuizSettings { get; set; }
 
     public virtual DbSet<RecurringTransaction> RecurringTransactions { get; set; }
 
@@ -64,8 +54,6 @@ public partial class MoneyEzContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
-    public virtual DbSet<UserQuizResult> UserQuizResults { get; set; }
-
     public virtual DbSet<UserSetting> UserSettings { get; set; }
 
     public virtual DbSet<UserSpendingModel> UserSpendingModels { get; set; }
@@ -73,6 +61,16 @@ public partial class MoneyEzContext : DbContext
     public virtual DbSet<Image> Images { get; set; }
 
     public virtual DbSet<BankAccount> BankAccounts { get; set; }
+
+    public virtual DbSet<AnswerOption> AnswerOptions { get; set; }
+
+    public virtual DbSet<Question> Questions { get; set; }
+
+    public virtual DbSet<UserQuizAnswer> UserQuizAnswers { get; set; }
+
+    public virtual DbSet<UserQuizResult> UserQuizResults { get; set; }
+
+    public virtual DbSet<Quiz> Quizzes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -240,6 +238,7 @@ public partial class MoneyEzContext : DbContext
 
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.ChangeDescription).IsRequired();
+            entity.Property(e => e.Action).HasMaxLength(40);
 
             entity.HasOne(d => d.Group).WithMany(p => p.GroupFundLogs)
                 .HasForeignKey(d => d.GroupId)
@@ -265,22 +264,6 @@ public partial class MoneyEzContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__GroupMemb__UserI__778AC167");
-        });
-
-        modelBuilder.Entity<GroupMemberLog>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__GroupMem__3214EC0785A93823");
-
-            entity.ToTable("GroupMemberLog");
-
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
-
-            entity.Property(e => e.ChangeDiscription).HasMaxLength(250);
-
-            entity.HasOne(d => d.GroupMember).WithMany(p => p.GroupMemberLogs)
-                .HasForeignKey(d => d.GroupMemberId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("FK__GroupMemb__Group__787EE5A0");
         });
 
         modelBuilder.Entity<Notification>(entity =>
@@ -330,50 +313,6 @@ public partial class MoneyEzContext : DbContext
             entity.HasOne(d => d.SubscriptionPlan).WithMany(p => p.PlanSettings)
                 .HasForeignKey(d => d.SubscriptionPlanId)
                 .HasConstraintName("FK__PlanSetti__Subsc__09A971A2");
-        });
-
-        modelBuilder.Entity<Quiz>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__Quiz__3214EC07459B7BE7");
-
-            entity.ToTable("Quiz");
-
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
-        });
-
-        modelBuilder.Entity<QuizAnswer>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__QuizAnsw__3214EC07BF3B8EBD");
-
-            entity.ToTable("QuizAnswer");
-
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
-
-            entity.HasOne(d => d.Question).WithMany(p => p.QuizAnswers)
-                .HasForeignKey(d => d.QuestionId)
-                .HasConstraintName("FK__QuizAnswe__Quest__0F624AF8");
-        });
-
-        modelBuilder.Entity<QuizQuestion>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__QuizQues__3214EC07F5493FC0");
-
-            entity.ToTable("QuizQuestion");
-
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
-
-            entity.HasOne(d => d.Quiz).WithMany(p => p.QuizQuestions)
-                .HasForeignKey(d => d.QuizId)
-                .HasConstraintName("FK__QuizQuest__QuizI__0E6E26BF");
-        });
-
-        modelBuilder.Entity<QuizSetting>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__QuizSett__3214EC07C96E3E6F");
-
-            entity.ToTable("QuizSetting");
-
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
         });
 
         modelBuilder.Entity<RecurringTransaction>(entity =>
@@ -534,25 +473,6 @@ public partial class MoneyEzContext : DbContext
             entity.Property(e => e.Address).HasMaxLength(255);
         });
 
-        modelBuilder.Entity<UserQuizResult>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__UserQuiz__3214EC07650B7C4B");
-
-            entity.ToTable("UserQuizResult");
-
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.QuizData).IsRequired();
-
-            entity.HasOne(d => d.Quiz).WithMany(p => p.UserQuizResults)
-                .HasForeignKey(d => d.QuizId)
-                .HasConstraintName("FK__UserQuizR__QuizI__0D7A0286");
-
-            entity.HasOne(d => d.User).WithMany(p => p.UserQuizResults)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__UserQuizR__UserI__0C85DE4D");
-        });
-
         modelBuilder.Entity<UserSetting>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__UserSett__3214EC0752B59B0B");
@@ -639,6 +559,84 @@ public partial class MoneyEzContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__BankAccount__UserId");
+        });
+
+        modelBuilder.Entity<Quiz>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Quiz__3214EC07459B7BE7");
+
+            entity.ToTable("Quiz");
+
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Title);
+            entity.Property(e => e.Description);
+        });
+
+        modelBuilder.Entity<Question>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Question__3214EC07");
+
+            entity.ToTable("Question");
+
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Content);
+
+            entity.HasOne(d => d.Quiz).WithMany(p => p.Questions)
+                .HasForeignKey(d => d.QuizId)
+                .HasConstraintName("FK__Question__QuizId");
+        });
+
+        modelBuilder.Entity<AnswerOption>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__AnswerOption__3214EC07");
+
+            entity.ToTable("AnswerOption");
+
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Content);
+            entity.Property(e => e.Type).HasConversion<int>();
+
+            entity.HasOne(d => d.Question).WithMany(p => p.AnswerOptions)
+                .HasForeignKey(d => d.QuestionId)
+                .HasConstraintName("FK__AnswerOption__QuestionId");
+        });
+
+        modelBuilder.Entity<UserQuizResult>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__UserQuiz__3214EC07650B7C4B");
+
+            entity.ToTable("UserQuizResult");
+
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.RecommendedModel);
+            entity.Property(e => e.TakenAt);
+
+            entity.HasOne(d => d.Quiz).WithMany(p => p.UserQuizResults)
+                .HasForeignKey(d => d.QuizId)
+                .HasConstraintName("FK__UserQuizR__QuizI__0D7A0286");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserQuizResults)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__UserQuizR__UserI__0C85DE4D");
+        });
+
+        modelBuilder.Entity<UserQuizAnswer>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__UserQuizAnswer__3214EC07");
+
+            entity.ToTable("UserQuizAnswer");
+
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.AnswerContent);
+
+            entity.HasOne(d => d.AnswerOption).WithMany(p => p.UserQuizAnswers)
+                .HasForeignKey(d => d.AnswerOptionId)
+                .HasConstraintName("FK__UserQuizAnswer__AnswerOptionId");
+
+            entity.HasOne(d => d.UserQuizResult).WithMany(p => p.UserQuizAnswers)
+                .HasForeignKey(d => d.UserQuizResultId)
+                .HasConstraintName("FK__UserQuizAnswer__UserQuizResultId");
         });
 
         OnModelCreatingPartial(modelBuilder);

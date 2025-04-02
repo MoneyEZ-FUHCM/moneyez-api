@@ -7,6 +7,7 @@ using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
+using MoneyEz.Services.BusinessModels.TransactionModels.Group;
 using MoneyEz.Services.BusinessModels.WebhookModels;
 using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
@@ -80,9 +81,10 @@ namespace MoneyEz.API.Controllers
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("groups")]
         [Authorize]
-        public Task<IActionResult> GetAllTransactionsForGroupByGroupID([FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
+        public Task<IActionResult> GetAllTransactionsForGroupByGroupID([FromQuery] Guid groupId, 
+            [FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
         {
-            return ValidateAndExecute(() => _transactionService.GetTransactionByGroupIdAsync(paginationParameter, filter));
+            return ValidateAndExecute(() => _transactionService.GetTransactionByGroupIdAsync(groupId, paginationParameter, filter));
         }
 
         [HttpPost("group/create")]
@@ -109,16 +111,10 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _transactionService.DeleteGroupTransactionAsync(transactionId));
         }
 
-        [HttpPost("group/approve/{transactionId}")]
-        public Task<IActionResult> ApproveGroupTransaction(Guid transactionId)
+        [HttpPost("group/response")]
+        public Task<IActionResult> ResponseGroupTransaction(ResponseGroupTransactionModel model)
         {
-            return ValidateAndExecute(() => _transactionService.ApproveGroupTransactionAsync(transactionId));
-        }
-
-        [HttpPost("group/reject/{transactionId}")]
-        public Task<IActionResult> RejectGroupTransaction(Guid transactionId)
-        {
-            return ValidateAndExecute(() => _transactionService.RejectGroupTransactionAsync(transactionId));
+            return ValidateAndExecute(() => _transactionService.ResponseGroupTransactionAsync(model));
         }
 
         #region vote
@@ -154,6 +150,12 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> CreateTransactionPythonService(CreateTransactionPythonModel model)
         {
             return ValidateAndExecute(() => _transactionService.CreateTransactionPythonService(model));
+        }
+
+        [HttpPut("categorize")]
+        public Task<IActionResult> CategorizeTransaction(CategorizeTransactionModel model)
+        {
+            return ValidateAndExecute(() => _transactionService.CategorizeTransactionAsync(model));
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using MoneyEz.Repositories.Entities;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.Services.Interfaces;
@@ -21,13 +22,13 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task NotifyBudgetExceededAsync(User user, Category category, decimal exceededAmount, TransactionType type)
         {
-            string title = type == TransactionType.EXPENSE
-                ? "Chi tiêu vượt hạn mức!"
-                : "Thu nhập vượt kế hoạch!";
+            string title = !category.IsSaving
+                ? "⚠️ Cảnh báo: Chi tiêu vượt hạn mức"
+                : "🎉 Chúc mừng: Tiết kiệm thành công";
 
-            string message = type == TransactionType.EXPENSE
-                ? $"Bạn đã chi vượt ngân sách cho danh mục '{category.Name}' thêm {exceededAmount:N0} VNĐ trong kỳ hiện tại."
-                : $"Bạn đã tiết kiệm thêm được {exceededAmount:N0} VNĐ cho danh mục '{category.Name}'. Tuyệt vời!";
+            string message = !category.IsSaving
+                ? $"Bạn đã vượt quá ngân sách cho danh mục '{category.Name}' với số tiền {exceededAmount:N0} VNĐ. Hãy cân nhắc điều chỉnh chi tiêu!"
+                : $"Chúc mừng! Bạn đã tiết kiệm thêm được {exceededAmount:N0} VNĐ cho danh mục '{category.Name}'. Tiếp tục duy trì bạn nhé!";
 
             var notification = new Notification
             {
@@ -44,30 +45,75 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task NotifyGoalAchievedAsync(User user, FinancialGoal goal)
         {
+            string message;
+            if (goal.IsSaving)
+            {
+                message = $"Chúc mừng! Bạn đã đạt được mục tiêu tiết kiệm '{goal.Name}' với tổng số tiền {goal.CurrentAmount:N0} VNĐ. " +
+                    $"Thành quả này thật tuyệt vời!";
+            }
+            else
+            {
+                message = $"Thông báo! Bạn đã đạt đến giới hạn ngân sách chi tiêu '{goal.Name}' với số tiền {goal.CurrentAmount:N0} VNĐ. " +
+                    $"Hãy tiếp tục quản lý tài chính hiệu quả!";
+            }
+
             var notification = new Notification
             {
                 UserId = user.Id,
-                Title = "Chúc mừng hoàn thành mục tiêu!",
-                Message = $"Bạn đã hoàn thành mục tiêu: '{goal.Name}' với số tiền tích lũy {goal.CurrentAmount:N0} VNĐ.",
+                Title = goal.IsSaving ? "🎉 Chúc mừng hoàn thành mục tiêu!" : "⚠️ Cảnh báo giới hạn ngân sách chi tiêu",
+                Message = message,
                 EntityId = user.Id,
-                Type = NotificationType.USER,
+                Type = NotificationType.FINANCIAL_GOAL_PERSONAL,
                 CreatedDate = CommonUtils.GetCurrentTime()
             };
+
             await _notificationService.AddNotificationByUserId(user.Id, notification);
         }
 
         public async Task NotifyGoalProgressTrackingAsync(User user, FinancialGoal goal)
         {
             decimal remaining = goal.TargetAmount - goal.CurrentAmount;
+            string message;
+
+            if (remaining <= 0)
+            {
+                await NotifyGoalAchievedAsync(user, goal);
+                return;
+            }
+
+            if (goal.IsSaving)
+            {
+                if (remaining < goal.TargetAmount * 0.1m)
+                {
+                    message = $"Bạn sắp đạt được mục tiêu tiết kiệm '{goal.Name}'! Chỉ còn {remaining:N0} VNĐ nữa thôi!";
+                }
+                else
+                {
+                    message = $"Bạn đã tiết kiệm được {goal.CurrentAmount:N0} VNĐ cho mục tiêu '{goal.Name}'. Hãy tiếp tục cố gắng!";
+                }
+            }
+            else
+            {
+                if (remaining < goal.TargetAmount * 0.1m)
+                {
+                    message = $"Nhắc nhở! Chỉ còn {remaining:N0} VNĐ nữa là bạn sẽ đạt đến giới hạn ngân sách chi tiêu '{goal.Name}'.";
+                }
+                else
+                {
+                    message = $"Bạn đã sử dụng {goal.CurrentAmount:N0} VNĐ trong ngân sách chi tiêu '{goal.Name}'. Hãy tiếp tục quản lý tài chính thông minh!";
+                }
+            }
+
             var notification = new Notification
             {
                 UserId = user.Id,
-                Title = "Tiến độ mục tiêu tài chính",
-                Message = $"Mục tiêu '{goal.Name}' còn thiếu {remaining:N0} VNĐ để hoàn thành.",
+                Title = "📊 Cập nhật tiến độ mục tiêu",
+                Message = message,
                 EntityId = user.Id,
-                Type = NotificationType.USER,
+                Type = NotificationType.FINANCIAL_GOAL_PERSONAL,
                 CreatedDate = CommonUtils.GetCurrentTime()
             };
+
             await _notificationService.AddNotificationByUserId(user.Id, notification);
         }
 
@@ -75,12 +121,14 @@ namespace MoneyEz.Services.Services.Implements
         public async Task NotifyTransactionApprovalRequestAsync(GroupFund group, Transaction transaction, User requester)
         {
             var leader = group.GroupMembers.FirstOrDefault(m => m.Role == RoleGroup.LEADER);
+            string action = transaction.Type == TransactionType.INCOME ? "góp quỹ" : "rút quỹ";
+
             if (leader != null)
             {
                 await _notificationService.AddNotificationByUserId(leader.UserId, new Notification
                 {
-                    Title = "Yêu cầu phê duyệt giao dịch",
-                    Message = $"Thành viên {requester.FullName} vừa tạo giao dịch cần phê duyệt: {transaction.Description}.",
+                    Title = $"Giao dịch mới trong nhóm [{group.Name}]",
+                    Message = $"{requester.FullName} đã tạo yêu cầu {action} trong nhóm '{group.Name}': '{transaction.Description}'.",
                     Type = NotificationType.GROUP,
                     EntityId = transaction.Id
                 });
@@ -89,12 +137,14 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task NotifyTransactionCreatedAsync(GroupFund group, Transaction transaction, User creator)
         {
+            string action = transaction.Type == TransactionType.INCOME ? "đã góp" : "đã rút";
+
             foreach (var member in group.GroupMembers)
             {
                 await _notificationService.AddNotificationByUserId(member.UserId, new Notification
                 {
-                    Title = "Giao dịch mới",
-                    Message = $"Giao dịch '{transaction.Description}' đã được tạo bởi {creator.FullName}.",
+                    Title = transaction.Type == TransactionType.INCOME ? "Góp quỹ thành công" : "Rút quỹ thành công",
+                    Message = $"{creator.FullName} {action} {transaction.Amount:N0} vào {group.Name} với lời nhắn \"{transaction.Description}\"",
                     Type = NotificationType.GROUP,
                     EntityId = transaction.Id
                 });
@@ -107,6 +157,17 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Title = "Hoàn thành mục tiêu tài chính!",
                 Message = $"Mục tiêu '{goal.Name}' đã đạt được!",
+                Type = NotificationType.USER,
+                EntityId = goal.Id
+            });
+        }
+
+        public async Task NotifyGoalDueAsync(FinancialGoal goal)
+        {
+            await _notificationService.AddNotificationByUserId(goal.UserId, new Notification
+            {
+                Title = "Mục tiêu tài chính kết thúc!",
+                Message = $"Mục tiêu '{goal.Name}' đã kết thúc!",
                 Type = NotificationType.USER,
                 EntityId = goal.Id
             });

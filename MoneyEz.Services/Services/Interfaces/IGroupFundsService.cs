@@ -30,8 +30,9 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> LeaveGroupAsync(Guid groupId);
         Task<BaseResultModel> SetGroupContribution(SetGroupContributionModel setGroupContributionModel);
         Task<BaseResultModel> CreateFundraisingRequest(CreateFundraisingModel createFundraisingModel);
-/*        Task<BaseResultModel> ResponsePendingTransaction(UpdateGroupTransactionModel updateGroupTransactionModel);
-*/        
+        Task<BaseResultModel> CreateFundWithdrawalRequest(CreateFundWithdrawalModel createFundWithdrawalModel);
+        Task<BaseResultModel> GetGroupFundLogs(Guid groupId, PaginationParameter paginationParameters, GroupLogFilter filter);    
+        
         // utils
         Task<GroupMember> GetGroupLeader(Guid groupId);
         Task<List<GroupMember>> GetGroupMembers(Guid groupId);

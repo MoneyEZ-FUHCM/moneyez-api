@@ -27,7 +27,7 @@ namespace MoneyEz.Services.Services.Implements
             _settings = settings.Value;
         }
 
-        public async Task<BaseResultModel> RegisterWebhookAsync(Guid accountBankId)
+        public async Task<BaseResultModel> RegisterWebhookAsync(Guid accountBankId, string serverUri)
         {
             // Get bank account
             var bankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(accountBankId)
@@ -40,12 +40,12 @@ namespace MoneyEz.Services.Services.Implements
 
             // Generate secret key
             string secretKey = SecretKeyGenerator.GenerateSecretKey();
-            string webhookUrl = _settings.ServerUrl;
+            string webhookUrl = _settings.BaseUrl;
 
             // Create webhook request
             var webhookRequest = new WebhookRequestModel
             {
-                Url = _settings.ServerUrl,
+                Url = $"https://{serverUri}{_settings.EndpointApi}",
                 Secret = secretKey,
                 AccountNumber = bankAccount.AccountNumber
             };

@@ -36,20 +36,21 @@ namespace MoneyEz.Services.Hubs
             };
             await _chatHistoryService.CreateAndUpdateConversation(userMessage);
 
-            string botResponse = ProcessMessage(message);
+            //string agentResponse = ProcessMessage(message);
+            var agentResponse = await _chatService.ProcessMessageAsync(user, message);
 
             //var botResponse = await _chatService.ProcessMessageAsync(user, message);
 
             var botMessage = new CreateChatHistoryModel
             {
                 UserId = user,
-                Message = botResponse,
+                Message = agentResponse.Message,
                 MessageType = MessageType.BOT
             };
 
             await _chatHistoryService.CreateAndUpdateConversation(botMessage);
 
-            await Clients.Caller.SendAsync("ReceiveMessage", "MoneyEzAssistant", botResponse, CommonUtils.GetCurrentTime());
+            await Clients.Caller.SendAsync("ReceiveMessage", "MoneyEzAssistant", agentResponse.Message, CommonUtils.GetCurrentTime());
         }
 
         private string ProcessMessage(string message)

@@ -1,4 +1,5 @@
 ﻿#nullable disable
+using MoneyEz.Repositories.Enums;
 using System;
 using System.Collections.Generic;
 
@@ -6,9 +7,13 @@ namespace MoneyEz.Repositories.Entities;
 
 public partial class Quiz : BaseEntity
 {
-    public Guid? SpendingModelId { get; set; }
+    public string Title { get; set; }
 
-    public virtual ICollection<QuizQuestion> QuizQuestions { get; set; } = new List<QuizQuestion>();
+    public string Description { get; set; }
+
+    public CommonsStatus Status { get; set; }
+
+    public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
 
     public virtual ICollection<UserQuizResult> UserQuizResults { get; set; } = new List<UserQuizResult>();
 }

@@ -16,7 +16,12 @@ namespace MoneyEz.Services.Mappers
     {
         partial void BankAccountMapperConfig()
         {
-            CreateMap<BankAccount, BankAccountModel>();
+            CreateMap<BankAccount, BankAccountModel>()
+                .ForMember(dest => dest.IsLinked,
+                    opt => opt.MapFrom(src =>
+                        !string.IsNullOrEmpty(src.WebhookUrl) &&
+                        !string.IsNullOrEmpty(src.WebhookSecretKey)));
+
             CreateMap<CreateBankAccountModel, BankAccount>();
             CreateMap<Pagination<BankAccount>, Pagination<BankAccountModel>>().ConvertUsing<PaginationConverter<BankAccount, BankAccountModel>>();
         }

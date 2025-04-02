@@ -3,6 +3,7 @@ using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.TransactionModels;
+using MoneyEz.Services.BusinessModels.TransactionModels.Group;
 using MoneyEz.Services.BusinessModels.WebhookModels;
 using System;
 using System.Collections.Generic;
@@ -18,12 +19,14 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model);
         Task<BaseResultModel> DeleteTransactionAsync(Guid transactionId);
         Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter);
-        Task<BaseResultModel> GetTransactionByGroupIdAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter);
+        Task<BaseResultModel> GetTransactionByGroupIdAsync(Guid groupId, 
+            PaginationParameter paginationParameter, TransactionFilter transactionFilter);
+        Task<BaseResultModel> CategorizeTransactionAsync(CategorizeTransactionModel model);
         Task<BaseResultModel> CreateGroupTransactionAsync(CreateGroupTransactionModel model);
         Task<BaseResultModel> GetGroupTransactionDetailsAsync(Guid transactionId);
         Task<BaseResultModel> UpdateGroupTransactionAsync(UpdateGroupTransactionModel model);
         Task<BaseResultModel> DeleteGroupTransactionAsync(Guid transactionId);
-        Task<BaseResultModel> ApproveGroupTransactionAsync(Guid transactionId);
+        Task<BaseResultModel> ResponseGroupTransactionAsync(ResponseGroupTransactionModel model);
         Task<BaseResultModel> RejectGroupTransactionAsync(Guid transactionId);
         Task<BaseResultModel> CreateGroupTransactionVoteAsync(CreateGroupTransactionVoteModel model);
         Task<BaseResultModel> UpdateGroupTransactionVoteAsync(UpdateGroupTransactionVoteModel model);

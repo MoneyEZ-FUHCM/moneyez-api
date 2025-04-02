@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.SpendingModelModels;
 using MoneyEz.Services.Services.Interfaces;
@@ -21,9 +22,9 @@ namespace MoneyEz.API.Controllers
         }
 
         [HttpGet]
-        public Task<IActionResult> GetSpendingModels([FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetSpendingModels([FromQuery] PaginationParameter paginationParameter, [FromQuery] SpendingModelFilter filter)
         {
-            return ValidateAndExecute(() => _spendingModelService.GetSpendingModelsPaginationAsync(paginationParameter));
+            return ValidateAndExecute(() => _spendingModelService.GetSpendingModelsPaginationAsync(paginationParameter, filter));
         }
 
         [HttpGet("{id}")]

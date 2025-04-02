@@ -17,4 +17,12 @@ namespace MoneyEz.Services.BusinessModels.ChatHistoryModels
         public string Message { get; set; } = "";
 
     }
+
+    public class SendChatToExternalModel
+    {
+        public Guid ConversationId { get; set; }
+        public string Content { get; set; } = "";
+        public string Role { get; set; } = "";
+        public DateTime Timestamp { get; set; }
+    }
 }

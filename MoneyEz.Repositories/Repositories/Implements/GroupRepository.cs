@@ -40,7 +40,8 @@ namespace MoneyEz.Repositories.Repositories.Implements
 
             if (filter.UserId.HasValue)
             {
-                query = query.Where(x => x.GroupMembers.Any(gm => gm.UserId == filter.UserId && gm.Status != GroupMemberStatus.INACTIVE));
+                query = query.Where(x => x.GroupMembers.Any(gm => gm.UserId == filter.UserId 
+                    && gm.Status == GroupMemberStatus.ACTIVE));
             }
 
             // apply filter

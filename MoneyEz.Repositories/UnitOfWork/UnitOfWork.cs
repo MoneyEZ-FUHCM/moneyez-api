@@ -44,6 +44,9 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         //transaction
         private ITransactionRepository _transactionsRepository;
+
+        //recurring transaction
+        private IRecurringTransactionRepository _recurringTransactionRepository;
         //vote
         private ITransactionVoteRepository _transactionVoteRepository;
 
@@ -56,7 +59,6 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IGroupFundLogRepository _groupFundLogRepository;
         //group member
         private IGroupMemberRepository _groupMemberRepository;
-        private IGroupMemberLogRepository _groupMemberLogRepository;
         private ISubscriptionRepository _subscriptionRepository;
 
         // chat
@@ -72,6 +74,13 @@ namespace MoneyEz.Repositories.UnitOfWork
 
         // bank account
         private IBankAccountRepository _bankAccountRepository;
+
+        // quiz
+        private IQuizRepository _quizRepository;
+        private IAnswerOptionRepository _answerOptionRepository;
+        private IUserQuizResultRepository _userQuizResultRepository;
+        private IQuestionRepository _questionRepository;
+        private IUserQuizAnswerRepository _userQuizAnswerRepository;
 
         public UnitOfWork(MoneyEzContext context)
         {
@@ -156,6 +165,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             }
         }
 
+        public IRecurringTransactionRepository RecurringTransactionRepository
+        {
+            get
+            {
+                return _recurringTransactionRepository ??= new RecurringTransactionRepository(_context);
+            }
+        }
+
         public ITransactionVoteRepository TransactionVoteRepository
         {
             get
@@ -191,14 +208,6 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _groupMemberRepository ??= new GroupMemberRepository(_context);
-            }
-        }
-
-        public IGroupMemberLogRepository GroupMemberLogRepository
-        {
-            get
-            {
-                return _groupMemberLogRepository ??= new GroupMemberLogRepository(_context);
             }
         }
 
@@ -253,6 +262,46 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _bankAccountRepository ??= new BankAccountRepository(_context);
+            }
+        }
+
+        public IQuizRepository QuizRepository
+        {
+            get
+            {
+                return _quizRepository ??= new QuizRepository(_context);
+            }
+        }
+
+        public IAnswerOptionRepository AnswerOptionRepository
+        {
+            get
+            {
+                return _answerOptionRepository ??= new AnswerOptionRepository(_context);
+            }
+        }
+
+        public IUserQuizResultRepository UserQuizResultRepository
+        {
+            get
+            {
+                return _userQuizResultRepository ??= new UserQuizResultRepository(_context);
+            }
+        }
+
+        public IQuestionRepository QuestionRepository
+        {
+            get
+            {
+                return _questionRepository ??= new QuestionRepository(_context);
+            }
+        }
+
+        public IUserQuizAnswerRepository UserQuizAnswerRepository
+        {
+            get
+            {
+                return _userQuizAnswerRepository ??= new UserQuizAnswerRepository(_context);
             }
         }
 

@@ -108,6 +108,7 @@ namespace MoneyEz.API
                         .AllowAnyHeader()
                         .WithExposedHeaders("X-Pagination")
                         .WithExposedHeaders("X-Webhook-Secret")
+                        .WithExposedHeaders("X-External-Secret")
                         .AllowAnyMethod();
                     });
             });
@@ -142,6 +143,7 @@ namespace MoneyEz.API
 
             services.ConfigureOptions<SampleJobSetup>();
             services.ConfigureOptions<ScanUserSpendingModelJobSetup>();
+            services.ConfigureOptions<RecurringTransactionJobSetup>();
             #endregion
 
             // config webhook setting
@@ -181,8 +183,9 @@ namespace MoneyEz.API
             //config financial goal
             services.AddScoped<IFinancialGoalRepository, FinancialGoalRepository>();
             services.AddScoped<IFinancialGoalService, FinancialGoalService>();
+            services.AddScoped<IGoalPredictionService, GoalPredictionService>();
 
-            //financial repỏtt
+            //financial report
             services.AddScoped<IFinancialReportRepository, FinancialReportRepository>();
             services.AddScoped<IFinancialReportService, FinancialReportService>();
 
@@ -205,6 +208,10 @@ namespace MoneyEz.API
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<ITransactionNotificationService, TransactionNotificationService>();
 
+            //recurring transaction
+            services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
+            services.AddScoped<IRecurringTransactionRepository, RecurringTransactionRepository>();
+
             // vote
             services.AddScoped<ITransactionVoteRepository, TransactionVoteRepository>();
             // config image service
@@ -226,7 +233,6 @@ namespace MoneyEz.API
             //config group member service
             services.AddScoped<IGroupMemberRepository, GroupMemberRepository>();
             services.AddScoped<IGroupMemberService, GroupMemberService>();
-            services.AddScoped<IGroupMemberLogRepository, GroupMemberLogRepository>();
 
             // config chat service
             services.AddScoped<IChatHistoryRepository, ChatHistoryRepository>();
@@ -248,6 +254,11 @@ namespace MoneyEz.API
             services.AddScoped<IBankAccountService, BankAccountService>();
             // config chat service
             services.AddScoped<IChatService, ChatService>();
+
+            // config external service
+            services.AddScoped<IExternalApiService, ExternalApiService>();
+            services.AddScoped<IAIKnowledgeService, AIKnowledgeService>();
+
             // Register HTTP client with optional configuration
             services.AddHttpClient<IExternalApiService, ExternalApiService>(client =>
             {
@@ -263,6 +274,14 @@ namespace MoneyEz.API
             services.AddHttpClient("WebhookClient");
             services.AddScoped<IWebhookHttpClient, WebhookHttpClient>();
             services.AddScoped<IWebhookService, WebhookService>();
+
+            // config quiz service
+            services.AddScoped<IQuizService, QuizService>();
+            services.AddScoped<IQuizRepository, QuizRepository>();
+            services.AddScoped<IUserQuizAnswerRepository, UserQuizAnswerRepository>();
+            services.AddScoped<IUserQuizResultRepository, UserQuizResultRepository>();
+            services.AddScoped<IAnswerOptionRepository, AnswerOptionRepository>();
+            services.AddScoped<IQuestionRepository, QuestionRepository>();
             #endregion
 
             #region config database

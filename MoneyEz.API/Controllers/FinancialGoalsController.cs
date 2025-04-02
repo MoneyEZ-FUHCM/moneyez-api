@@ -60,6 +60,13 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _financialGoalService.GetPersonalFinancialGoalByIdAsync(goalId));
         }
 
+        [HttpGet("personal/chart/{goalId}")]
+
+        public Task<IActionResult> GetChartPersonalFinacialGoalByIdAsync(Guid goalId, string type)
+        {
+            return ValidateAndExecute(() => _financialGoalService.GetChartPersonalFinacialGoalByIdAsync(goalId, type));
+        }
+
         [HttpGet("personal/user-spending-model/{id}")]
 
         public Task<IActionResult> GetPersonalFinancialGoalBySpendingModelAsync(Guid id, [FromQuery] PaginationParameter paginationParameter, [FromQuery] FinancialGoalFilter filter)
