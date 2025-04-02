@@ -47,7 +47,8 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Url = $"https://{serverUri}{_settings.EndpointApi}",
                 Secret = secretKey,
-                AccountNumber = bankAccount.AccountNumber
+                AccountNumber = bankAccount.AccountNumber,
+                AccountHolder = bankAccount.AccountHolderName
             };
 
             // Send registration request
