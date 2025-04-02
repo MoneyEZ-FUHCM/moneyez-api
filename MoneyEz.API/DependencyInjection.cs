@@ -282,6 +282,9 @@ namespace MoneyEz.API
             services.AddScoped<IUserQuizResultRepository, UserQuizResultRepository>();
             services.AddScoped<IAnswerOptionRepository, AnswerOptionRepository>();
             services.AddScoped<IQuestionRepository, QuestionRepository>();
+
+            // config admin dashboard service
+            services.AddScoped<IAdminDashboardService, AdminDashboardService>();
             #endregion
 
             #region config database
