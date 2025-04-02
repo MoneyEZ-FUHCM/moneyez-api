@@ -23,7 +23,7 @@ namespace MoneyEz.API.Controllers
         [Authorize]
         public Task<IActionResult> GetAllQuizzes([FromQuery] PaginationParameter paginationParameter)
         {
-            return ValidateAndExecute(() => _quizService.GetQuizListAsync(paginationParameter));
+            return ValidateAndExecute(() => _quizService.GetAllQuizzesAsync(paginationParameter));
         }
 
         [HttpGet]
@@ -36,7 +36,7 @@ namespace MoneyEz.API.Controllers
 
         [HttpGet]
         [Route("active")]
-        //[Authorize]
+        [Authorize]
         public Task<IActionResult> GetActiveQuiz()
         {
             return ValidateAndExecute(() => _quizService.GetActiveQuizAsync());
@@ -51,17 +51,9 @@ namespace MoneyEz.API.Controllers
 
         [HttpPut]
         [Authorize(Roles = "ADMIN")]
-        public Task<IActionResult> UpdateQuiz(QuizModel model)
+        public Task<IActionResult> UpdateQuiz(UpdateQuizModel quizModel)
         {
-            return ValidateAndExecute(() => _quizService.UpdateQuizAsync(model));
-        }
-
-        [HttpDelete]
-        [Route("{id}")]
-        [Authorize(Roles = "ADMIN")]
-        public Task<IActionResult> DeleteQuiz([FromRoute] Guid id)
-        {
-            return ValidateAndExecute(() => _quizService.DeleteQuizAsync(id));
+            return ValidateAndExecute(() => _quizService.UpdateQuizAsync(quizModel));
         }
 
         [HttpPost]
@@ -69,71 +61,7 @@ namespace MoneyEz.API.Controllers
         [Authorize(Roles = "ADMIN")]
         public Task<IActionResult> SetActiveQuiz([FromRoute] Guid id)
         {
-            return ValidateAndExecute(() => _quizService.SetActiveQuizAsync(id));
-        }
-
-        #endregion
-
-        #region Quiz Questions Endpoints
-
-        [HttpGet]
-        [Route("{id}/questions")]
-        [Authorize]
-        public Task<IActionResult> GetQuestionsByQuizId([FromRoute] Guid id)
-        {
-            return ValidateAndExecute(() => _quizService.GetQuestionsByQuizIdAsync(id));
-        }
-
-        [HttpPost]
-        [Route("{id}/questions")]
-        [Authorize(Roles = "ADMIN")]
-        public Task<IActionResult> CreateQuestion([FromRoute] Guid id, CreateQuestionModel model)
-        {
-            return ValidateAndExecute(() => _quizService.CreateQuestionAsync(id, model));
-        }
-
-        [HttpPut]
-        [Route("questions")]
-        [Authorize(Roles = "ADMIN")]
-        public Task<IActionResult> UpdateQuestion(QuestionModel model)
-        {
-            return ValidateAndExecute(() => _quizService.UpdateQuestionAsync(model));
-        }
-
-        [HttpDelete]
-        [Route("questions/{questionId}")]
-        [Authorize(Roles = "ADMIN")]
-        public Task<IActionResult> DeleteQuestion([FromRoute] Guid questionId)
-        {
-            return ValidateAndExecute(() => _quizService.DeleteQuestionAsync(questionId));
-        }
-
-        #endregion
-
-        #region Answer Options Endpoints
-
-        [HttpPost]
-        [Route("questions/{questionId}/answer-options")]
-        [Authorize(Roles = "ADMIN")]
-        public Task<IActionResult> CreateAnswerOption([FromRoute] Guid questionId, CreateAnswerOptionModel model)
-        {
-            return ValidateAndExecute(() => _quizService.CreateAnswerOptionAsync(questionId, model));
-        }
-
-        [HttpPut]
-        [Route("answer-options")]
-        [Authorize(Roles = "ADMIN")]
-        public Task<IActionResult> UpdateAnswerOption(AnswerOptionModel model)
-        {
-            return ValidateAndExecute(() => _quizService.UpdateAnswerOptionAsync(model));
-        }
-
-        [HttpDelete]
-        [Route("answer-options/{answerOptionId}")]
-        [Authorize(Roles = "ADMIN")]
-        public Task<IActionResult> DeleteAnswerOption([FromRoute] Guid answerOptionId)
-        {
-            return ValidateAndExecute(() => _quizService.DeleteAnswerOptionAsync(answerOptionId));
+            return ValidateAndExecute(() => _quizService.ActivateQuizAsync(id));
         }
 
         #endregion
@@ -145,7 +73,7 @@ namespace MoneyEz.API.Controllers
         [Authorize]
         public Task<IActionResult> SubmitQuizAttempt(CreateQuizAttemptModel model)
         {
-            return ValidateAndExecute(() => _quizService.SubmitQuizAttemptAsync(model));
+            return ValidateAndExecute(() => _quizService.SubmitQuizAnswersAsync(model));
         }
 
         #endregion
@@ -157,23 +85,7 @@ namespace MoneyEz.API.Controllers
         [Authorize]
         public Task<IActionResult> GetAllUserQuizResults([FromQuery] PaginationParameter paginationParameter)
         {
-            return ValidateAndExecute(() => _quizService.GetAllUserQuizResultsAsync(paginationParameter));
-        }
-
-        [HttpGet]
-        [Route("user-quiz-results/{id}")]
-        [Authorize]
-        public Task<IActionResult> GetUserQuizResultById([FromRoute] Guid id)
-        {
-            return ValidateAndExecute(() => _quizService.GetUserQuizResultByIdAsync(id));
-        }
-
-        [HttpGet]
-        [Route("user-quiz-results/user")]
-        [Authorize]
-        public Task<IActionResult> GetUserQuizResultsByUserId([FromQuery] PaginationParameter paginationParameter)
-        {
-            return ValidateAndExecute(() => _quizService.GetUserQuizResultsByUserIdAsync(paginationParameter));
+            return ValidateAndExecute(() => _quizService.GetUserQuizHistoryAsync(paginationParameter));
         }
 
         #endregion

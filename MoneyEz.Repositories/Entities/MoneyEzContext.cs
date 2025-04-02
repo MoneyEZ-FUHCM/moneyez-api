@@ -62,12 +62,6 @@ public partial class MoneyEzContext : DbContext
 
     public virtual DbSet<BankAccount> BankAccounts { get; set; }
 
-    public virtual DbSet<AnswerOption> AnswerOptions { get; set; }
-
-    public virtual DbSet<Question> Questions { get; set; }
-
-    public virtual DbSet<UserQuizAnswer> UserQuizAnswers { get; set; }
-
     public virtual DbSet<UserQuizResult> UserQuizResults { get; set; }
 
     public virtual DbSet<Quiz> Quizzes { get; set; }
@@ -550,7 +544,7 @@ public partial class MoneyEzContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.WebhookSecretKey)
-                .HasMaxLength(60); 
+                .HasMaxLength(60);
             entity.Property(e => e.WebhookUrl)
                 .HasMaxLength(500);
 
@@ -570,35 +564,9 @@ public partial class MoneyEzContext : DbContext
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.Title);
             entity.Property(e => e.Description);
-        });
-
-        modelBuilder.Entity<Question>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__Question__3214EC07");
-
-            entity.ToTable("Question");
-
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Content);
-
-            entity.HasOne(d => d.Quiz).WithMany(p => p.Questions)
-                .HasForeignKey(d => d.QuizId)
-                .HasConstraintName("FK__Question__QuizId");
-        });
-
-        modelBuilder.Entity<AnswerOption>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__AnswerOption__3214EC07");
-
-            entity.ToTable("AnswerOption");
-
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Content);
-            entity.Property(e => e.Type).HasConversion<int>();
-
-            entity.HasOne(d => d.Question).WithMany(p => p.AnswerOptions)
-                .HasForeignKey(d => d.QuestionId)
-                .HasConstraintName("FK__AnswerOption__QuestionId");
+            entity.Property(e => e.QuestionsJson).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.Version).HasMaxLength(20);
+            entity.Property(e => e.Status).HasConversion<int>();
         });
 
         modelBuilder.Entity<UserQuizResult>(entity =>
@@ -610,6 +578,8 @@ public partial class MoneyEzContext : DbContext
             entity.Property(x => x.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.RecommendedModel);
             entity.Property(e => e.TakenAt);
+            entity.Property(e => e.QuizVersion).HasMaxLength(20);
+            entity.Property(e => e.AnswersJson).HasColumnType("nvarchar(max)");
 
             entity.HasOne(d => d.Quiz).WithMany(p => p.UserQuizResults)
                 .HasForeignKey(d => d.QuizId)
@@ -619,24 +589,6 @@ public partial class MoneyEzContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__UserQuizR__UserI__0C85DE4D");
-        });
-
-        modelBuilder.Entity<UserQuizAnswer>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__UserQuizAnswer__3214EC07");
-
-            entity.ToTable("UserQuizAnswer");
-
-            entity.Property(x => x.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.AnswerContent);
-
-            entity.HasOne(d => d.AnswerOption).WithMany(p => p.UserQuizAnswers)
-                .HasForeignKey(d => d.AnswerOptionId)
-                .HasConstraintName("FK__UserQuizAnswer__AnswerOptionId");
-
-            entity.HasOne(d => d.UserQuizResult).WithMany(p => p.UserQuizAnswers)
-                .HasForeignKey(d => d.UserQuizResultId)
-                .HasConstraintName("FK__UserQuizAnswer__UserQuizResultId");
         });
 
         OnModelCreatingPartial(modelBuilder);
