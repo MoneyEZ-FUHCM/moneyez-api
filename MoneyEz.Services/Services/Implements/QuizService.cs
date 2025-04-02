@@ -1,15 +1,21 @@
-﻿// C#
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
+using MoneyEz.Repositories.Repositories.Interfaces;
 using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.QuizModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
+using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
+using MoneyEz.Services.Utils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -26,435 +32,236 @@ namespace MoneyEz.Services.Services.Implements
             _claimsService = claimsService;
         }
 
+        // ADMIN FUNCTIONS
+
         public async Task<BaseResultModel> CreateQuizAsync(CreateQuizModel createQuizModel)
         {
-            if (createQuizModel == null)
-            {
-                throw new ArgumentException("Quiz model is null.", nameof(createQuizModel));
-            }
-            if (string.IsNullOrWhiteSpace(createQuizModel.Title))
-            {
-                throw new ArgumentException("Quiz title is required.", nameof(createQuizModel.Title));
-            }
-
             var quiz = _mapper.Map<Quiz>(createQuizModel);
             
-            // If the new quiz should be active, deactivate all other quizzes first
-            if (quiz.Status == CommonsStatus.ACTIVE)
-            {
-                await _unitOfWork.QuizRepository.DeactivateAllQuizzesAsync();
-            }
+            // Create a new quiz with versioning
+            var createdQuiz = await _unitOfWork.QuizRepository.CreateQuizVersionAsync(quiz);
             
-            await _unitOfWork.QuizRepository.AddAsync(quiz);
-
-            foreach (var createQuestionModel in createQuizModel.Questions)
-            {
-                var question = _mapper.Map<Question>(createQuestionModel);
-                question.QuizId = quiz.Id;
-                await _unitOfWork.QuestionRepository.AddAsync(question);
-
-                foreach (var createAnswerOptionModel in createQuestionModel.AnswerOptions)
-                {
-                    var answerOption = _mapper.Map<AnswerOption>(createAnswerOptionModel);
-                    answerOption.QuestionId = question.Id;
-                    await _unitOfWork.AnswerOptionRepository.AddAsync(answerOption);
-                }
-            }
-
-            await _unitOfWork.SaveAsync();
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status201Created,
-                Data = _mapper.Map<QuizModel>(quiz),
-                Message = "Quiz created successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> SubmitQuizAttemptAsync(CreateQuizAttemptModel quizAttemptModel)
-        {
-            if (quizAttemptModel == null || quizAttemptModel.QuizId == Guid.Empty)
-            {
-                throw new ArgumentException("Quiz attempt model or QuizId is invalid.");
-            }
-
-            var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(quizAttemptModel.QuizId);
-            if (quiz == null)
-            {
-                throw new NotExistException("", "Quiz not found.");
-            }
-
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
-            if (user == null)
-            {
-                throw new NotExistException("", "User not found.");
-            }
-
-            var quizResult = new UserQuizResult
-            {
-                UserId = user.Id,
-                QuizId = quizAttemptModel.QuizId,
-                TakenAt = CommonUtils.GetCurrentTime(),
-                RecommendedModel = "50-30-20" // TODO: goi AI
-            };
-
-            await _unitOfWork.UserQuizResultRepository.AddAsync(quizResult);
-            await _unitOfWork.SaveAsync();
-
-            var answers = _mapper.Map<List<UserQuizAnswer>>(quizAttemptModel.Answers);
-            foreach (var answer in answers)
-            {
-                answer.UserQuizResultId = quizResult.Id;
-                await _unitOfWork.UserQuizAnswerRepository.AddAsync(answer);
-            }
-            await _unitOfWork.SaveAsync();
-
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = _mapper.Map<UserQuizResultModel>(quizResult),
-                Message = "Quiz attempt submitted successfully."
+                Data = _mapper.Map<QuizModel>(createdQuiz),
+                Message = "Tạo bộ câu hỏi thành công"
             };
         }
 
-        public async Task<BaseResultModel> GetQuizByIdAsync(Guid quizId)
+        public async Task<BaseResultModel> GetQuizByIdAsync(Guid id)
         {
-            if (quizId == Guid.Empty)
-            {
-                throw new ArgumentException("QuizId is invalid.", nameof(quizId));
-            }
-            var quiz = await _unitOfWork.QuizRepository.GetByIdAsyncInclude(quizId);
+            var quiz = await _unitOfWork.QuizRepository.GetQuizByIdAsync(id);
             if (quiz == null)
-            {
-                throw new NotExistException("", "Quiz not found.");
-            }
+                throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
+            
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Data = _mapper.Map<QuizModel>(quiz),
-                Message = "Quiz retrieved successfully."
+                Message = "Lấy bộ câu hỏi thành công"
             };
         }
 
-        public async Task<BaseResultModel> GetQuizListAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetAllQuizzesAsync(PaginationParameter paginationParameter)
         {
-            var pagedQuizzes = await _unitOfWork.QuizRepository.GetAllAsyncPagingInclude(paginationParameter);
-            var resultData = _mapper.Map<Pagination<QuizModel>>(pagedQuizzes);
-            return new BaseResultModel
+            var quizzesPagination = await _unitOfWork.QuizRepository.GetAllQuizzesPaginatedAsync(paginationParameter);
+            var quizModels = _mapper.Map<List<QuizModel>>(quizzesPagination);
+            
+            // Create pagination metadata
+            var metadata = new
             {
-                Status = StatusCodes.Status200OK,
-                Data = resultData,
-                Message = "Quiz list retrieved successfully."
+                quizzesPagination.TotalCount,
+                quizzesPagination.PageSize,
+                quizzesPagination.CurrentPage,
+                quizzesPagination.TotalPages,
+                quizzesPagination.HasNext,
+                quizzesPagination.HasPrevious
             };
-        }
-
-        public async Task<BaseResultModel> UpdateQuizAsync(QuizModel quizModel)
-        {
-            if (quizModel == null || quizModel.Id == Guid.Empty)
-            {
-                throw new ArgumentException("Quiz model is null or invalid.", nameof(quizModel));
-            }
-            var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(quizModel.Id);
-            if (quiz == null)
-            {
-                throw new NotExistException("", "Quiz not found.");
-            }
-            
-            bool activationChanged = quiz.Status != quizModel.Status && quizModel.Status == CommonsStatus.ACTIVE;
-            
-            _mapper.Map(quizModel, quiz);
-            
-            if (activationChanged)
-            {
-                await _unitOfWork.QuizRepository.DeactivateAllQuizzesAsync();
-                quiz.Status = CommonsStatus.ACTIVE; 
-            }
-            
-            _unitOfWork.QuizRepository.UpdateAsync(quiz);
-            await _unitOfWork.SaveAsync();
             
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = "Quiz updated successfully."
+                Data = PaginationHelper.GetPaginationResult(quizzesPagination, quizModels),
+                Message = "Lấy tất cả bộ câu hỏi thành công"
             };
         }
 
-        public async Task<BaseResultModel> DeleteQuizAsync(Guid quizId)
+        public async Task<BaseResultModel> UpdateQuizAsync(UpdateQuizModel quizModel)
         {
-            if (quizId == Guid.Empty)
-            {
-                throw new ArgumentException("QuizId is invalid.", nameof(quizId));
-            }
-            var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(quizId);
-            if (quiz == null)
-            {
-                throw new NotExistException("", "Quiz not found.");
-            }
-            _unitOfWork.QuizRepository.SoftDeleteAsync(quiz);
-            await _unitOfWork.SaveAsync();
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = "Quiz deleted successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> GetQuestionsByQuizIdAsync(Guid quizId)
-        {
-            if (quizId == Guid.Empty)
-            {
-                throw new ArgumentException("QuizId is invalid.", nameof(quizId));
-            }
-            var questions = await _unitOfWork.QuestionRepository.GetByQuizIdAsync(quizId);
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Data = _mapper.Map<List<QuestionModel>>(questions),
-                Message = "Questions retrieved successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> CreateQuestionAsync(Guid quizId, CreateQuestionModel questionModel)
-        {
-            if (quizId == Guid.Empty)
-            {
-                throw new ArgumentException("QuizId is invalid.", nameof(quizId));
-            }
-            if (questionModel == null)
-            {
-                throw new ArgumentException("Question model is null.", nameof(questionModel));
-            }
-            if (string.IsNullOrWhiteSpace(questionModel.Content))
-            {
-                throw new ArgumentException("Question content is required.", nameof(questionModel.Content));
-            }
-
-            var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(quizId);
-            if (quiz == null)
-            {
-                throw new NotExistException("", "Quiz not found.");
-            }
-
-            var question = _mapper.Map<Question>(questionModel);
-            question.QuizId = quizId;
-            await _unitOfWork.QuestionRepository.AddAsync(question);
-            await _unitOfWork.SaveAsync();
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status201Created,
-                Data = _mapper.Map<QuestionModel>(question),
-                Message = "Question created successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> UpdateQuestionAsync(QuestionModel questionModel)
-        {
-            if (questionModel.Id == Guid.Empty)
-            {
-                throw new ArgumentException("QuestionId is invalid.", nameof(questionModel.Id));
-            }
-            if (questionModel == null)
-            {
-                throw new ArgumentException("Question model is null.", nameof(questionModel));
-            }
-            var question = await _unitOfWork.QuestionRepository.GetByIdAsync(questionModel.Id);
-            if (question == null)
-            {
-                throw new NotExistException("", "Question not found.");
-            }
-            _mapper.Map(questionModel, question);
-            _unitOfWork.QuestionRepository.UpdateAsync(question);
-            await _unitOfWork.SaveAsync();
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = "Question updated successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> DeleteQuestionAsync(Guid questionId)
-        {
-            if (questionId == Guid.Empty)
-            {
-                throw new ArgumentException("QuestionId is invalid.", nameof(questionId));
-            }
-            var question = await _unitOfWork.QuestionRepository.GetByIdAsync(questionId);
-            if (question == null)
-            {
-                throw new NotExistException("", "Question not found.");
-            }
-            _unitOfWork.QuestionRepository.SoftDeleteAsync(question);
-            await _unitOfWork.SaveAsync();
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = "Question deleted successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> CreateAnswerOptionAsync(Guid questionId, CreateAnswerOptionModel answerOptionModel)
-        {
-            if (questionId == Guid.Empty)
-            {
-                throw new ArgumentException("QuestionId is invalid.", nameof(questionId));
-            }
-            if (answerOptionModel == null)
-            {
-                throw new ArgumentException("Answer option model is null.", nameof(answerOptionModel));
-            }
-            if (string.IsNullOrWhiteSpace(answerOptionModel.Content))
-            {
-                throw new ArgumentException("Answer option content is required.", nameof(answerOptionModel.Content));
-            }
-
-            var question = await _unitOfWork.QuestionRepository.GetByIdAsync(questionId);
-            if (question == null)
-            {
-                throw new NotExistException("", "Question not found.");
-            }
-
-            var answerOption = _mapper.Map<AnswerOption>(answerOptionModel);
-            answerOption.QuestionId = questionId;
-            await _unitOfWork.AnswerOptionRepository.AddAsync(answerOption);
-            await _unitOfWork.SaveAsync();
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status201Created,
-                Data = _mapper.Map<AnswerOptionModel>(answerOption),
-                Message = "Answer option created successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> UpdateAnswerOptionAsync(AnswerOptionModel answerOptionModel)
-        {
-            if (answerOptionModel.Id == Guid.Empty)
-            {
-                throw new ArgumentException("AnswerOptionId is invalid.", nameof(answerOptionModel.Id));
-            }
-            if (answerOptionModel == null)
-            {
-                throw new ArgumentException("Answer option model is null.", nameof(answerOptionModel));
-            }
-            var answerOption = await _unitOfWork.AnswerOptionRepository.GetByIdAsync(answerOptionModel.Id);
-            if (answerOption == null)
-            {
-                throw new NotExistException("", "Answer option not found.");
-            }
-            _mapper.Map(answerOptionModel, answerOption);
-            _unitOfWork.AnswerOptionRepository.UpdateAsync(answerOption);
-            await _unitOfWork.SaveAsync();
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = "Answer option updated successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> DeleteAnswerOptionAsync(Guid answerOptionId)
-        {
-            if (answerOptionId == Guid.Empty)
-            {
-                throw new ArgumentException("AnswerOptionId is invalid.", nameof(answerOptionId));
-            }
-            var answerOption = await _unitOfWork.AnswerOptionRepository.GetByIdAsync(answerOptionId);
-            if (answerOption == null)
-            {
-                throw new NotExistException("", "Answer option not found.");
-            }
-            _unitOfWork.AnswerOptionRepository.SoftDeleteAsync(answerOption);
-            await _unitOfWork.SaveAsync();
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = "Answer option deleted successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> GetAllUserQuizResultsAsync(PaginationParameter paginationParameter)
-        {
-            var pagedUserQuizResults = await _unitOfWork.UserQuizResultRepository.GetAllUserQuizResultsAsync(paginationParameter);
-            var resultData = _mapper.Map<Pagination<UserQuizResultModel>>(pagedUserQuizResults);
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Data = resultData,
-                Message = "User quiz results retrieved successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> GetUserQuizResultByIdAsync(Guid id)
-        {
-            var userQuizResult = await _unitOfWork.UserQuizResultRepository.GetUserQuizResultByIdAsync(id);
-            var resultData = _mapper.Map<UserQuizResultModel>(userQuizResult);
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Data = resultData,
-                Message = "User quiz results retrieved successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> GetUserQuizResultsByUserIdAsync(PaginationParameter paginationParameter)
-        {
-            var userId = _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail).Result.Id;
-            var pagedUserQuizResults = await _unitOfWork.UserQuizResultRepository.GetUserQuizResultsByUserIdAsync(userId, paginationParameter);
-            var resultData = _mapper.Map<Pagination<UserQuizResultModel>>(pagedUserQuizResults);
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Data = resultData,
-                Message = "User quiz results retrieved successfully."
-            };
-        }
-
-        public async Task<BaseResultModel> SetActiveQuizAsync(Guid quizId)
-        {
-            if (quizId == Guid.Empty)
-            {
-                throw new ArgumentException("QuizId is invalid.", nameof(quizId));
-            }
+            var existingQuiz = await _unitOfWork.QuizRepository.GetQuizByIdAsync(quizModel.Id);
+            if (existingQuiz == null)
+                throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {quizModel.Id}");
             
-            var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(quizId);
-            if (quiz == null)
-            {
-                throw new NotExistException("", "Quiz not found.");
-            }
+            var updatedQuiz = _mapper.Map<Quiz>(quizModel);
             
-            // Deactivate all quizzes first
-            await _unitOfWork.QuizRepository.DeactivateAllQuizzesAsync();
-            
-            // Set the specified quiz as active
-            quiz.Status = CommonsStatus.ACTIVE;
-            _unitOfWork.QuizRepository.UpdateAsync(quiz);
-            await _unitOfWork.SaveAsync();
+            var result = await _unitOfWork.QuizRepository.UpdateQuizAsync(updatedQuiz);
             
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = "Quiz activated successfully."
+                Data = _mapper.Map<QuizModel>(result),
+                Message = "Cập nhật bộ câu hỏi thành công"
             };
         }
+
+        public async Task<BaseResultModel> ActivateQuizAsync(Guid id)
+        {
+            var allQuizzes = await _unitOfWork.QuizRepository.GetAllAsync();
+            foreach (var quiz in allQuizzes)
+            {
+                quiz.Status = CommonsStatus.INACTIVE;
+                _unitOfWork.QuizRepository.UpdateAsync(quiz);
+            }
+            
+            var quizToActivate = await _unitOfWork.QuizRepository.GetQuizByIdAsync(id);
+            if (quizToActivate == null)
+                throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
+            
+            quizToActivate.Status = CommonsStatus.ACTIVE;
+            _unitOfWork.QuizRepository.UpdateAsync(quizToActivate);
+            
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = true,
+                Message = "Kích hoạt bộ câu hỏi thành công"
+            };
+        }
+
+        // USER FUNCTIONS
 
         public async Task<BaseResultModel> GetActiveQuizAsync()
         {
             var quiz = await _unitOfWork.QuizRepository.GetActiveQuizAsync();
             if (quiz == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Message = "No active quiz found."
-                };
-            }
+                throw new NotExistException("Không có bộ câu hỏi nào đang hoạt động");
             
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Data = _mapper.Map<QuizModel>(quiz),
-                Message = "Active quiz retrieved successfully."
+                Message = "Lấy bộ câu hỏi đang hoạt động thành công"
             };
+        }
+
+        public async Task<BaseResultModel> SubmitQuizAnswersAsync(CreateQuizAttemptModel quizAttempt)
+        {
+            var quiz = await _unitOfWork.QuizRepository.GetQuizByIdAsync(quizAttempt.QuizId);
+            if (quiz == null)
+                throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {quizAttempt.QuizId}");
+
+            var userId = _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail).Result.Id;
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            var quizQuestions = quiz.GetQuestions();
+
+            ValidateQuizAnswers(quizAttempt.Answers, quizQuestions);
+
+            var userQuizResult = new UserQuizResult
+            {
+                UserId = userId,
+                QuizId = quiz.Id,
+                TakenAt = CommonUtils.GetCurrentTime(),
+                QuizVersion = quiz.Version
+            };
+            
+            userQuizResult.SetAnswers(quizAttempt.Answers.Select(a => new UserAnswer
+            {
+                QuestionId = a.QuestionId ?? Guid.Empty,
+                AnswerOptionId = a.AnswerOptionId,     
+                AnswerContent = a.AnswerContent
+            }).ToList());
+            
+            // Calculate recommended spending model based on answers
+            userQuizResult.RecommendedModel = await CalculateRecommendedModel(quiz, quizAttempt.Answers);
+            
+            // Save the result
+            var savedResult = await _unitOfWork.UserQuizResultRepository.CreateUserQuizResultAsync(userQuizResult);
+            
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = _mapper.Map<UserQuizResultModel>(savedResult),
+                Message = "Nộp câu trả lời thành công"
+            };
+        }
+
+        private void ValidateQuizAnswers(List<UserAnswerModel> answers, List<QuizQuestion> quizQuestions)
+        {
+            if (answers.Count < quizQuestions.Count)
+            {
+                throw new DefaultException($"Phải trả lời tất cả {quizQuestions.Count} câu hỏi, hiện tại chỉ có {answers.Count} câu trả lời");
+            }
+
+            var answeredQuestionIds = new HashSet<Guid>();
+
+            foreach (var answer in answers)
+            {
+                if (!answer.QuestionId.HasValue)
+                    continue;
+
+                var matchingQuestion = quizQuestions.FirstOrDefault(q => q.Id == answer.QuestionId);
+                
+                if (matchingQuestion == null)
+                {
+                    throw new DefaultException($"Câu hỏi với ID {answer.QuestionId} không tồn tại trong bộ câu hỏi");
+                }
+
+                if (answer.AnswerOptionId.HasValue)
+                {
+                    var matchingOption = matchingQuestion.AnswerOptions.FirstOrDefault(o => o.Id == answer.AnswerOptionId);
+                    if (matchingOption == null)
+                    {
+                        throw new DefaultException($"Lựa chọn với ID {answer.AnswerOptionId} không tồn tại trong câu hỏi {matchingQuestion.Content}");
+                    }
+                }
+                
+                answeredQuestionIds.Add(matchingQuestion.Id);
+            }
+
+            var unansweredQuestions = quizQuestions.Where(q => !answeredQuestionIds.Contains(q.Id)).ToList();
+            if (unansweredQuestions.Any())
+            {
+                var missingQuestions = string.Join(", ", unansweredQuestions.Select(q => q.Content));
+                throw new DefaultException($"Thiếu câu trả lời cho các câu hỏi sau: {missingQuestions}");
+            }
+
+            // Ensure all answers have content
+            var emptyAnswers = answers.Where(a => string.IsNullOrWhiteSpace(a.AnswerContent)).ToList();
+            if (emptyAnswers.Any())
+            {
+                throw new DefaultException("Tất cả các câu trả lời phải có nội dung");
+            }
+        }
+
+        public async Task<BaseResultModel> GetUserQuizHistoryAsync(PaginationParameter paginationParameter)
+        {
+            var userId = _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail).Result.Id;
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            var userQuizResultsPagination = await _unitOfWork.UserQuizResultRepository.GetUserQuizResultsByUserIdPaginatedAsync(userId, paginationParameter);
+            var userQuizResultModels = _mapper.Map<List<UserQuizResultModel>>(userQuizResultsPagination);
+            
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = PaginationHelper.GetPaginationResult(userQuizResultsPagination, userQuizResultModels),
+                Message = "Lấy lịch sử làm bài thành công"
+            };
+        }
+
+        private async Task<string> CalculateRecommendedModel(Quiz quiz, List<UserAnswerModel> answers)
+        {
+            return "50-30-20"; 
         }
     }
 }
