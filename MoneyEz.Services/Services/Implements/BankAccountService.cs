@@ -178,6 +178,11 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("Bank account not found", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
             }
 
+            if (account.WebhookSecretKey != null && account.WebhookUrl != null)
+            {
+                throw new DefaultException("Webhook is registered for this bank account. Can not delete.", MessageConstants.WEBHOOK_SECRET_EXISTED);
+            }
+
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
             if (user == null)
             {
@@ -193,7 +198,7 @@ namespace MoneyEz.Services.Services.Implements
             var groupFund = await _unitOfWork.GroupFundRepository.GetByConditionAsync(filter: a => a.AccountBankId == id);
             if (groupFund.Any())
             {
-                throw new DefaultException("Bank account is registered in group", MessageConstants.BANK_ACCOUNT_REGISTERED_IN_GROUP);
+                throw new DefaultException("Bank account is registered in group. Can not delete.", MessageConstants.BANK_ACCOUNT_REGISTERED_IN_GROUP);
             }
 
             account.UpdatedBy = user.Email;

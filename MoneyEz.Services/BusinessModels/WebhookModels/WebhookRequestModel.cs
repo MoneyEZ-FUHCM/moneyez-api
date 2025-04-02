@@ -17,4 +17,10 @@ namespace MoneyEz.Services.BusinessModels.WebhookModels
 
         public required string AccountHolder { get; set; }
     }
+
+    public class CancelWebhookRequestModel
+    {
+        public required string Url { get; set; }
+        public required string Secret { get; set; }
+    }
 }
