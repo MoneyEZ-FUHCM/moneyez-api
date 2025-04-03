@@ -124,6 +124,13 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundsService.CreateFundWithdrawalRequest(model));
         }
 
+        [HttpPost("fund-rasising/remind")]
+        [Authorize]
+        public async Task<IActionResult> CreateFundraisingRemind([FromBody] RemindFundraisingModel model)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.RemindFundraisingAsync(model));
+        }
+
 
         //[HttpPost("funds/response")]
         //[Authorize]

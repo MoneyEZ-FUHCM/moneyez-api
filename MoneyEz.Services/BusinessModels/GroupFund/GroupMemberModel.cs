@@ -20,6 +20,10 @@ namespace MoneyEz.Services.BusinessModels.GroupFund
 
         public string? Status { get; set; }
 
+        public decimal TotalContribution { get; set; } = 0;
+
+        public int TransactionCount { get; set; } = 0;
+
         public UserModel? UserInfo { get; set; }
     }
 }

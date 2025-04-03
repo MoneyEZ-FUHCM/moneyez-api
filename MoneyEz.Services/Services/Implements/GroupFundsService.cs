@@ -776,6 +776,24 @@ namespace MoneyEz.Services.Services.Implements
             var groupFundModel = _mapper.Map<GroupFundModel>(groupFund);
             groupFundModel.ImageUrl = images.FirstOrDefault()?.ImageUrl;
 
+            var allGroupTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == groupId && t.Type == TransactionType.INCOME && t.Status == TransactionStatus.APPROVED
+            );
+
+            if (groupFundModel.GroupMembers != null && groupFundModel.GroupMembers.Any())
+            {
+                foreach (var member in groupFundModel.GroupMembers)
+                {
+                    var memberTransactions = allGroupTransactions.Where(t => t.UserId == member.UserId).ToList();
+
+                    decimal totalContribution = memberTransactions.Sum(t => t.Amount);
+
+                    member.TotalContribution = totalContribution;
+
+                    member.TransactionCount = memberTransactions.Count;
+                }
+            }
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -1305,6 +1323,146 @@ namespace MoneyEz.Services.Services.Implements
             };
 
             return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest, currentUser.Email);
+        }
+
+        public async Task<BaseResultModel> RemindFundraisingAsync(RemindFundraisingModel remindFundraisingModel)
+        {
+            // Get and verify current user
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // Get group with members and financial goals
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                remindFundraisingModel.GroupId,
+                include: q => q.Include(g => g.GroupMembers).Include(g => g.FinancialGoals));
+
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // Validate leader permission
+            var isLeader = groupFund.GroupMembers.Any(member =>
+                member.UserId == currentUser.Id &&
+                member.Role == RoleGroup.LEADER &&
+                member.Status == GroupMemberStatus.ACTIVE);
+
+            if (!isLeader)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Message = MessageConstants.GROUP_REMIND_FORBIDDEN
+                };
+            }
+
+            // Get active financial goal if exists
+            var activeGoal = groupFund.FinancialGoals
+                .FirstOrDefault(g => g.Status == FinancialGoalStatus.ACTIVE);
+
+            // Xác định tổng số tiền cần đóng góp
+            decimal totalRequired = 0;
+            bool hasActiveGoal = activeGoal != null;
+
+            if (hasActiveGoal)
+            {
+                totalRequired = activeGoal.TargetAmount;
+
+                // Kiểm tra tổng % đóng góp chỉ khi có mục tiêu tài chính
+                var totalPercentage = groupFund.GroupMembers
+                    .Where(m => m.Status == GroupMemberStatus.ACTIVE)
+                    .Sum(m => m.ContributionPercentage ?? 0);
+
+                if (totalPercentage != 100)
+                {
+                    throw new DefaultException("Total contribution percentage must equal 100%",
+                        MessageConstants.GROUP_INVALID_TOTAL_CONTRIBUTION);
+                }
+            }
+
+            // Process each member
+            foreach (var memberRemind in remindFundraisingModel.Members)
+            {
+                var groupMember = groupFund.GroupMembers.FirstOrDefault(m =>
+                    m.UserId == memberRemind.MemberId &&
+                    m.Status == GroupMemberStatus.ACTIVE);
+
+                if (groupMember == null)
+                {
+                    throw new NotExistException($"Member with ID {memberRemind.MemberId} not found in group",
+                        MessageConstants.GROUP_MEMBER_NOT_FOUND);
+                }
+
+                // Get member user info
+                var memberUser = await _unitOfWork.UsersRepository.GetByIdAsync(memberRemind.MemberId);
+                if (memberUser == null)
+                {
+                    throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+                }
+
+                // Xác định số tiền cuối cùng dựa vào trường hợp có goal hoặc không
+                decimal finalAmount;
+
+                if (hasActiveGoal)
+                {
+                    // Trường hợp có goal: Tính theo % đóng góp
+                    decimal expectedAmount = totalRequired * (groupMember.ContributionPercentage ?? 0) / 100m;
+                    // Nếu amount đưa xuống vượt quá số tiền dự kiến, lấy giá trị dự kiến
+                    finalAmount = Math.Min(memberRemind.Amount, expectedAmount);
+                }
+                else
+                {
+                    // Trường hợp không có goal: Lấy trực tiếp amount đưa xuống
+                    finalAmount = memberRemind.Amount;
+                }
+
+                // Send notification
+                var notification = new Notification
+                {
+                    UserId = memberRemind.MemberId,
+                    Title = $"Nhắc nhở góp quỹ [{groupFund.Name}]",
+                    Message = $"Bạn cần đóng góp {finalAmount:N0} VNĐ cho quỹ nhóm '{groupFund.Name}",
+                    EntityId = groupFund.Id,
+                    Type = NotificationType.GROUP,
+                };
+                await _notificationService.AddNotificationByUserId(memberRemind.MemberId, notification);
+
+                // create transaction pending
+                var groupTransaction = new CreateGroupTransactionModel
+                {
+                    GroupId = groupFund.Id,
+                    Description = $"Nhắc nhở góp quỹ cho thành viên {memberUser.FullName}",
+                    Amount = finalAmount,
+                    Type = TransactionType.INCOME,
+                    TransactionDate = CommonUtils.GetCurrentTime()
+                };
+
+                var transactionResult = await _transactionService.CreateGroupTransactionAsync(groupTransaction, memberUser.Email);
+            }
+
+            // Add group fund log
+            groupFund.GroupFundLogs.Add(new GroupFundLog
+            {
+                ChangedBy = currentUser.FullName,
+                ChangeDescription = $"đã gửi nhắc nhở góp quỹ" + (activeGoal != null ? $" cho mục tiêu '{activeGoal.Name}'" : ""),
+                Action = GroupAction.TRANSACTION_CREATED.ToString(),
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
+            });
+
+            // Save changes
+            groupFund.UpdatedBy = currentUser.Email;
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.GROUP_REMIND_SUCCESS_MESSAGE
+            };
         }
     }
 }

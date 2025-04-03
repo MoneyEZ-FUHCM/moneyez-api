@@ -31,8 +31,9 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> SetGroupContribution(SetGroupContributionModel setGroupContributionModel);
         Task<BaseResultModel> CreateFundraisingRequest(CreateFundraisingModel createFundraisingModel);
         Task<BaseResultModel> CreateFundWithdrawalRequest(CreateFundWithdrawalModel createFundWithdrawalModel);
-        Task<BaseResultModel> GetGroupFundLogs(Guid groupId, PaginationParameter paginationParameters, GroupLogFilter filter);    
-        
+        Task<BaseResultModel> GetGroupFundLogs(Guid groupId, PaginationParameter paginationParameters, GroupLogFilter filter);
+        Task<BaseResultModel> RemindFundraisingAsync(RemindFundraisingModel remindFundraisingModel);
+
         // utils
         Task<GroupMember> GetGroupLeader(Guid groupId);
         Task<List<GroupMember>> GetGroupMembers(Guid groupId);
