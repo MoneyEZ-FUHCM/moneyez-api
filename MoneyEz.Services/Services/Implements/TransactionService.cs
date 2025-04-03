@@ -973,6 +973,14 @@ namespace MoneyEz.Services.Services.Implements
                     MessageConstants.BANK_ACCOUNT_NOT_FOUND);
             }
 
+            // check bank account is register for group
+            GroupFund groupBankAccount = null;
+            var groupFunds = await _unitOfWork.GroupFundRepository.GetByAccountBankId(bankAccount.Id);
+            if (groupFunds.Any())
+            {
+                groupBankAccount = groupFunds.First();
+            }
+
             // get info user
             var user = await _unitOfWork.UsersRepository.GetByIdAsync(bankAccount.UserId);
             if (user == null)
@@ -988,13 +996,33 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Invalid webhook secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
             }
 
-            // Get transaction by request code
+            // Get transaction by request code (nếu có thì cập nhật trạng thái / nếu không thì tạo mới)
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
                 filter: t => t.RequestCode == webhookPayload.Description);
             var updatedTransactions = transactions.FirstOrDefault();
 
             if (updatedTransactions == null)
             {
+                // tạo mới transaction cho group nếu đã được liên kết với group
+                
+                if (groupBankAccount != null)
+                {
+                    // create new transaction for group
+                    var newTransactionGroup = new CreateGroupTransactionModel
+                    {
+                        Amount = webhookPayload.Amount,
+                        Description = "[Ngân hàng] " + webhookPayload.Description,
+                        Type = webhookPayload.TransactionType,
+                        TransactionDate = webhookPayload.Timestamp,
+                        GroupId = groupBankAccount.Id,
+                        InsertType = InsertType.BANKING,
+                    };
+
+                    return await CreateGroupTransactionAsync(newTransactionGroup);
+                }
+
+                // tạo mới transaction cho user
+
                 // search user spending model
                 var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id);
                 if (userSpendingModel == null)
@@ -1012,7 +1040,7 @@ namespace MoneyEz.Services.Services.Implements
                     TransactionDate = webhookPayload.Timestamp,
                     UserId = bankAccount.UserId,
                     CreatedBy = user.Email,
-                    ApprovalRequired = true,
+                    ApprovalRequired = false,
                     InsertType = InsertType.BANKING,
                 };
 
