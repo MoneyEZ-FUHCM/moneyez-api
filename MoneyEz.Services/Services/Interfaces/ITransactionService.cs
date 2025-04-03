@@ -22,7 +22,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetTransactionByGroupIdAsync(Guid groupId, 
             PaginationParameter paginationParameter, TransactionFilter transactionFilter);
         Task<BaseResultModel> CategorizeTransactionAsync(CategorizeTransactionModel model);
-        Task<BaseResultModel> CreateGroupTransactionAsync(CreateGroupTransactionModel model);
+        Task<BaseResultModel> CreateGroupTransactionAsync(CreateGroupTransactionModel model, string currentEmail);
         Task<BaseResultModel> GetGroupTransactionDetailsAsync(Guid transactionId);
         Task<BaseResultModel> UpdateGroupTransactionAsync(UpdateGroupTransactionModel model);
         Task<BaseResultModel> DeleteGroupTransactionAsync(Guid transactionId);

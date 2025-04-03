@@ -530,10 +530,9 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> CreateGroupTransactionAsync(CreateGroupTransactionModel model)
+        public async Task<BaseResultModel> CreateGroupTransactionAsync(CreateGroupTransactionModel model, string currentEmail)
         {
-            string userEmail = _claimsService.GetCurrentUserEmail;
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(currentEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
             var group = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
@@ -1018,7 +1017,7 @@ namespace MoneyEz.Services.Services.Implements
                         InsertType = InsertType.BANKING,
                     };
 
-                    return await CreateGroupTransactionAsync(newTransactionGroup);
+                    return await CreateGroupTransactionAsync(newTransactionGroup, user.Email);
                 }
 
                 // tạo mới transaction cho user

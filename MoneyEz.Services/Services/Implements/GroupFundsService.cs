@@ -1156,7 +1156,7 @@ namespace MoneyEz.Services.Services.Implements
                 TransactionDate = CommonUtils.GetCurrentTime(),
             };
 
-            return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest);
+            return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest, currentUser.Email);
         }
 
         public async Task<GroupMember> GetGroupLeader(Guid groupId)
@@ -1304,7 +1304,7 @@ namespace MoneyEz.Services.Services.Implements
                 Images = createFundWithdrawalModel.Images
             };
 
-            return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest);
+            return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest, currentUser.Email);
         }
     }
 }
