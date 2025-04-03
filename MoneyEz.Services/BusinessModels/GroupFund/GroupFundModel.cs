@@ -19,6 +19,7 @@ namespace MoneyEz.Services.BusinessModels.GroupFund
         public string? Status { get; set; }
         public string? Visibility { get; set; }
         public string? ImageUrl { get; set; }
+        public bool IsGoalActive { get; set; } = false;
         public List<GroupMemberModel> GroupMembers { get; set; } = new List<GroupMemberModel>();
         //public ImageModel? Image { get; set; }
     }
