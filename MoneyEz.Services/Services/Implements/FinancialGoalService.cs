@@ -1162,7 +1162,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var goal = financialGoal.First();
-            
+
             // Get all group members
             var groupMembers = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
                 filter: gm => gm.GroupId == model.GroupId && gm.Status == GroupMemberStatus.ACTIVE,
@@ -1175,14 +1175,17 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("No active members found in the group.", MessageConstants.GROUP_MEMBER_NOT_FOUND);
             }
 
-            // Calculate default equal planned contribution percentage
+            // Kiểm tra tổng phần trăm đóng góp của các thành viên
+            var totalPercentage = groupMembers.Sum(m => m.ContributionPercentage ?? 0);
+            // Nếu tổng phần trăm không bằng 100%, tạo giá trị mặc định
             var defaultPlannedPercentage = 100m / memberCount;
 
             // Get all transactions related to this financial goal
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.GroupId == model.GroupId 
-                            && t.CreatedDate >= goal.CreatedDate 
+                filter: t => t.GroupId == model.GroupId
+                            && t.CreatedDate >= goal.CreatedDate
                             && t.CreatedDate <= goal.Deadline
+                            && t.Status == TransactionStatus.APPROVED
             );
 
             // Calculate member contributions
@@ -1195,13 +1198,15 @@ namespace MoneyEz.Services.Services.Implements
                 var memberTransactions = transactions.Where(t => t.UserId == member.UserId);
                 var currentContributionAmount = memberTransactions.Sum(t => t.Amount);
 
-                // Calculate planned amounts
-                var plannedContributionPercentage = defaultPlannedPercentage; // Can be customized per member if needed
+                // Sử dụng đóng góp theo phần trăm từ GroupMember hoặc giá trị mặc định nếu không có
+                var plannedContributionPercentage = member.ContributionPercentage ?? defaultPlannedPercentage;
+
+                // Tính toán số tiền dự kiến đóng góp dựa trên phần trăm thực tế
                 var plannedTargetAmount = (goal.TargetAmount * plannedContributionPercentage) / 100;
-                
+
                 // Calculate remaining and completion
                 var remainingAmount = Math.Max(0, plannedTargetAmount - currentContributionAmount);
-                var completionPercentage = plannedTargetAmount > 0 
+                var completionPercentage = plannedTargetAmount > 0
                     ? Math.Min(100, (currentContributionAmount / plannedTargetAmount) * 100)
                     : 0;
 
@@ -1224,7 +1229,7 @@ namespace MoneyEz.Services.Services.Implements
             var mappedGoal = _mapper.Map<GroupFinancialGoalDetailModel>(goal);
             mappedGoal.MemberContributions = memberContributions;
             mappedGoal.TotalCurrentAmount = Math.Round(totalCurrentContributions, 2);
-            mappedGoal.CompletionPercentage = goal.TargetAmount > 0 
+            mappedGoal.CompletionPercentage = goal.TargetAmount > 0
                 ? Math.Round((totalCurrentContributions / goal.TargetAmount) * 100, 2)
                 : 0;
 

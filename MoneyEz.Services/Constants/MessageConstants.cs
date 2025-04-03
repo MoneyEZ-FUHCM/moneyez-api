@@ -232,6 +232,8 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_LEAVE_SUCCESS_MESSAGE = "You have left the group successfully.";
         public const string GROUP_MEMBER_ALREADY_ROLE = "MemberAlreadyRole";
         public const string GROUP_LEADER_NOT_FOUND = "GroupLeaderNotFound";
+        public const string GROUP_REMIND_FORBIDDEN = "GroupRemindForbidden";
+        public const string GROUP_REMIND_SUCCESS_MESSAGE = "Group remind successfully";
 
         // fundraising request
         public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
