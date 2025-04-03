@@ -278,6 +278,7 @@ namespace MoneyEz.Services.Constants
         public const string BANK_ACCOUNT_ACCESS_DENIED = "BankAccountAccessDenied";
         public const string BANK_ACCOUNT_NUMBER_DUPLICATE = "BankAccountNumberDuplicate";
         public const string BANK_ACCOUNT_REGISTERED_IN_GROUP = "BankAccountRegisteredInGroup";
+        public const string BANK_ACCOUNT_VALIDATION_FAILED = "BankAccountValidationFailed";
 
         public const string BANK_ACCOUNT_LIST_GET_SUCCESS_MESSAGE = "Bank account list fetched successfully";
         public const string BANK_ACCOUNT_GET_SUCCESS_MESSAGE = "Bank account details fetched successfully";
