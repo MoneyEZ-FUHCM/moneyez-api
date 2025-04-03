@@ -776,6 +776,24 @@ namespace MoneyEz.Services.Services.Implements
             var groupFundModel = _mapper.Map<GroupFundModel>(groupFund);
             groupFundModel.ImageUrl = images.FirstOrDefault()?.ImageUrl;
 
+            var allGroupTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == groupId && t.Type == TransactionType.INCOME && t.Status == TransactionStatus.APPROVED
+            );
+
+            if (groupFundModel.GroupMembers != null && groupFundModel.GroupMembers.Any())
+            {
+                foreach (var member in groupFundModel.GroupMembers)
+                {
+                    var memberTransactions = allGroupTransactions.Where(t => t.UserId == member.UserId).ToList();
+
+                    decimal totalContribution = memberTransactions.Sum(t => t.Amount);
+
+                    member.TotalContribution = totalContribution;
+
+                    member.TransactionCount = memberTransactions.Count;
+                }
+            }
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
