@@ -197,6 +197,22 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Access denied", MessageConstants.BANK_ACCOUNT_ACCESS_DENIED);
             }
 
+            // validate the bank account
+            // Create webhook request
+            var webhookRequest = new ValidateBankAccountRequestModel
+            {
+                AccountNumber = model.AccountNumber,
+                AccountHolder = model.AccountHolderName,
+            };
+
+            // Send registration request
+            var response = await _webhookClient.ValidateBankAccount(webhookRequest);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new DefaultException("Bank account validation failed", MessageConstants.BANK_ACCOUNT_VALIDATION_FAILED);
+            }
+
             _mapper.Map(model, existingAccount);
             existingAccount.UpdatedBy = user.Email;
             _unitOfWork.BankAccountRepository.UpdateAsync(existingAccount);
