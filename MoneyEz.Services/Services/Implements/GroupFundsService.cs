@@ -776,6 +776,16 @@ namespace MoneyEz.Services.Services.Implements
             var groupFundModel = _mapper.Map<GroupFundModel>(groupFund);
             groupFundModel.ImageUrl = images.FirstOrDefault()?.ImageUrl;
 
+            // get goal
+            var groupGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: g => g.GroupId == groupId && g.Status == FinancialGoalStatus.ACTIVE
+            );
+
+            if (groupGoal.Any())
+            {
+                groupFundModel.IsGoalActive = true;
+            }
+
             var allGroupTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
                 filter: t => t.GroupId == groupId && t.Type == TransactionType.INCOME && t.Status == TransactionStatus.APPROVED
             );
