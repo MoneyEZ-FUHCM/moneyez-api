@@ -42,6 +42,12 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("No webhook is registered for this bank account", MessageConstants.WEBHOOK_NOT_REGISTERED);
             }
 
+            var groupFunds = await _unitOfWork.GroupFundRepository.GetByAccountBankId(accountBankId);
+            if (groupFunds.Any())
+            {
+                throw new DefaultException("Cannot cancel webhook for a bank account with group funds", MessageConstants.WEBHOOK_CANCELLATION_FAILED);
+            }
+
             // Build webhook cancellation request
             var secretKey = bankAccount.WebhookSecretKey;
 
