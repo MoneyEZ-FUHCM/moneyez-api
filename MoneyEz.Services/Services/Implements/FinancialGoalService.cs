@@ -804,15 +804,15 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            if (model.CurrentAmount > groupFund.CurrentBalance)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.INSUFFICIENT_GROUP_FUNDS,
-                    Message = "Số dư hiện tại của nhóm không đủ để khởi tạo mục tiêu này."
-                };
-            }
+            //if (model.CurrentAmount > groupFund.CurrentBalance)
+            //{
+            //    return new BaseResultModel
+            //    {
+            //        Status = StatusCodes.Status400BadRequest,
+            //        ErrorCode = MessageConstants.INSUFFICIENT_GROUP_FUNDS,
+            //        Message = "Số dư hiện tại của nhóm không đủ để khởi tạo mục tiêu này."
+            //    };
+            //}
 
             if (model.Deadline <= CommonUtils.GetCurrentTime())
             {
