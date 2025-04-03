@@ -29,5 +29,7 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Group
         public List<string>? Images { get; set; }
 
         public bool RequireVote { get; set; } = false;
+
+        public InsertType InsertType { get; set; } = InsertType.MANUAL;
     }
 }

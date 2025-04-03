@@ -29,7 +29,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetAllBankAccountsPaginationAsync(PaginationParameter paginationParameter)
         {
-            var bankAccounts = await _unitOfWork.BankAccountRepository.ToPagination(paginationParameter);
+            var bankAccounts = await _unitOfWork.BankAccountRepository.ToPaginationIncludeAsync(paginationParameter, filter: a => !a.IsDeleted);
             var accountModels = _mapper.Map<List<BankAccountModel>>(bankAccounts);
             var paginatedResult = PaginationHelper.GetPaginationResult(bankAccounts, accountModels);
 
@@ -43,7 +43,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetBankAccountByIdAsync(Guid id)
         {
-            var account = await _unitOfWork.BankAccountRepository.GetByIdAsync(id);
+            var account = await _unitOfWork.BankAccountRepository.GetByIdIncludeAsync(id, filter: a => !a.IsDeleted);
             if (account == null)
             {
                 throw new NotExistException("Bank account not found", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
@@ -65,7 +65,7 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
             var accounts = await _unitOfWork.BankAccountRepository
-                .ToPaginationIncludeAsync(paginationParameter, filter: uid => uid.UserId == user.Id);
+                .ToPaginationIncludeAsync(paginationParameter, filter: a => a.UserId == user.Id && !a.IsDeleted);
             var accountModels = _mapper.Map<List<BankAccountModel>>(accounts);
             
             // Check if user is a leader in any groups
@@ -115,12 +115,32 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Check for duplicate names
-            var existingAccount = await _unitOfWork.BankAccountRepository
+            var existingAccounts = await _unitOfWork.BankAccountRepository
                 .GetByConditionAsync(filter: x => x.AccountNumber == model.AccountNumber);
-            if (existingAccount.Any())
+            
+            var existingAccount = existingAccounts.FirstOrDefault();
+
+            if (existingAccount != null)
             {
-                throw new DefaultException("Bank account number already exists", 
-                    MessageConstants.BANK_ACCOUNT_ALREADY_EXISTS);
+                if (existingAccount.IsDeleted && existingAccount.UserId == user.Id)
+                {
+                    // update the deleted account
+                    existingAccount.IsDeleted = false;
+                    existingAccount.UpdatedBy = user.Email;
+                    _unitOfWork.BankAccountRepository.UpdateAsync(existingAccount);
+                    await _unitOfWork.SaveAsync();
+
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status201Created,
+                        Data = _mapper.Map<BankAccountModel>(existingAccount),
+                        Message = MessageConstants.BANK_ACCOUNT_CREATE_SUCCESS_MESSAGE
+                    };
+                }
+                else
+                {
+                    throw new DefaultException("Bank account number already exists", MessageConstants.BANK_ACCOUNT_ALREADY_EXISTS);
+                }
             }
 
             var bankAccount = _mapper.Map<BankAccount>(model);
@@ -201,7 +221,6 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Bank account is registered in group. Can not delete.", MessageConstants.BANK_ACCOUNT_REGISTERED_IN_GROUP);
             }
 
-            account.UpdatedBy = user.Email;
             _unitOfWork.BankAccountRepository.SoftDeleteAsync(account);
             _unitOfWork.Save();
 
