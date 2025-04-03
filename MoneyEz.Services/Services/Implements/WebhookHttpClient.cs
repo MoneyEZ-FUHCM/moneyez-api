@@ -33,5 +33,10 @@ namespace MoneyEz.Services.Services.Implements
         {
             return await _httpClient.PostAsJsonAsync(_settings.RegistrationEndpoint, request);
         }
+
+        public async Task<HttpResponseMessage> ValidateBankAccount(ValidateBankAccountRequestModel request)
+        {
+            return await _httpClient.PostAsJsonAsync(_settings.ValidateEndpoint, request);
+        }
     }
 }

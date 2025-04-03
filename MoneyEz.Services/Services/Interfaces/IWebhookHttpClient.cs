@@ -12,5 +12,7 @@ namespace MoneyEz.Services.Services.Interfaces
         public Task<HttpResponseMessage> RegisterWebhookAsync(WebhookRequestModel request);
 
         public Task<HttpResponseMessage> CancelWebhookAsync(string secret);
+
+        public Task<HttpResponseMessage> ValidateBankAccount(ValidateBankAccountRequestModel request);
     }
 }

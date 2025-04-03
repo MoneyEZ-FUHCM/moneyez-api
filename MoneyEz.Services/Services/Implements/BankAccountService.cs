@@ -8,10 +8,12 @@ using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Services.BusinessModels;
 using MoneyEz.Services.BusinessModels.BankAccountModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
+using MoneyEz.Services.BusinessModels.WebhookModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Utils;
+using System.Runtime;
 namespace MoneyEz.Services.Services.Implements
 {
     public class BankAccountService : IBankAccountService
@@ -19,12 +21,14 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
+        private readonly IWebhookHttpClient _webhookClient;
 
-        public BankAccountService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService)
+        public BankAccountService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService, IWebhookHttpClient webhookClient)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
+            _webhookClient = webhookClient;
         }
 
         public async Task<BaseResultModel> GetAllBankAccountsPaginationAsync(PaginationParameter paginationParameter)
@@ -141,6 +145,22 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     throw new DefaultException("Bank account number already exists", MessageConstants.BANK_ACCOUNT_ALREADY_EXISTS);
                 }
+            }
+
+            // validate the bank account
+            // Create webhook request
+            var webhookRequest = new ValidateBankAccountRequestModel
+            {
+                AccountNumber = model.AccountNumber,
+                AccountHolder = model.AccountHolderName,
+            };
+
+            // Send registration request
+            var response = await _webhookClient.ValidateBankAccount(webhookRequest);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new DefaultException("Bank account validation failed", MessageConstants.BANK_ACCOUNT_VALIDATION_FAILED);
             }
 
             var bankAccount = _mapper.Map<BankAccount>(model);
