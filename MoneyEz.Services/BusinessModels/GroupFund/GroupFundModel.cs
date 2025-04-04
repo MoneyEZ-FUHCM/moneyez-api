@@ -9,9 +9,8 @@ using System.Threading.Tasks;
 
 namespace MoneyEz.Services.BusinessModels.GroupFund
 {
-    public class GroupFundModel
+    public class GroupFundModel : BaseEntity
     {
-        public Guid Id { get; set; }
         public string? Name { get; set; }
         public string? NameUnsign { get; set; }
         public string? Description { get; set; }
