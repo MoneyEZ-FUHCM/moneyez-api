@@ -199,6 +199,7 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_ADMIN_ACCESS_DENIED = "TransactionAdminAccessDenied";
         public const string SPENDING_MODEL_OVER_LIMIT = "SpendingModelOverLimit";
         public const string TRANSACTION_AMOUNT_INVALID = "TransactionAmountInvalid";
+        public const string TRANSACTION_REJECTED_MISSING_REASON = "TransactionRejectMissingReason";
 
         //vote
         public const string VOTE_ALREADY_EXISTS = "VoteAlreadyExists";
