@@ -775,11 +775,29 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
+                if (string.IsNullOrWhiteSpace(model.Note))
+                    throw new DefaultException("Reason for rejection cannot be left blank.", MessageConstants.TRANSACTION_REJECTED_MISSING_REASON);
+
                 transaction.Status = TransactionStatus.REJECTED;
                 _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
                 await _unitOfWork.SaveAsync();
 
                 await _transactionNotificationService.NotifyTransactionApprovalRequestAsync(group, transaction, user);
+
+                string transactionContext = transaction.Type == TransactionType.INCOME ? "góp quỹ" : "rút quỹ";
+
+                // get info transaction fundraising request
+                var userRequest = await _unitOfWork.UsersRepository.GetByIdAsync(transaction.UserId.Value);
+                if (userRequest != null)
+                {
+                    await LogGroupFundChange(group, $"Giao dịch {transactionContext} [{transaction.Description}] của [{userRequest.FullName}] đã bị từ chối. " +
+                        $"Lí do: {model.Note}", 
+                        GroupAction.TRANSACTION_UPDATED, userEmail);
+                }
+                else
+                {
+                    throw new NotExistException("Not found user created transaction", MessageConstants.ACCOUNT_NOT_EXIST);
+                }
 
                 return new BaseResultModel
                 {

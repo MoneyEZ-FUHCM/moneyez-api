@@ -11,5 +11,7 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Group
         public Guid TransactionId { get; set; }
 
         public bool IsApprove { get; set; } = false;
+
+        public string? Note { get; set; } = string.Empty;
     }
 }
