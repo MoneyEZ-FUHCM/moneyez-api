@@ -742,20 +742,20 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> ResponseGroupTransactionAsync(ResponseGroupTransactionModel model)
         {
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.TransactionId)
-                ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
+                ?? throw new NotExistException("", MessageConstants.TRANSACTION_NOT_FOUND);
 
             var userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
-                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+                ?? throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var group = await _unitOfWork.GroupFundRepository.GetByIdAsync(transaction.GroupId.Value)
-                ?? throw new NotExistException(MessageConstants.GROUP_NOT_EXIST);
+            var group = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(transaction.GroupId.Value, include: gr => gr.Include(x => x.GroupMembers))
+                ?? throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
 
             var groupMember = group.GroupMembers.FirstOrDefault(m => m.UserId == user.Id)
-                ?? throw new DefaultException(MessageConstants.USER_NOT_IN_GROUP);
+                ?? throw new DefaultException("", MessageConstants.USER_NOT_IN_GROUP);
 
             if (groupMember.Role != RoleGroup.LEADER)
-                throw new DefaultException(MessageConstants.PERMISSION_DENIED);
+                throw new DefaultException("", MessageConstants.PERMISSION_DENIED);
 
             if (model.IsApprove)
             {
