@@ -791,7 +791,7 @@ namespace MoneyEz.Services.Services.Implements
                 if (userRequest != null)
                 {
                     await LogGroupFundChange(group, $"Giao dịch {transactionContext} [{transaction.Description}] của [{userRequest.FullName}] đã bị từ chối. " +
-                        $"Lí do: {model.Note}", 
+                        $"\n[Lí do:] {model.Note}", 
                         GroupAction.TRANSACTION_UPDATED, userEmail);
                 }
                 else
