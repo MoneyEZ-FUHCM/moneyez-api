@@ -1303,6 +1303,13 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
             }
 
+            // validate amount
+            if (createFundWithdrawalModel.Amount > groupFund.CurrentBalance)
+            {
+                throw new DefaultException("Amount must be less than or equal to the balance",
+                    MessageConstants.GROUP_WITHDRAWAL_AMOUNT_INVALID);
+            }
+
             var groupBankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(groupFund.AccountBankId.Value);
             if (groupBankAccount == null)
             {

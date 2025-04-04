@@ -215,6 +215,7 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_CLOSE_FAIL = "GroupCloseFailed";
         public const string GROUP_CLOSE_SUCCESS_MESSAGE = "Group closed successfully";
         public const string GROUP_ACCESS_DENIED = "GroupAccessDenied";
+        public const string GROUP_WITHDRAWAL_AMOUNT_INVALID = "GroupWithdrawalAmountInvalid";
 
         public const string GROUP_CLOSE_FORBIDDEN = "GroupCloseForbidden";
         public const string GROUP_REMOVE_MEMBER_FORBIDDEN = "GroupMemberNotFound";
