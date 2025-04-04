@@ -144,7 +144,7 @@ namespace MoneyEz.Services.Services.Implements
                 await _notificationService.AddNotificationByUserId(member.UserId, new Notification
                 {
                     Title = transaction.Type == TransactionType.INCOME ? "Góp quỹ thành công" : "Rút quỹ thành công",
-                    Message = $"{creator.FullName} {action} {transaction.Amount:N0} vào {group.Name} với lời nhắn \"{transaction.Description}\"",
+                    Message = $"{creator.FullName} {action} {transaction.Amount:N0} trong nhóm {group.Name} với lời nhắn \"{transaction.Description}\"",
                     Type = NotificationType.GROUP,
                     EntityId = transaction.Id
                 });
