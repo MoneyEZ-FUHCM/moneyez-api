@@ -139,6 +139,9 @@ namespace MoneyEz.Repositories.Repositories.Implements
             {
                 switch (filter.Status.ToLower())
                 {
+                    case "confirmed":
+                        query = query.Where(t => t.Status == TransactionStatus.APPROVED || t.Status == TransactionStatus.REJECTED);
+                        break;
                     case "approved":
                         query = query.Where(t => t.Status == TransactionStatus.APPROVED);
                         break;
