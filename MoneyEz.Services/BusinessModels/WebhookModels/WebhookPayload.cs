@@ -17,5 +17,6 @@ namespace MoneyEz.Services.BusinessModels.WebhookModels
         public DateTime Timestamp { get; set; }
         public string TransactionId { get; set; } = default!;
         public string Description { get; set; } = "";
+        public string BankName { get; set; } = "";
     }
 }
