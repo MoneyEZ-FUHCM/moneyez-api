@@ -19,5 +19,9 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
         public string? SubcategoryIcon { get; set; }
         public List<string>? Images { get; set; }
         public string? InsertType { get; set; }
+        public string? AccountBankNumber { get; set; }
+        public string? AccountBankName { get; set; }
+        public string? BankTransactionId { get; set; }
+        public DateTime? BankTransactionDate { get; set; }
     }
 }

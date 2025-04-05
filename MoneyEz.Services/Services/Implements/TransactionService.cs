@@ -990,21 +990,6 @@ namespace MoneyEz.Services.Services.Implements
                     MessageConstants.BANK_ACCOUNT_NOT_FOUND);
             }
 
-            // check bank account is register for group
-            GroupFund groupBankAccount = null;
-            var groupFunds = await _unitOfWork.GroupFundRepository.GetByAccountBankId(bankAccount.Id);
-            if (groupFunds.Any())
-            {
-                groupBankAccount = groupFunds.First();
-            }
-
-            // get info user
-            var user = await _unitOfWork.UsersRepository.GetByIdAsync(bankAccount.UserId);
-            if (user == null)
-            {
-                throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
-            }
-
             // Get secret key from header
             var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-Webhook-Secret"].ToString();
 
@@ -1013,83 +998,122 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Invalid webhook secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
             }
 
-            // Get transaction by request code (nếu có thì cập nhật trạng thái / nếu không thì tạo mới)
+            // kiểm tra số tài khoản ngân hàng đã được liên kết với nhóm chưa
+            GroupFund groupBankAccount = null;
+            var groupFunds = await _unitOfWork.GroupFundRepository.GetByAccountBankId(bankAccount.Id);
+            if (groupFunds.Any())
+            {
+                groupBankAccount = groupFunds.First();
+            }
+
+            // lấy thông tin người dùng (chủ tài khoản)
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(bankAccount.UserId);
+            if (user == null)
+            {
+                throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // lấy transaction by request code (nếu có thì cập nhật trạng thái / nếu không thì tạo mới)
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
                 filter: t => t.RequestCode == webhookPayload.Description);
             var updatedTransactions = transactions.FirstOrDefault();
 
-            if (updatedTransactions == null)
+            // trường hợp có giao dịch trùng với request code
+            if (updatedTransactions != null)
             {
-                // tạo mới transaction cho group nếu đã được liên kết với group
-                
+                // trường hợp đã liên kết ngân hàng với nhóm
                 if (groupBankAccount != null)
                 {
-                    // create new transaction for group
-                    var newTransactionGroup = new CreateGroupTransactionModel
+                    // trường hợp số tiền giao dịch hợp lệ
+                    if (updatedTransactions.Amount == webhookPayload.Amount)
+                    {
+                        // cập nhật lại giao dịch đã có trước đó (từ việc góp quỹ, rút quỹ)
+                        updatedTransactions.Status = TransactionStatus.APPROVED;
+                        updatedTransactions.UpdatedBy = user.Email;
+                        updatedTransactions.BankTransactionId = webhookPayload.TransactionId;
+                        updatedTransactions.TransactionDate = webhookPayload.Timestamp;
+                        updatedTransactions.AccountBankNumber = webhookPayload.AccountNumber;
+                        updatedTransactions.AccountBankName = webhookPayload.BankName;
+
+                        _unitOfWork.TransactionsRepository.UpdateAsync(updatedTransactions);
+                        await _unitOfWork.SaveAsync();
+                    }
+                    else
+                    {
+                        // trường hợp giao dịch số tiền không hợp lệ
+                        // tạo transaction mới cho group
+                        var newTransactionGroup = new CreateGroupTransactionModel
+                        {
+                            Amount = webhookPayload.Amount,
+                            Description = "[Ngân hàng] " + webhookPayload.Description,
+                            Type = webhookPayload.TransactionType,
+                            TransactionDate = webhookPayload.Timestamp,
+                            GroupId = groupBankAccount.Id,
+                            InsertType = InsertType.BANKING,
+                            AccountBankNumber = webhookPayload.AccountNumber,
+                            AccountBankName = webhookPayload.BankName,
+                            BankTransactionDate = webhookPayload.Timestamp,
+                            BankTransactionId = webhookPayload.TransactionId
+                        };
+
+                        return await CreateGroupTransactionAsync(newTransactionGroup, user.Email);
+                    }
+                }
+                else
+                {
+                    // trường hợp không liên kết ngân hàng với nhóm
+                    // tạo mới transaction cho user
+                    // chỉ hỗ trợ thêm giao dịch vào nếu user đã có mô hình chi tiêu
+
+                    // search user spending model
+                    var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id);
+                    if (userSpendingModel == null)
+                    {
+                        throw new NotExistException("User spending model not found", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+                    }
+
+                    // create new transaction
+                    var newTransaction = new Transaction
                     {
                         Amount = webhookPayload.Amount,
                         Description = "[Ngân hàng] " + webhookPayload.Description,
+                        Status = TransactionStatus.PENDING,
                         Type = webhookPayload.TransactionType,
                         TransactionDate = webhookPayload.Timestamp,
-                        GroupId = groupBankAccount.Id,
+                        UserId = bankAccount.UserId,
+                        CreatedBy = user.Email,
+                        ApprovalRequired = false,
                         InsertType = InsertType.BANKING,
+                        UserSpendingModelId = userSpendingModel.Id,
+                        BankTransactionDate = webhookPayload.Timestamp,
+                        BankTransactionId = webhookPayload.TransactionId,
+                        AccountBankNumber = webhookPayload.AccountNumber,
+                        AccountBankName = webhookPayload.BankName
                     };
 
-                    return await CreateGroupTransactionAsync(newTransactionGroup, user.Email);
+                    // tự phân loại giao dịch với tiền lương
+                    var isSalary = StringUtils.IsDescriptionContainsSalaryKeywords(webhookPayload.Description);
+                    if (isSalary)
+                    {
+                        var salarySubcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(
+                            filter: sc => sc.Code == "sc-luong" && !sc.IsDeleted);
+                        if (salarySubcategory.Any())
+                        {
+                            newTransaction.SubcategoryId = salarySubcategory.First().Id;
+                        }
+                    }
+
+                    await _unitOfWork.TransactionsRepository.AddAsync(newTransaction);
+                    await _unitOfWork.SaveAsync();
                 }
-
-                // tạo mới transaction cho user
-
-                // search user spending model
-                var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id);
-                if (userSpendingModel == null)
-                {
-                    throw new NotExistException("User spending model not found", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
-                }
-
-                // create new transaction
-                var newTransaction = new Transaction
-                {
-                    Amount = webhookPayload.Amount,
-                    Description = "[Ngân hàng] " + webhookPayload.Description,
-                    Status = TransactionStatus.PENDING,
-                    Type = webhookPayload.TransactionType,
-                    TransactionDate = webhookPayload.Timestamp,
-                    UserId = bankAccount.UserId,
-                    CreatedBy = user.Email,
-                    ApprovalRequired = false,
-                    InsertType = InsertType.BANKING,
-                };
-
-                await _unitOfWork.TransactionsRepository.AddAsync(newTransaction);
-                await _unitOfWork.SaveAsync();
-
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status201Created,
-                    Message = "Transaction created successfully"
-                };
             }
-
-            // update transaction pending to approved
-
-            if (updatedTransactions.Amount != webhookPayload.Amount)
-            {
-                throw new DefaultException("Transaction amount invalid", MessageConstants.TRANSACTION_AMOUNT_INVALID);
-            }
-
-            // Update transaction status
-            updatedTransactions.Status = TransactionStatus.APPROVED;
-            updatedTransactions.UpdatedBy = user.Email;
-
-            _unitOfWork.TransactionsRepository.UpdateAsync(updatedTransactions);
-            await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = "Transaction status updated successfully"
             };
+
         }
 
         public async Task<BaseResultModel> CreateTransactionPythonService(CreateTransactionPythonModel model)

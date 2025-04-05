@@ -31,5 +31,11 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Group
         public bool RequireVote { get; set; } = false;
 
         public InsertType InsertType { get; set; } = InsertType.MANUAL;
+
+        // for bank transaction
+        public string? AccountBankNumber { get; set; }
+        public string? AccountBankName { get; set; }
+        public string? BankTransactionId { get; set; }
+        public DateTime? BankTransactionDate { get; set; }
     }
 }

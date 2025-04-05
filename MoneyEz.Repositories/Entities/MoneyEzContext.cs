@@ -412,6 +412,9 @@ public partial class MoneyEzContext : DbContext
             entity.Property(e => e.Amount).HasColumnType("decimal(15, 2)");
             entity.Property(e => e.ApprovalRequired).HasDefaultValue(false);
             entity.Property(e => e.RequestCode).HasMaxLength(50);
+            entity.Property(e => e.AccountBankName).HasMaxLength(50);
+            entity.Property(e => e.AccountBankNumber).HasMaxLength(20);
+            entity.Property(e => e.BankTransactionId).HasMaxLength(50);
 
             entity.HasOne(d => d.Group).WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.GroupId)

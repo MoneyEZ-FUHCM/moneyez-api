@@ -22,5 +22,9 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Group
         public string? RequestCode { get; set; }
         public string? InsertType { get; set; }
         public string? AvatarUrl { get; set; }
+        public string? AccountBankNumber { get; set; }
+        public string? AccountBankName { get; set; }
+        public string? BankTransactionId { get; set; }
+        public DateTime? BankTransactionDate { get; set; }
     }
 }
