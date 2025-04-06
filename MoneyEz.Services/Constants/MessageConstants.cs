@@ -312,5 +312,15 @@ namespace MoneyEz.Services.Constants
         public const string INVALID_COMMAND = "InvalidCommand";
         public const string MISSING_PARAMETER = "MissingParameter";
         public const string INVALID_PARAMETER_FORMAT = "InvalidParameterFormat";
+
+        // Post
+        public const string POST_NOT_FOUND = "PostNotFound";
+        public const string POST_ALREADY_EXISTS = "PostAlreadyExists";
+        public const string POST_ACCESS_DENIED = "PostAccessDenied";
+        public const string POST_CREATED_SUCCESS = "PostCreatedSuccessfully";
+        public const string POST_UPDATED_SUCCESS = "PostUpdatedSuccessfully";
+        public const string POST_DELETED_SUCCESS = "PostDeletedSuccessfully";
+        public const string POST_LIST_FETCHED_SUCCESS = "Post list fetched successfully.";
+        public const string POST_FETCHED_SUCCESS = "Post details fetched successfully.";
     }
 }

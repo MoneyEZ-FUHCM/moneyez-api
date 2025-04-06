@@ -285,6 +285,10 @@ namespace MoneyEz.API
 
             // config admin dashboard service
             services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+
+            // config post service
+            services.AddScoped<IPostRepository, PostRepository>();
+            services.AddScoped<IPostService, PostService>();
             #endregion
 
             #region config database
