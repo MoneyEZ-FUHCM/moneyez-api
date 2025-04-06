@@ -66,6 +66,8 @@ public partial class MoneyEzContext : DbContext
 
     public virtual DbSet<Quiz> Quizzes { get; set; }
 
+    public virtual DbSet<Post> Posts { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Asset>(entity =>
@@ -592,6 +594,18 @@ public partial class MoneyEzContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__UserQuizR__UserI__0C85DE4D");
+        });
+
+        modelBuilder.Entity<Post>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Post__3214EC0790D5D4E0");
+
+            entity.ToTable("Post");
+
+            entity.Property(e => e.Title).HasMaxLength(250);
+            entity.Property(e => e.Content).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.ShortContent).HasMaxLength(500);
+            entity.Property(e => e.Thumbnail).HasMaxLength(500);
         });
 
         OnModelCreatingPartial(modelBuilder);
