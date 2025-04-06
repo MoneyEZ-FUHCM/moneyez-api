@@ -237,6 +237,9 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_REMIND_FORBIDDEN = "GroupRemindForbidden";
         public const string GROUP_REMIND_SUCCESS_MESSAGE = "Group remind successfully";
 
+        public const string GROUP_MEMBER_HAVE_TRANSACTION = "GroupMemberHaveTransaction";
+        public const string GROUP_MEMBER_HAVE_TRANSACTION_MESSAGE = "Group member has transactions and cannot be removed.";
+
         // fundraising request
         public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
         public const string FUNDRAISING_REQUEST_ACCESS_DENIED = "FundraisingRequestAccessDenied";
