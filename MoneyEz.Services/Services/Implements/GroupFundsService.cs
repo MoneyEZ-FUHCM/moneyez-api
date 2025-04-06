@@ -290,6 +290,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> RemoveMemberByLeaderAsync(Guid groupId, Guid memberId)
         {
+            // BR: leader chỉ có thể xóa thành viên nếu thành viên chưa đóng góp vào nhóm (chưa có transaction)
             // Retrieve the group fund by its Id
             var groupFund = await _unitOfWork.GroupFundRepository
                 .GetByIdIncludeAsync(groupId, include: query => query.Include(g => g.GroupMembers));
@@ -359,11 +360,20 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
+                // kiểm tra xem thành viên đã có giao dịch nào chưa
+                var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                    filter: t => t.GroupId == groupId && t.UserId == memberToRemove.UserId && t.Status == TransactionStatus.APPROVED
+                );
+                if (transactions.Any())
+                {
+                    throw new DefaultException(MessageConstants.GROUP_MEMBER_HAVE_TRANSACTION_MESSAGE, MessageConstants.GROUP_MEMBER_HAVE_TRANSACTION);
+                }
+
                 groupFund.GroupFundLogs.Add(new GroupFundLog
                 {
-                    ChangedBy = removeMember.FullName,
-                    ChangeDescription = $"đã rời khỏi nhóm",
-                    Action = GroupAction.LEFT.ToString(),
+                    ChangedBy = currentUser.FullName,
+                    ChangeDescription = $"đã xóa {removeMember.FullName} khỏi nhóm",
+                    Action = GroupAction.UPDATED.ToString(),
                     CreatedDate = CommonUtils.GetCurrentTime(),
                     CreatedBy = currentUser.Email
                 });
@@ -372,7 +382,6 @@ namespace MoneyEz.Services.Services.Implements
                 memberToRemove.UpdatedBy = currentUser.Email;
                 _unitOfWork.GroupMemberRepository.SoftDeleteAsync(memberToRemove);
 
-                // Save the changes to the repository
                 await _unitOfWork.SaveAsync();
 
                 // send notification to member
@@ -387,7 +396,6 @@ namespace MoneyEz.Services.Services.Implements
 
                 await _notificationService.AddNotificationByUserId(memberId, newNotification);
 
-                // Return a success result
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status200OK,
@@ -395,6 +403,10 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
         }
+
+        /// <summary>
+        /// cập nhật vai trò trong nhóm (chỉ leader mới có quyền cập nhật)
+        /// 
 
         public async Task<BaseResultModel> SetMemberRoleAsync(SetRoleGroupModel setRoleGroupModel)
         {
@@ -449,13 +461,10 @@ namespace MoneyEz.Services.Services.Implements
                     MessageConstants.GROUP_MEMBER_ALREADY_ROLE);
             }
 
-            // Update the member's role
             memberToUpdate.Role = setRoleGroupModel.RoleGroup;
 
-            // get info member update
             var memberUpdateInfo = await _unitOfWork.UsersRepository.GetByIdAsync(memberToUpdate.UserId);
 
-            // Add a log entry for the role change action
             groupFund.GroupFundLogs.Add(new GroupFundLog
             {
                 ChangedBy = currentUser.FullName,
@@ -468,7 +477,6 @@ namespace MoneyEz.Services.Services.Implements
 
             groupFund.UpdatedBy = currentUser.Email;
 
-            // Save the changes to the repository
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
 
@@ -1055,6 +1063,9 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        /// <summary>
+        /// cập nhật tỉ lệ đóng góp của các thành viên trong nhóm (chỉ leader mới có quyền cập nhật)
+        /// 
         public async Task<BaseResultModel> SetGroupContribution(SetGroupContributionModel setGroupContributionModel)
         {
             // Retrieve the group fund by its Id including members
@@ -1110,7 +1121,6 @@ namespace MoneyEz.Services.Services.Implements
                 CreatedBy = currentUser.Email
             });
 
-            // Save changes
             groupFund.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
@@ -1137,6 +1147,9 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        /// <summary>
+        /// tạo yêu cầu góp quỹ vào nhóm
+        /// 
         public async Task<BaseResultModel> CreateFundraisingRequest(CreateFundraisingModel createFundraisingModel)
         {
             // Get and verify current user
@@ -1256,7 +1269,7 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = "Success",
+                Message = "Retrieved group fund logs successfully",
                 Data = result
             };
         }
@@ -1284,6 +1297,9 @@ namespace MoneyEz.Services.Services.Implements
             return members;
         }
 
+        /// <summary>
+        /// tạo yêu cầu rút tiền từ quỹ nhóm
+        /// 
         public async Task<BaseResultModel> CreateFundWithdrawalRequest(CreateFundWithdrawalModel createFundWithdrawalModel)
         {
             // Get and verify current user
@@ -1342,6 +1358,9 @@ namespace MoneyEz.Services.Services.Implements
             return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest, currentUser.Email);
         }
 
+        /// <summary>
+        /// tạo lời nhắc góp quỹ cho các thành viên trong nhóm (chỉ leader mới có quyền tạo)
+        /// 
         public async Task<BaseResultModel> RemindFundraisingAsync(RemindFundraisingModel remindFundraisingModel)
         {
             // Get and verify current user
@@ -1432,7 +1451,7 @@ namespace MoneyEz.Services.Services.Implements
                 }
                 else
                 {
-                    // Trường hợp không có goal: Lấy trực tiếp amount đưa xuống
+                    // Trường hợp không có goal: Lấy trực tiếp amount nhập vào
                     finalAmount = memberRemind.Amount;
                 }
 
