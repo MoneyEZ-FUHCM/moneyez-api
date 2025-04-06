@@ -82,6 +82,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         private IQuestionRepository _questionRepository;
         private IUserQuizAnswerRepository _userQuizAnswerRepository;
 
+        // post
+        private IPostRepository _postRepository;
+
         public UnitOfWork(MoneyEzContext context)
         {
             _context = context;
@@ -302,6 +305,14 @@ namespace MoneyEz.Repositories.UnitOfWork
             get
             {
                 return _userQuizAnswerRepository ??= new UserQuizAnswerRepository(_context);
+            }
+        }
+
+        public IPostRepository PostRepository
+        {
+            get
+            {
+                return _postRepository ??= new PostRepository(_context);
             }
         }
 
