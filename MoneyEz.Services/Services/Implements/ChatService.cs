@@ -41,8 +41,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     UserId = userId,
                     Message = message,
-                    ConversationId = chatHistories.FirstOrDefault().ConversationId,
-                    PreviousMessages = chatHistories
+                    ConversationId = chatHistories.FirstOrDefault().ConversationId
                 });
 
                 if (apiResponse.IsSuccess == false)

@@ -123,10 +123,10 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _financialGoalService.UpdateGroupFinancialGoalAsync(model));
         }
 
-        [HttpDelete("group")]
-        public Task<IActionResult> DeleteGroupFinancialGoal([FromBody] DeleteFinancialGoalModel model)
+        [HttpDelete("group/{id}")]
+        public Task<IActionResult> DeleteGroupFinancialGoal(Guid id)
         {
-            return ValidateAndExecute(() => _financialGoalService.DeleteGroupFinancialGoalAsync(model));
+            return ValidateAndExecute(() => _financialGoalService.DeleteGroupFinancialGoalAsync(new DeleteFinancialGoalModel { Id = id }));
         }
 
         [HttpPost("approve-group-goal")]

@@ -1,4 +1,8 @@
-﻿using MoneyEz.Repositories.Commons;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using MoneyEz.Repositories.Commons;
+using MoneyEz.Services.BusinessModels.ExternalServiceModels;
 using MoneyEz.Services.BusinessModels.KnowledgeModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.Services.Interfaces;
@@ -12,6 +16,13 @@ namespace MoneyEz.Services.Services.Implements
 {
     public class AIKnowledgeService : IAIKnowledgeService
     {
+        private readonly IExternalApiService _externalApiService;
+
+        public AIKnowledgeService(IExternalApiService externalApiService) 
+        {
+            _externalApiService = externalApiService;
+        }
+
         public Task<BaseResultModel> CreateKnowledgeAsync(CreateKnowledgeModel model)
         {
             throw new NotImplementedException();
@@ -22,9 +33,13 @@ namespace MoneyEz.Services.Services.Implements
             throw new NotImplementedException();
         }
 
-        public Task<BaseResultModel> GetKnowledgesAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetKnowledgesAsync(PaginationParameter paginationParameter)
         {
-            throw new NotImplementedException();
+            var model = new ExternalKnowledgeRequestModel
+            {
+                Command = "get_all_documents"
+            };
+            return await _externalApiService.ExecuteKnownledgeDocumentSerivce(model, paginationParameter);
         }
     }
 }

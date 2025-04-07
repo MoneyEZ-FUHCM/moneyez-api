@@ -110,7 +110,7 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundsService.SetGroupContribution(setGroupContributionModel));
         }
 
-        [HttpPost("fund-rasising/request")]
+        [HttpPost("fund-raising/request")]
         [Authorize]
         public async Task<IActionResult> CreateFundraisingRequest([FromBody] CreateFundraisingModel model)
         {
@@ -124,7 +124,7 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundsService.CreateFundWithdrawalRequest(model));
         }
 
-        [HttpPost("fund-rasising/remind")]
+        [HttpPost("fund-raising/remind")]
         [Authorize]
         public async Task<IActionResult> CreateFundraisingRemind([FromBody] RemindFundraisingModel model)
         {
