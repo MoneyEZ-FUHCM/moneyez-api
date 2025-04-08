@@ -55,6 +55,13 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _quizService.UpdateQuizAsync(quizModel));
         }
+        
+        [HttpPut]
+        [Authorize(Roles = "ADMIN")]
+        public Task<IActionResult> DeleteQuiz([FromRoute] Guid id)
+        {
+            return ValidateAndExecute(() => _quizService.DeleteQuizAsync(id));
+        }
 
         [HttpPost]
         [Route("{id}/activate")]
