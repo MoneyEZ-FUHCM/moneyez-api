@@ -1105,6 +1105,53 @@ namespace MoneyEz.Services.Services.Implements
                     await _unitOfWork.SaveAsync();
                 }
             }
+            else
+            {
+                // trường hợp không liên kết ngân hàng với nhóm
+                // tạo mới transaction cho user
+                // chỉ hỗ trợ thêm giao dịch vào nếu user đã có mô hình chi tiêu
+
+                // search user spending model
+                var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id);
+                if (userSpendingModel == null)
+                {
+                    throw new NotExistException("User spending model not found", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+                }
+
+                // create new transaction
+                var newTransaction = new Transaction
+                {
+                    Amount = webhookPayload.Amount,
+                    Description = "[Ngân hàng] " + webhookPayload.Description,
+                    Status = TransactionStatus.PENDING,
+                    Type = webhookPayload.TransactionType,
+                    TransactionDate = webhookPayload.Timestamp,
+                    UserId = bankAccount.UserId,
+                    CreatedBy = user.Email,
+                    ApprovalRequired = false,
+                    InsertType = InsertType.BANKING,
+                    UserSpendingModelId = userSpendingModel.Id,
+                    BankTransactionDate = webhookPayload.Timestamp,
+                    BankTransactionId = webhookPayload.TransactionId,
+                    AccountBankNumber = webhookPayload.AccountNumber,
+                    AccountBankName = webhookPayload.BankName
+                };
+
+                // tự phân loại giao dịch với tiền lương
+                var isSalary = StringUtils.IsDescriptionContainsSalaryKeywords(webhookPayload.Description);
+                if (isSalary)
+                {
+                    var salarySubcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(
+                        filter: sc => sc.Code == "sc-luong" && !sc.IsDeleted);
+                    if (salarySubcategory.Any())
+                    {
+                        newTransaction.SubcategoryId = salarySubcategory.First().Id;
+                    }
+                }
+
+                await _unitOfWork.TransactionsRepository.AddAsync(newTransaction);
+                await _unitOfWork.SaveAsync();
+            }
 
             return new BaseResultModel
             {
