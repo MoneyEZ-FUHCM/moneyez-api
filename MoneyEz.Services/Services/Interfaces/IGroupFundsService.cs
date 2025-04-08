@@ -17,6 +17,7 @@ namespace MoneyEz.Services.Services.Interfaces
     public interface IGroupFundsService
     {
         Task<BaseResultModel> CreateGroupFundsAsync(CreateGroupModel model);
+        Task<BaseResultModel> UpdateGroupFundsAsync(UpdateGroupModel model);
         Task<BaseResultModel> GetAllGroupFunds(PaginationParameter paginationParameters, GroupFilter groupFilter);
         Task<BaseResultModel> CloseGroupFundAsync(Guid groupId);
         Task<BaseResultModel> RemoveMemberByLeaderAsync(Guid groupId, Guid memberId);
@@ -37,6 +38,7 @@ namespace MoneyEz.Services.Services.Interfaces
         // utils
         Task<GroupMember> GetGroupLeader(Guid groupId);
         Task<List<GroupMember>> GetGroupMembers(Guid groupId);
+        Task LogGroupFundChange(Guid groupId, string description, GroupAction action, string userEmail);
 
     }
 }

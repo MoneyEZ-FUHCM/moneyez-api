@@ -107,6 +107,8 @@ namespace MoneyEz.Services.Constants
         public const string SPENDING_MODEL_HAS_NO_SUBCATEGORIES = "SpendingModelHasNoSubcategories";
         public const string FINANCIAL_GOAL_CANNOT_BE_DELETED = "FinancialGoalCannotBeDeleted";
         public const string GOAL_ALREADY_COMPLETED = "GoalAlreadyCompleted";
+        public const string FINACIAL_GOAL_UPDATE_FORBIDDEN = "FinancialGoalUpdateForbidden";
+        public const string FINACIAL_GOAL_DELETE_FORBIDDEN = "FinancialGoalDeleteForbidden";
         //financial report
         public const string REPORT_NOT_FOUND = "ReportNotFound";
         public const string REPORT_CREATE_FAILED = "ReportCreateFailed";
@@ -242,6 +244,11 @@ namespace MoneyEz.Services.Constants
 
         public const string GROUP_MEMBER_HAVE_CONTRIBUTION = "GroupMemberHaveContribution";
         public const string GROUP_MEMBER_HAVE_CONTRIBUTION_MESSAGE = "Group member has contributions and cannot be removed.";
+
+        public const string GROUP_UPDATE_FORBIDDEN = "GroupUpdateForbidden";
+        public const string GROUP_UPDATE_FORBIDDEN_MESSAGE = "Only the group leader can update the group information.";
+
+        public const string GROUP_UPDATE_SUCCESS_MESSAGE = "Group information updated successfully";
 
         // fundraising request
         public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
