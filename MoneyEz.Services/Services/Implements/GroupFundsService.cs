@@ -332,11 +332,21 @@ namespace MoneyEz.Services.Services.Implements
                 .FirstOrDefault(member => member.UserId == memberId && member.Status == GroupMemberStatus.ACTIVE);
             if (memberToRemove == null)
             {
-                return new BaseResultModel
+                throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
+            }
+
+            // kiểm tra % contribution đối với group có goal
+            var groupGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: g => g.GroupId == groupId && g.Status == FinancialGoalStatus.ACTIVE
+            );
+
+            if (groupGoal.Any())
+            {
+                if (memberToRemove.ContributionPercentage > 0)
                 {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.GROUP_MEMBER_NOT_FOUND
-                };
+                    throw new DefaultException(MessageConstants.GROUP_MEMBER_HAVE_CONTRIBUTION_MESSAGE,
+                        MessageConstants.GROUP_MEMBER_HAVE_CONTRIBUTION);
+                }
             }
 
             // get remove member info
@@ -1031,11 +1041,21 @@ namespace MoneyEz.Services.Services.Implements
                 .FirstOrDefault(member => member.UserId == currentUser.Id && member.Status == GroupMemberStatus.ACTIVE);
             if (memberToRemove == null)
             {
-                return new BaseResultModel
+                throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
+            }
+
+            // kiểm tra % contribution đối với group có goal
+            var groupGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: g => g.GroupId == groupId && g.Status == FinancialGoalStatus.ACTIVE
+            );
+
+            if (groupGoal.Any())
+            {
+                if (memberToRemove.ContributionPercentage > 0)
                 {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.GROUP_MEMBER_NOT_FOUND
-                };
+                    throw new DefaultException(MessageConstants.GROUP_MEMBER_HAVE_CONTRIBUTION_MESSAGE,
+                        MessageConstants.GROUP_MEMBER_HAVE_CONTRIBUTION);
+                }
             }
 
             // add log
@@ -1193,8 +1213,7 @@ namespace MoneyEz.Services.Services.Implements
                 GroupId = createFundraisingModel.GroupId,
                 Description = createFundraisingModel.Description,
                 Amount = createFundraisingModel.Amount,
-                Type = TransactionType.INCOME,
-                TransactionDate = CommonUtils.GetCurrentTime(),
+                Type = TransactionType.INCOME
             };
 
             return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest, currentUser.Email);
@@ -1351,7 +1370,6 @@ namespace MoneyEz.Services.Services.Implements
                 Description = createFundWithdrawalModel.Description,
                 Amount = createFundWithdrawalModel.Amount,
                 Type = TransactionType.EXPENSE,
-                TransactionDate = CommonUtils.GetCurrentTime(),
                 Images = createFundWithdrawalModel.Images
             };
 

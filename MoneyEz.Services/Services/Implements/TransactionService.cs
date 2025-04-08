@@ -567,11 +567,6 @@ namespace MoneyEz.Services.Services.Implements
             bool requiresApproval = groupMember.Role != RoleGroup.LEADER;
             TransactionStatus transactionStatus = requiresApproval ? TransactionStatus.PENDING : TransactionStatus.APPROVED;
 
-            if (groupMember.Role == RoleGroup.LEADER && model.Type == TransactionType.EXPENSE && model.RequireVote)
-            {
-                transactionStatus = TransactionStatus.PENDING;
-            }
-
             // Generate random 10-digit code
             var requestCode = StringUtils.GenerateRandomUppercaseString(8);
 
@@ -760,6 +755,8 @@ namespace MoneyEz.Services.Services.Implements
             if (model.IsApprove)
             {
                 transaction.Status = TransactionStatus.APPROVED;
+                transaction.TransactionDate = CommonUtils.GetCurrentTime();
+
                 _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
                 await _unitOfWork.SaveAsync();
 
@@ -779,6 +776,7 @@ namespace MoneyEz.Services.Services.Implements
                     throw new DefaultException("Reason for rejection cannot be left blank.", MessageConstants.TRANSACTION_REJECTED_MISSING_REASON);
 
                 transaction.Status = TransactionStatus.REJECTED;
+                transaction.TransactionDate = CommonUtils.GetCurrentTime();
                 _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
                 await _unitOfWork.SaveAsync();
 
