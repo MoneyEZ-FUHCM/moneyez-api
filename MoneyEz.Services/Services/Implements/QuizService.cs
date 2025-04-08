@@ -37,9 +37,10 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> CreateQuizAsync(CreateQuizModel createQuizModel)
         {
             var quiz = _mapper.Map<Quiz>(createQuizModel);
-            
+            quiz.Version = CommonUtils.GetCurrentTime().ToString("yyyyMMddHHmm");
+
             // Create a new quiz with versioning
-            var createdQuiz = await _unitOfWork.QuizRepository.CreateQuizVersionAsync(quiz);
+            var createdQuiz = await _unitOfWork.QuizRepository.AddAsync(quiz);
             
             return new BaseResultModel
             {
@@ -92,15 +93,16 @@ namespace MoneyEz.Services.Services.Implements
             var existingQuiz = await _unitOfWork.QuizRepository.GetQuizByIdAsync(quizModel.Id);
             if (existingQuiz == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {quizModel.Id}");
-            
-            var updatedQuiz = _mapper.Map<Quiz>(quizModel);
-            
-            var result = await _unitOfWork.QuizRepository.UpdateQuizAsync(updatedQuiz);
+
+            _mapper.Map(existingQuiz, quizModel);
+            existingQuiz.Version = DateTime.Now.ToString("yyyyMMddHHmm");
+
+            _unitOfWork.QuizRepository.UpdateAsync(existingQuiz);
             
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = _mapper.Map<QuizModel>(result),
+                Data = _mapper.Map<QuizModel>(existingQuiz),
                 Message = "Cập nhật bộ câu hỏi thành công"
             };
         }
