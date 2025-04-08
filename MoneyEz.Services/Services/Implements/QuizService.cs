@@ -122,6 +122,7 @@ namespace MoneyEz.Services.Services.Implements
             
             quizToActivate.Status = CommonsStatus.ACTIVE;
             _unitOfWork.QuizRepository.UpdateAsync(quizToActivate);
+            await _unitOfWork.SaveAsync();
             
             return new BaseResultModel
             {
