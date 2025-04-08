@@ -34,6 +34,8 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> CreateFundWithdrawalRequest(CreateFundWithdrawalModel createFundWithdrawalModel);
         Task<BaseResultModel> GetGroupFundLogs(Guid groupId, PaginationParameter paginationParameters, GroupLogFilter filter);
         Task<BaseResultModel> RemindFundraisingAsync(RemindFundraisingModel remindFundraisingModel);
+        Task<BaseResultModel> GetPendingRequestsAsync(Guid groupId, PaginationParameter paginationParameters);
+        Task<BaseResultModel> GetPendingRequestDetailAsync(Guid requestId);
 
         // utils
         Task<GroupMember> GetGroupLeader(Guid groupId);

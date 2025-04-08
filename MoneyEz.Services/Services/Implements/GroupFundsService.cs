@@ -31,6 +31,7 @@ using MoneyEz.Services.BusinessModels.FinancialReportModels;
 using MoneyEz.Services.BusinessModels.GroupMemLogModels;
 using MoneyEz.Services.BusinessModels.TransactionModels.Group;
 using MoneyEz.Services.Utils.Email;
+using System.Text.RegularExpressions;
 namespace MoneyEz.Services.Services.Implements
 {
     public class GroupFundsService : IGroupFundsService
@@ -1630,6 +1631,128 @@ namespace MoneyEz.Services.Services.Implements
 
             await _unitOfWork.GroupFundLogRepository.AddAsync(log);
             await _unitOfWork.SaveAsync();
+        }
+
+        public async Task<BaseResultModel> GetPendingRequestsAsync(Guid groupId, PaginationParameter paginationParameters)
+        {
+            // Get and verify current user
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // get group fund
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(groupId, 
+                include: g => g.Include(g => g.GroupMembers));
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // check user is leader
+            var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id
+                && member.Role == RoleGroup.LEADER && member.Status == GroupMemberStatus.ACTIVE);
+
+            if (isLeader)
+            {
+                // get all pending requests
+                var pendingRequests = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+                    paginationParameters,
+                    filter: t => t.GroupId == groupId && t.Status == TransactionStatus.PENDING,
+                    include: q => q.Include(t => t.User),
+                    orderBy: q => q.OrderByDescending(t => t.CreatedDate)
+                );
+
+                var pendingRequestModels = _mapper.Map<List<GroupTransactionModel>>(pendingRequests);
+                var result = PaginationHelper.GetPaginationResult(pendingRequests, pendingRequestModels);
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = result
+                };
+            }
+            else
+            {
+                // get users pending requests
+                var pendingRequests = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+                    paginationParameters,
+                    filter: t => t.GroupId == groupId && t.UserId == currentUser.Id && t.Status == TransactionStatus.PENDING,
+                    include: q => q.Include(t => t.User),
+                    orderBy: q => q.OrderByDescending(t => t.CreatedDate)
+                );
+
+                var pendingRequestModels = _mapper.Map<List<GroupTransactionModel>>(pendingRequests);
+                var result = PaginationHelper.GetPaginationResult(pendingRequests, pendingRequestModels);
+                
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Data = result,
+                };
+            }
+        }
+
+        public async Task<BaseResultModel> GetPendingRequestDetailAsync(Guid requestId)
+        {
+            // Get and verify current user
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // get pending requests
+            var pendingRequest = await _unitOfWork.TransactionsRepository.GetByIdIncludeAsync(
+                requestId,
+                filter: t => t.Status == TransactionStatus.PENDING,
+                include: q => q.Include(t => t.User)
+            );
+
+            // get group fund
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(pendingRequest.GroupId.Value,
+                include: g => g.Include(g => g.GroupMembers));
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // get group bank account
+            var groupBankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(groupFund.AccountBankId.Value);
+
+            if (pendingRequest.Type == TransactionType.INCOME)
+            {
+                // get info transaction fundraising request
+
+                var response = new FundraisingTransactionResponse
+                {
+                    RequestCode = pendingRequest.RequestCode,
+                    Amount = pendingRequest.Amount,
+                    Status = pendingRequest.Status.ToString(),
+                    BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
+                };
+                var response2 = new
+                {
+                    Transaction = _mapper.Map<GroupTransactionModel>(pendingRequest),
+                    BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
+                };
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = "Pending request get successfully",
+                    Data = response2
+                };
+            }
+            else
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = "Pending request get successfully",
+                    Data = _mapper.Map<TransactionModel>(pendingRequest)
+                };
+            }
         }
     }
 }
