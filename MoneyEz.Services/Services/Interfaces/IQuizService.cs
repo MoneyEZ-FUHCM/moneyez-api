@@ -15,7 +15,8 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetAllQuizzesAsync(PaginationParameter paginationParameter);
         Task<BaseResultModel> UpdateQuizAsync(UpdateQuizModel quizModel);
         Task<BaseResultModel> ActivateQuizAsync(Guid id);
-        
+        Task<BaseResultModel> DeleteQuizAsync(Guid id);
+
         // User functions
         Task<BaseResultModel> GetActiveQuizAsync();
         Task<BaseResultModel> SubmitQuizAnswersAsync(CreateQuizAttemptModel quizAttempt);
