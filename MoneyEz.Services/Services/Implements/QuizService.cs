@@ -41,7 +41,8 @@ namespace MoneyEz.Services.Services.Implements
 
             // Create a new quiz with versioning
             var createdQuiz = await _unitOfWork.QuizRepository.AddAsync(quiz);
-            
+            await _unitOfWork.SaveAsync();
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -98,7 +99,25 @@ namespace MoneyEz.Services.Services.Implements
             existingQuiz.Version = DateTime.Now.ToString("yyyyMMddHHmm");
 
             _unitOfWork.QuizRepository.UpdateAsync(existingQuiz);
-            
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = _mapper.Map<QuizModel>(existingQuiz),
+                Message = "Cập nhật bộ câu hỏi thành công"
+            };
+        }
+
+        public async Task<BaseResultModel> DeleteQuizAsync(Guid id)
+        {
+            var existingQuiz = await _unitOfWork.QuizRepository.GetQuizByIdAsync(id);
+            if (existingQuiz == null)
+                throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
+
+            _unitOfWork.QuizRepository.SoftDeleteAsync(existingQuiz);
+            await _unitOfWork.SaveAsync();
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -185,7 +204,8 @@ namespace MoneyEz.Services.Services.Implements
             
             // Save the result
             var savedResult = await _unitOfWork.UserQuizResultRepository.CreateUserQuizResultAsync(userQuizResult);
-            
+            await _unitOfWork.SaveAsync();
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
