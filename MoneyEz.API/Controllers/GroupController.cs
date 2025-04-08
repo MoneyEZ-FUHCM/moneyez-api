@@ -152,5 +152,19 @@ namespace MoneyEz.API.Controllers
         {
             return await ValidateAndExecute(() => _groupFundsService.UpdateGroupFundsAsync(model));
         }
+
+        [HttpGet("pending-requests")]
+        [Authorize]
+        public async Task<IActionResult> GetPendingRequests([FromQuery] Guid groupId, [FromQuery] PaginationParameter paginationParameters)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.GetPendingRequestsAsync(groupId, paginationParameters));
+        }
+
+        [HttpGet("pending-requests/{requestId}")]
+        [Authorize]
+        public async Task<IActionResult> GetPendingRequestDetail([FromRoute] Guid requestId)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.GetPendingRequestDetailAsync(requestId));
+        }
     }
 }
