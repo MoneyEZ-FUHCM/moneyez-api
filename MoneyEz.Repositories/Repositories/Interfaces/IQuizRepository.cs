@@ -10,7 +10,6 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
 {
     public interface IQuizRepository : IGenericRepository<Quiz>
     {
-        Task<Quiz> GetQuizByIdAsync(Guid id);
         Task<Quiz> GetActiveQuizAsync();
         Task<Quiz> CreateQuizVersionAsync(Quiz quiz);
         Task<Quiz> UpdateQuizAsync(Quiz quiz);
