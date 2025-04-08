@@ -566,6 +566,14 @@ namespace MoneyEz.Services.Services.Implements
 
             bool requiresApproval = groupMember.Role != RoleGroup.LEADER;
             TransactionStatus transactionStatus = requiresApproval ? TransactionStatus.PENDING : TransactionStatus.APPROVED;
+            if (!requiresApproval)
+            {
+                model.TransactionDate = CommonUtils.GetCurrentTime();
+            }
+            else
+            {
+                model.TransactionDate = null;
+            }
 
             // Generate random 10-digit code
             var requestCode = StringUtils.GenerateRandomUppercaseString(8);

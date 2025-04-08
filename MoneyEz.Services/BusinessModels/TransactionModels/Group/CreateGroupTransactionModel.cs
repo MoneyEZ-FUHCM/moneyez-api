@@ -19,9 +19,8 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Group
         [EnumDataType(typeof(TransactionType), ErrorMessage = "Loại giao dịch không hợp lệ.")]
         public TransactionType Type { get; set; }
 
-        [Required(ErrorMessage = "Ngày giao dịch là bắt buộc.")]
         [DataType(DataType.Date)]
-        public DateTime TransactionDate { get; set; }
+        public DateTime? TransactionDate { get; set; }
 
         [StringLength(1000, ErrorMessage = "Mô tả không được vượt quá 1000 ký tự.")]
         public string? Description { get; set; } = string.Empty;
