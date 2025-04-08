@@ -554,12 +554,12 @@ namespace MoneyEz.Services.Services.Implements
             if (!Enum.IsDefined(typeof(TransactionType), model.Type))
                 throw new DefaultException("Loại giao dịch không hợp lệ.");
 
-            var now = CommonUtils.GetCurrentTime().Date;
-            if (model.TransactionDate.Date > now)
-                throw new DefaultException("Không được tạo giao dịch cho ngày trong tương lai.");
+            //var now = CommonUtils.GetCurrentTime().Date;
+            //if (model.TransactionDate.Date > now)
+            //    throw new DefaultException("Không được tạo giao dịch cho ngày trong tương lai.");
 
-            if (model.TransactionDate < now.AddYears(-5) || model.TransactionDate > now.AddMonths(1))
-                throw new DefaultException("Ngày giao dịch không hợp lệ.");
+            //if (model.TransactionDate < now.AddYears(-5) || model.TransactionDate > now.AddMonths(1))
+            //    throw new DefaultException("Ngày giao dịch không hợp lệ.");
 
             if (model.Description?.Length > 1000)
                 throw new DefaultException("Mô tả giao dịch quá dài (tối đa 1000 ký tự).");
