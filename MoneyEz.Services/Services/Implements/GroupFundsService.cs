@@ -1518,5 +1518,118 @@ namespace MoneyEz.Services.Services.Implements
                 Message = MessageConstants.GROUP_REMIND_SUCCESS_MESSAGE
             };
         }
+
+        public async Task<BaseResultModel> UpdateGroupFundsAsync(UpdateGroupModel model)
+        {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (user == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            var bankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(model.AccountBankId);
+            if (bankAccount == null)
+            {
+                throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            }
+
+            // get group fund
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(model.Id);
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // check user is leader
+            var isLeader = groupFund.GroupMembers.Any(member => member.UserId == user.Id 
+                && member.Role == RoleGroup.LEADER && member.Status == GroupMemberStatus.ACTIVE);
+
+            if (!isLeader)
+            {
+                throw new DefaultException(MessageConstants.GROUP_UPDATE_FORBIDDEN_MESSAGE, MessageConstants.GROUP_UPDATE_FORBIDDEN);
+            }
+
+            // Map the model to the existing groupFund entity
+            _mapper.Map(model, groupFund);
+            groupFund.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
+            groupFund.UpdatedBy = user.Email;
+
+            // group image
+            var groupImages = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(groupFund.Id, EntityName.GROUP.ToString());
+            var groupImage = groupImages.FirstOrDefault();
+
+
+            if (groupImage == null)
+            {
+                Image newImage = null;
+
+                if (model.Image != null)
+                {
+                    newImage = new Image
+                    {
+                        EntityId = groupFund.Id,
+                        EntityName = EntityName.GROUP.ToString(),
+                        ImageUrl = model.Image,
+                        CreatedBy = user.Email
+                    };
+
+                    await _unitOfWork.ImageRepository.AddAsync(newImage);
+                    await _unitOfWork.SaveAsync();
+                }
+            }
+            else
+            {
+                if (model.Image != null)
+                {
+                    // Update the existing image entity
+                    groupImage.ImageUrl = model.Image;
+                    groupImage.UpdatedBy = user.Email;
+                    _unitOfWork.ImageRepository.UpdateAsync(groupImage);
+                    await _unitOfWork.SaveAsync();
+                }
+            }
+
+            groupFund.GroupFundLogs = new List<GroupFundLog>
+            {
+                new GroupFundLog
+                {
+                    ChangedBy = user.FullName,
+                    ChangeDescription = "đã chỉnh sửa thông tin của nhóm",
+                    Action = GroupAction.CREATED.ToString(),
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = user.Email
+                }
+            };
+            // Add the groupFund to the repository and save changes again
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            await _unitOfWork.SaveAsync();
+
+            // Return a success result with the created groupFund
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.GROUP_UPDATE_SUCCESS_MESSAGE
+            };
+        }
+
+        public async Task LogGroupFundChange(Guid groupId, string description, GroupAction action, string userEmail)
+        {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+                ?? throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(groupId)
+                ?? throw new NotExistException("Group not found", MessageConstants.GROUP_NOT_EXIST);
+            var log = new GroupFundLog
+            {
+                GroupId = groupFund.Id,
+                ChangedBy = user.FullName,
+                ChangeDescription = description,
+                Action = action.ToString(),
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = user.Email,
+            };
+
+            await _unitOfWork.GroupFundLogRepository.AddAsync(log);
+            await _unitOfWork.SaveAsync();
+        }
     }
 }

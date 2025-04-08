@@ -33,6 +33,7 @@ namespace MoneyEz.Services.Services.Implements
         private readonly INotificationService _notificationService;
         private readonly ITransactionNotificationService _transactionNotificationService;
         private readonly IGoalPredictionService _goalPredictionService;
+        private readonly IGroupFundsService _groupFundsService;
 
         public FinancialGoalService(
             IUnitOfWork unitOfWork,
@@ -40,7 +41,8 @@ namespace MoneyEz.Services.Services.Implements
             IClaimsService claimsService,
             INotificationService notificationService,
             ITransactionNotificationService transactionNotificationService,
-            IGoalPredictionService goalPredictionService)
+            IGoalPredictionService goalPredictionService,
+            IGroupFundsService groupFundsService)
 
         {
             _unitOfWork = unitOfWork;
@@ -49,6 +51,7 @@ namespace MoneyEz.Services.Services.Implements
             _notificationService = notificationService;
             _transactionNotificationService = transactionNotificationService;
             _goalPredictionService = goalPredictionService;
+            _groupFundsService = groupFundsService;
         }
 
         #region Personal
@@ -854,6 +857,9 @@ namespace MoneyEz.Services.Services.Implements
             await _unitOfWork.FinancialGoalRepository.AddAsync(financialGoal);
             await _unitOfWork.SaveAsync();
 
+            // log group fund
+            await _groupFundsService.LogGroupFundChange(model.GroupId, $"đã đặt mục tiêu tài chính cho nhóm", GroupAction.UPDATED, userEmail);
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status201Created,
@@ -1004,14 +1010,12 @@ namespace MoneyEz.Services.Services.Implements
                 goalToUpdate.ApprovalStatus = ApprovalStatus.APPROVED;
 
                 await NotifyGroupMembers(goalToUpdate, user, "updated");
+                await _groupFundsService.LogGroupFundChange(model.GroupId, $"đã cập nhật mục tiêu của nhóm",
+                        GroupAction.UPDATED, userEmail);
             }
-            else if (userRole == RoleGroup.MOD)
+            else
             {
-                // MOD update -> cần duyệt lại
-                goalToUpdate.Status = FinancialGoalStatus.PENDING;
-                goalToUpdate.ApprovalStatus = ApprovalStatus.PENDING;
-
-                await NotifyGroupLeaderApprovalRequest(goalToUpdate, user, "update", "UPDATE");
+                throw new DefaultException("Just leader can update this goal.", MessageConstants.FINACIAL_GOAL_UPDATE_FORBIDDEN);
             }
 
             _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToUpdate);
@@ -1078,28 +1082,13 @@ namespace MoneyEz.Services.Services.Implements
 
                 await NotifyGroupMembers(goalToDelete, user, "deleted");
 
+                // log group fund
+                await _groupFundsService.LogGroupFundChange(model.Id, $"đã xóa mục tiêu tài chính của nhóm", GroupAction.UPDATED, userEmail);
+
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status200OK,
                     Message = "Group financial goal has been deleted successfully."
-                };
-            }
-            else if (userRole == RoleGroup.MOD)
-            {
-                // MOD gửi yêu cầu xóa
-                goalToDelete.Status = FinancialGoalStatus.PENDING;
-                goalToDelete.ApprovalStatus = ApprovalStatus.PENDING;
-                goalToDelete.UpdatedDate = CommonUtils.GetCurrentTime();
-
-                _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToDelete);
-                await _unitOfWork.SaveAsync();
-
-                await NotifyGroupLeaderApprovalRequest(goalToDelete, user, "delete", "DELETE");
-
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status200OK,
-                    Message = "Delete request for this financial goal has been sent to the group leader for approval."
                 };
             }
 

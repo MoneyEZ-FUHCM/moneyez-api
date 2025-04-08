@@ -145,5 +145,12 @@ namespace MoneyEz.API.Controllers
         {
             return await ValidateAndExecute(() => _groupFundsService.GetGroupFundLogs(id, paginationParameters, filter));
         }
+
+        [HttpPut]
+        [Authorize]
+        public async Task<IActionResult> UpdateGroupFund([FromBody] UpdateGroupModel model)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.UpdateGroupFundsAsync(model));
+        }
     }
 }
