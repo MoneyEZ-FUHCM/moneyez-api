@@ -22,9 +22,19 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         public List<QuizQuestionModel> Questions { get; set; } = new();
     }
 
-    public class UpdateQuizModel : CreateQuizModel
+    public class UpdateQuizModel 
     {
         public Guid Id { get; set; }
+
+        [Required(ErrorMessage = "Tiêu đề bộ quiz không được để trống")]
+        public string Title { get; set; }
+
+        [Required(ErrorMessage = "Chi tiết bộ câu hỏi không được để trống")]
+        public string Description { get; set; }
+
+        public CommonsStatus? Status { get; set; }
+
+        public List<QuizQuestionModel> Questions { get; set; } = new();
     }
 
     public class QuizModel : BaseEntity
@@ -58,4 +68,10 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Content { get; set; }
     }
+    public class QuestionAnswerPair
+    {
+        public string Question { get; set; }
+        public string Answer { get; set; }
+    }
+
 }
