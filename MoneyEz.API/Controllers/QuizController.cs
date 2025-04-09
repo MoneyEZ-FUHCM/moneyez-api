@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.QuizModels;
 using MoneyEz.Services.Services.Interfaces;
 
@@ -21,9 +22,9 @@ namespace MoneyEz.API.Controllers
 
         [HttpGet]
         [Authorize]
-        public Task<IActionResult> GetAllQuizzes([FromQuery] PaginationParameter paginationParameter)
+        public Task<IActionResult> GetAllQuizzes([FromQuery] PaginationParameter paginationParameter, [FromQuery] FilterBase filter)
         {
-            return ValidateAndExecute(() => _quizService.GetAllQuizzesAsync(paginationParameter));
+            return ValidateAndExecute(() => _quizService.GetAllQuizzesAsync(paginationParameter, filter));
         }
 
         [HttpGet]

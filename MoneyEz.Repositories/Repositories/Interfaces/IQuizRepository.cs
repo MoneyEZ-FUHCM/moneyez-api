@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 
 namespace MoneyEz.Repositories.Repositories.Interfaces
@@ -13,6 +14,6 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
         Task<Quiz> GetActiveQuizAsync();
         Task<Quiz> CreateQuizVersionAsync(Quiz quiz);
         Task<Quiz> UpdateQuizAsync(Quiz quiz);
-        Task<Pagination<Quiz>> GetAllQuizzesPaginatedAsync(PaginationParameter paginationParameter);
+        Task<Pagination<Quiz>> GetAllQuizzesPaginatedAsync(PaginationParameter paginationParameter, FilterBase filter);
     }
 }

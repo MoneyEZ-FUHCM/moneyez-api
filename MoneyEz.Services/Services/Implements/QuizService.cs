@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Repositories.Repositories.Interfaces;
@@ -66,7 +67,7 @@ namespace MoneyEz.Services.Services.Implements
             var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(id);
             if (quiz == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
-            
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -75,22 +76,11 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetAllQuizzesAsync(PaginationParameter paginationParameter)
+        public async Task<BaseResultModel> GetAllQuizzesAsync(PaginationParameter paginationParameter, FilterBase filter)
         {
-            var quizzesPagination = await _unitOfWork.QuizRepository.GetAllQuizzesPaginatedAsync(paginationParameter);
+            var quizzesPagination = await _unitOfWork.QuizRepository.GetAllQuizzesPaginatedAsync(paginationParameter, filter);
             var quizModels = _mapper.Map<List<QuizModel>>(quizzesPagination);
-            
-            // Create pagination metadata
-            var metadata = new
-            {
-                quizzesPagination.TotalCount,
-                quizzesPagination.PageSize,
-                quizzesPagination.CurrentPage,
-                quizzesPagination.TotalPages,
-                quizzesPagination.HasNext,
-                quizzesPagination.HasPrevious
-            };
-            
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -134,6 +124,11 @@ namespace MoneyEz.Services.Services.Implements
             if (existingQuiz == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
 
+            if (existingQuiz.Status == CommonsStatus.ACTIVE)
+            {
+                throw new DefaultException("Không thể xóa bộ câu hỏi đang hoạt động");
+            }
+
             _unitOfWork.QuizRepository.SoftDeleteAsync(existingQuiz);
             await _unitOfWork.SaveAsync();
 
@@ -153,15 +148,15 @@ namespace MoneyEz.Services.Services.Implements
                 quiz.Status = CommonsStatus.INACTIVE;
                 _unitOfWork.QuizRepository.UpdateAsync(quiz);
             }
-            
+
             var quizToActivate = await _unitOfWork.QuizRepository.GetByIdAsync(id);
             if (quizToActivate == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
-            
+
             quizToActivate.Status = CommonsStatus.ACTIVE;
             _unitOfWork.QuizRepository.UpdateAsync(quizToActivate);
             await _unitOfWork.SaveAsync();
-            
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -177,7 +172,7 @@ namespace MoneyEz.Services.Services.Implements
             var quiz = await _unitOfWork.QuizRepository.GetActiveQuizAsync();
             if (quiz == null)
                 throw new NotExistException("Không có bộ câu hỏi nào đang hoạt động");
-            
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -210,17 +205,17 @@ namespace MoneyEz.Services.Services.Implements
                 TakenAt = CommonUtils.GetCurrentTime(),
                 QuizVersion = quiz.Version
             };
-            
+
             userQuizResult.SetAnswers(quizAttempt.Answers.Select(a => new UserAnswer
             {
                 QuestionId = a.QuestionId ?? Guid.Empty,
-                AnswerOptionId = a.AnswerOptionId,     
+                AnswerOptionId = a.AnswerOptionId,
                 AnswerContent = a.AnswerContent
             }).ToList());
-            
+
             // Calculate recommended spending model based on answers
             userQuizResult.RecommendedModel = await CalculateRecommendedModel(quiz, quizAttempt.Answers);
-            
+
             // Save the result
             var savedResult = await _unitOfWork.UserQuizResultRepository.CreateUserQuizResultAsync(userQuizResult);
             await _unitOfWork.SaveAsync();
@@ -248,7 +243,7 @@ namespace MoneyEz.Services.Services.Implements
                     continue;
 
                 var matchingQuestion = quizQuestions.FirstOrDefault(q => q.Id == answer.QuestionId);
-                
+
                 if (matchingQuestion == null)
                 {
                     throw new DefaultException($"Câu hỏi với ID {answer.QuestionId} không tồn tại trong bộ câu hỏi");
@@ -262,7 +257,7 @@ namespace MoneyEz.Services.Services.Implements
                         throw new DefaultException($"Lựa chọn với ID {answer.AnswerOptionId} không tồn tại trong câu hỏi {matchingQuestion.Content}");
                     }
                 }
-                
+
                 answeredQuestionIds.Add(matchingQuestion.Id);
             }
 
@@ -292,7 +287,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var userQuizResultsPagination = await _unitOfWork.UserQuizResultRepository.GetUserQuizResultsByUserIdPaginatedAsync(userId, paginationParameter);
             var userQuizResultModels = _mapper.Map<List<UserQuizResultModel>>(userQuizResultsPagination);
-            
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -303,7 +298,7 @@ namespace MoneyEz.Services.Services.Implements
 
         private async Task<string> CalculateRecommendedModel(Quiz quiz, List<UserAnswerModel> answers)
         {
-            return "50-30-20"; 
+            return "50-30-20";
         }
     }
 }
