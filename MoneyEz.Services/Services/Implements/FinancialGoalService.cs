@@ -33,6 +33,7 @@ namespace MoneyEz.Services.Services.Implements
         private readonly INotificationService _notificationService;
         private readonly ITransactionNotificationService _transactionNotificationService;
         private readonly IGoalPredictionService _goalPredictionService;
+        private readonly IGroupFundsService _groupFundsService;
 
         public FinancialGoalService(
             IUnitOfWork unitOfWork,
@@ -40,7 +41,8 @@ namespace MoneyEz.Services.Services.Implements
             IClaimsService claimsService,
             INotificationService notificationService,
             ITransactionNotificationService transactionNotificationService,
-            IGoalPredictionService goalPredictionService)
+            IGoalPredictionService goalPredictionService,
+            IGroupFundsService groupFundsService)
 
         {
             _unitOfWork = unitOfWork;
@@ -49,6 +51,7 @@ namespace MoneyEz.Services.Services.Implements
             _notificationService = notificationService;
             _transactionNotificationService = transactionNotificationService;
             _goalPredictionService = goalPredictionService;
+            _groupFundsService = groupFundsService;
         }
 
         #region Personal
@@ -804,15 +807,15 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            if (model.CurrentAmount > groupFund.CurrentBalance)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.INSUFFICIENT_GROUP_FUNDS,
-                    Message = "Số dư hiện tại của nhóm không đủ để khởi tạo mục tiêu này."
-                };
-            }
+            //if (model.CurrentAmount > groupFund.CurrentBalance)
+            //{
+            //    return new BaseResultModel
+            //    {
+            //        Status = StatusCodes.Status400BadRequest,
+            //        ErrorCode = MessageConstants.INSUFFICIENT_GROUP_FUNDS,
+            //        Message = "Số dư hiện tại của nhóm không đủ để khởi tạo mục tiêu này."
+            //    };
+            //}
 
             if (model.Deadline <= CommonUtils.GetCurrentTime())
             {
@@ -853,6 +856,9 @@ namespace MoneyEz.Services.Services.Implements
 
             await _unitOfWork.FinancialGoalRepository.AddAsync(financialGoal);
             await _unitOfWork.SaveAsync();
+
+            // log group fund
+            await _groupFundsService.LogGroupFundChange(model.GroupId, $"đã đặt mục tiêu tài chính cho nhóm", GroupAction.UPDATED, userEmail);
 
             return new BaseResultModel
             {
@@ -1004,14 +1010,12 @@ namespace MoneyEz.Services.Services.Implements
                 goalToUpdate.ApprovalStatus = ApprovalStatus.APPROVED;
 
                 await NotifyGroupMembers(goalToUpdate, user, "updated");
+                await _groupFundsService.LogGroupFundChange(model.GroupId, $"đã cập nhật mục tiêu của nhóm",
+                        GroupAction.UPDATED, userEmail);
             }
-            else if (userRole == RoleGroup.MOD)
+            else
             {
-                // MOD update -> cần duyệt lại
-                goalToUpdate.Status = FinancialGoalStatus.PENDING;
-                goalToUpdate.ApprovalStatus = ApprovalStatus.PENDING;
-
-                await NotifyGroupLeaderApprovalRequest(goalToUpdate, user, "update", "UPDATE");
+                throw new DefaultException("Just leader can update this goal.", MessageConstants.FINACIAL_GOAL_UPDATE_FORBIDDEN);
             }
 
             _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToUpdate);
@@ -1078,28 +1082,13 @@ namespace MoneyEz.Services.Services.Implements
 
                 await NotifyGroupMembers(goalToDelete, user, "deleted");
 
+                // log group fund
+                await _groupFundsService.LogGroupFundChange(model.Id, $"đã xóa mục tiêu tài chính của nhóm", GroupAction.UPDATED, userEmail);
+
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status200OK,
                     Message = "Group financial goal has been deleted successfully."
-                };
-            }
-            else if (userRole == RoleGroup.MOD)
-            {
-                // MOD gửi yêu cầu xóa
-                goalToDelete.Status = FinancialGoalStatus.PENDING;
-                goalToDelete.ApprovalStatus = ApprovalStatus.PENDING;
-                goalToDelete.UpdatedDate = CommonUtils.GetCurrentTime();
-
-                _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToDelete);
-                await _unitOfWork.SaveAsync();
-
-                await NotifyGroupLeaderApprovalRequest(goalToDelete, user, "delete", "DELETE");
-
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status200OK,
-                    Message = "Delete request for this financial goal has been sent to the group leader for approval."
                 };
             }
 
@@ -1162,7 +1151,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var goal = financialGoal.First();
-            
+
             // Get all group members
             var groupMembers = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
                 filter: gm => gm.GroupId == model.GroupId && gm.Status == GroupMemberStatus.ACTIVE,
@@ -1175,14 +1164,17 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("No active members found in the group.", MessageConstants.GROUP_MEMBER_NOT_FOUND);
             }
 
-            // Calculate default equal planned contribution percentage
+            // Kiểm tra tổng phần trăm đóng góp của các thành viên
+            var totalPercentage = groupMembers.Sum(m => m.ContributionPercentage ?? 0);
+            // Nếu tổng phần trăm không bằng 100%, tạo giá trị mặc định
             var defaultPlannedPercentage = 100m / memberCount;
 
             // Get all transactions related to this financial goal
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.GroupId == model.GroupId 
-                            && t.CreatedDate >= goal.CreatedDate 
+                filter: t => t.GroupId == model.GroupId
+                            && t.CreatedDate >= goal.CreatedDate
                             && t.CreatedDate <= goal.Deadline
+                            && t.Status == TransactionStatus.APPROVED
             );
 
             // Calculate member contributions
@@ -1195,13 +1187,15 @@ namespace MoneyEz.Services.Services.Implements
                 var memberTransactions = transactions.Where(t => t.UserId == member.UserId);
                 var currentContributionAmount = memberTransactions.Sum(t => t.Amount);
 
-                // Calculate planned amounts
-                var plannedContributionPercentage = defaultPlannedPercentage; // Can be customized per member if needed
+                // Sử dụng đóng góp theo phần trăm từ GroupMember hoặc giá trị mặc định nếu không có
+                var plannedContributionPercentage = member.ContributionPercentage ?? defaultPlannedPercentage;
+
+                // Tính toán số tiền dự kiến đóng góp dựa trên phần trăm thực tế
                 var plannedTargetAmount = (goal.TargetAmount * plannedContributionPercentage) / 100;
-                
+
                 // Calculate remaining and completion
                 var remainingAmount = Math.Max(0, plannedTargetAmount - currentContributionAmount);
-                var completionPercentage = plannedTargetAmount > 0 
+                var completionPercentage = plannedTargetAmount > 0
                     ? Math.Min(100, (currentContributionAmount / plannedTargetAmount) * 100)
                     : 0;
 
@@ -1224,7 +1218,7 @@ namespace MoneyEz.Services.Services.Implements
             var mappedGoal = _mapper.Map<GroupFinancialGoalDetailModel>(goal);
             mappedGoal.MemberContributions = memberContributions;
             mappedGoal.TotalCurrentAmount = Math.Round(totalCurrentContributions, 2);
-            mappedGoal.CompletionPercentage = goal.TargetAmount > 0 
+            mappedGoal.CompletionPercentage = goal.TargetAmount > 0
                 ? Math.Round((totalCurrentContributions / goal.TargetAmount) * 100, 2)
                 : 0;
 

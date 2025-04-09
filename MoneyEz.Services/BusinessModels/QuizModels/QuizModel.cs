@@ -19,12 +19,16 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
 
         public CommonsStatus Status { get; set; } = CommonsStatus.INACTIVE;
 
-        public List<CreateQuestionModel> Questions { get; set; } = new();
+        public List<QuizQuestionModel> Questions { get; set; } = new();
     }
 
-    public class QuizModel
+    public class UpdateQuizModel : CreateQuizModel
     {
         public Guid Id { get; set; }
+    }
+
+    public class QuizModel : BaseEntity
+    {
         [Required(ErrorMessage = "Tiêu đề bộ quiz không được để trống")]
         public string Title { get; set; }
 
@@ -32,7 +36,26 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         public string Description { get; set; }
 
         public CommonsStatus Status { get; set; }
+        
+        public string Version { get; set; }
 
-        public List<QuestionModel> Questions { get; set; } = new List<QuestionModel>();
+        public List<QuizQuestionModel> Questions { get; set; } = new();
+    }
+
+    public class QuizQuestionModel
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+        
+        [Required(ErrorMessage = "Nội dung câu hỏi không được để trống")]
+        public string Content { get; set; }
+        
+        [MinLength(2, ErrorMessage = "Phải có ít nhất 2 câu trả lời cho câu hỏi")]
+        public List<QuizAnswerOptionModel> AnswerOptions { get; set; } = new();
+    }
+
+    public class QuizAnswerOptionModel
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public string Content { get; set; }
     }
 }

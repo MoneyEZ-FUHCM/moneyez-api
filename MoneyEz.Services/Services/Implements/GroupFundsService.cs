@@ -31,6 +31,7 @@ using MoneyEz.Services.BusinessModels.FinancialReportModels;
 using MoneyEz.Services.BusinessModels.GroupMemLogModels;
 using MoneyEz.Services.BusinessModels.TransactionModels.Group;
 using MoneyEz.Services.Utils.Email;
+using System.Text.RegularExpressions;
 namespace MoneyEz.Services.Services.Implements
 {
     public class GroupFundsService : IGroupFundsService
@@ -290,6 +291,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> RemoveMemberByLeaderAsync(Guid groupId, Guid memberId)
         {
+            // BR: leader chỉ có thể xóa thành viên nếu thành viên chưa đóng góp vào nhóm (chưa có transaction)
             // Retrieve the group fund by its Id
             var groupFund = await _unitOfWork.GroupFundRepository
                 .GetByIdIncludeAsync(groupId, include: query => query.Include(g => g.GroupMembers));
@@ -331,11 +333,21 @@ namespace MoneyEz.Services.Services.Implements
                 .FirstOrDefault(member => member.UserId == memberId && member.Status == GroupMemberStatus.ACTIVE);
             if (memberToRemove == null)
             {
-                return new BaseResultModel
+                throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
+            }
+
+            // kiểm tra % contribution đối với group có goal
+            var groupGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: g => g.GroupId == groupId && g.Status == FinancialGoalStatus.ACTIVE
+            );
+
+            if (groupGoal.Any())
+            {
+                if (memberToRemove.ContributionPercentage > 0)
                 {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.GROUP_MEMBER_NOT_FOUND
-                };
+                    throw new DefaultException(MessageConstants.GROUP_MEMBER_HAVE_CONTRIBUTION_MESSAGE,
+                        MessageConstants.GROUP_MEMBER_HAVE_CONTRIBUTION);
+                }
             }
 
             // get remove member info
@@ -359,11 +371,20 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
+                // kiểm tra xem thành viên đã có giao dịch nào chưa
+                var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                    filter: t => t.GroupId == groupId && t.UserId == memberToRemove.UserId && t.Status == TransactionStatus.APPROVED
+                );
+                if (transactions.Any())
+                {
+                    throw new DefaultException(MessageConstants.GROUP_MEMBER_HAVE_TRANSACTION_MESSAGE, MessageConstants.GROUP_MEMBER_HAVE_TRANSACTION);
+                }
+
                 groupFund.GroupFundLogs.Add(new GroupFundLog
                 {
-                    ChangedBy = removeMember.FullName,
-                    ChangeDescription = $"đã rời khỏi nhóm",
-                    Action = GroupAction.LEFT.ToString(),
+                    ChangedBy = currentUser.FullName,
+                    ChangeDescription = $"đã xóa {removeMember.FullName} khỏi nhóm",
+                    Action = GroupAction.UPDATED.ToString(),
                     CreatedDate = CommonUtils.GetCurrentTime(),
                     CreatedBy = currentUser.Email
                 });
@@ -372,7 +393,6 @@ namespace MoneyEz.Services.Services.Implements
                 memberToRemove.UpdatedBy = currentUser.Email;
                 _unitOfWork.GroupMemberRepository.SoftDeleteAsync(memberToRemove);
 
-                // Save the changes to the repository
                 await _unitOfWork.SaveAsync();
 
                 // send notification to member
@@ -387,7 +407,6 @@ namespace MoneyEz.Services.Services.Implements
 
                 await _notificationService.AddNotificationByUserId(memberId, newNotification);
 
-                // Return a success result
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status200OK,
@@ -395,6 +414,10 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
         }
+
+        /// <summary>
+        /// cập nhật vai trò trong nhóm (chỉ leader mới có quyền cập nhật)
+        /// 
 
         public async Task<BaseResultModel> SetMemberRoleAsync(SetRoleGroupModel setRoleGroupModel)
         {
@@ -449,13 +472,10 @@ namespace MoneyEz.Services.Services.Implements
                     MessageConstants.GROUP_MEMBER_ALREADY_ROLE);
             }
 
-            // Update the member's role
             memberToUpdate.Role = setRoleGroupModel.RoleGroup;
 
-            // get info member update
             var memberUpdateInfo = await _unitOfWork.UsersRepository.GetByIdAsync(memberToUpdate.UserId);
 
-            // Add a log entry for the role change action
             groupFund.GroupFundLogs.Add(new GroupFundLog
             {
                 ChangedBy = currentUser.FullName,
@@ -468,7 +488,6 @@ namespace MoneyEz.Services.Services.Implements
 
             groupFund.UpdatedBy = currentUser.Email;
 
-            // Save the changes to the repository
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
 
@@ -776,6 +795,34 @@ namespace MoneyEz.Services.Services.Implements
             var groupFundModel = _mapper.Map<GroupFundModel>(groupFund);
             groupFundModel.ImageUrl = images.FirstOrDefault()?.ImageUrl;
 
+            // get goal
+            var groupGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: g => g.GroupId == groupId && g.Status == FinancialGoalStatus.ACTIVE
+            );
+
+            if (groupGoal.Any())
+            {
+                groupFundModel.IsGoalActive = true;
+            }
+
+            var allGroupTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == groupId && t.Type == TransactionType.INCOME && t.Status == TransactionStatus.APPROVED
+            );
+
+            if (groupFundModel.GroupMembers != null && groupFundModel.GroupMembers.Any())
+            {
+                foreach (var member in groupFundModel.GroupMembers)
+                {
+                    var memberTransactions = allGroupTransactions.Where(t => t.UserId == member.UserId).ToList();
+
+                    decimal totalContribution = memberTransactions.Sum(t => t.Amount);
+
+                    member.TotalContribution = totalContribution;
+
+                    member.TransactionCount = memberTransactions.Count;
+                }
+            }
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -817,7 +864,7 @@ namespace MoneyEz.Services.Services.Implements
             {
                 invitationCode = StringUtils.GenerateInviteCode();
                 var existingCode = await _redisService.GetAsync<GroupInviteRedisModel>(invitationCode);
-                if (existingCode != null)
+                if (existingCode == null)
                 {
                     break;
                 }
@@ -995,11 +1042,21 @@ namespace MoneyEz.Services.Services.Implements
                 .FirstOrDefault(member => member.UserId == currentUser.Id && member.Status == GroupMemberStatus.ACTIVE);
             if (memberToRemove == null)
             {
-                return new BaseResultModel
+                throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
+            }
+
+            // kiểm tra % contribution đối với group có goal
+            var groupGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: g => g.GroupId == groupId && g.Status == FinancialGoalStatus.ACTIVE
+            );
+
+            if (groupGoal.Any())
+            {
+                if (memberToRemove.ContributionPercentage > 0)
                 {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.GROUP_MEMBER_NOT_FOUND
-                };
+                    throw new DefaultException(MessageConstants.GROUP_MEMBER_HAVE_CONTRIBUTION_MESSAGE,
+                        MessageConstants.GROUP_MEMBER_HAVE_CONTRIBUTION);
+                }
             }
 
             // add log
@@ -1027,6 +1084,9 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        /// <summary>
+        /// cập nhật tỉ lệ đóng góp của các thành viên trong nhóm (chỉ leader mới có quyền cập nhật)
+        /// 
         public async Task<BaseResultModel> SetGroupContribution(SetGroupContributionModel setGroupContributionModel)
         {
             // Retrieve the group fund by its Id including members
@@ -1082,7 +1142,6 @@ namespace MoneyEz.Services.Services.Implements
                 CreatedBy = currentUser.Email
             });
 
-            // Save changes
             groupFund.UpdatedBy = currentUser.Email;
             _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
             await _unitOfWork.SaveAsync();
@@ -1109,6 +1168,9 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
+        /// <summary>
+        /// tạo yêu cầu góp quỹ vào nhóm
+        /// 
         public async Task<BaseResultModel> CreateFundraisingRequest(CreateFundraisingModel createFundraisingModel)
         {
             // Get and verify current user
@@ -1152,11 +1214,10 @@ namespace MoneyEz.Services.Services.Implements
                 GroupId = createFundraisingModel.GroupId,
                 Description = createFundraisingModel.Description,
                 Amount = createFundraisingModel.Amount,
-                Type = TransactionType.INCOME,
-                TransactionDate = CommonUtils.GetCurrentTime(),
+                Type = TransactionType.INCOME
             };
 
-            return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest);
+            return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest, currentUser.Email);
         }
 
         public async Task<GroupMember> GetGroupLeader(Guid groupId)
@@ -1228,7 +1289,7 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Message = "Success",
+                Message = "Retrieved group fund logs successfully",
                 Data = result
             };
         }
@@ -1256,6 +1317,9 @@ namespace MoneyEz.Services.Services.Implements
             return members;
         }
 
+        /// <summary>
+        /// tạo yêu cầu rút tiền từ quỹ nhóm
+        /// 
         public async Task<BaseResultModel> CreateFundWithdrawalRequest(CreateFundWithdrawalModel createFundWithdrawalModel)
         {
             // Get and verify current user
@@ -1273,6 +1337,13 @@ namespace MoneyEz.Services.Services.Implements
             if (groupFund == null)
             {
                 throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // validate amount
+            if (createFundWithdrawalModel.Amount > groupFund.CurrentBalance)
+            {
+                throw new DefaultException("Amount must be less than or equal to the balance",
+                    MessageConstants.GROUP_WITHDRAWAL_AMOUNT_INVALID);
             }
 
             var groupBankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(groupFund.AccountBankId.Value);
@@ -1300,11 +1371,388 @@ namespace MoneyEz.Services.Services.Implements
                 Description = createFundWithdrawalModel.Description,
                 Amount = createFundWithdrawalModel.Amount,
                 Type = TransactionType.EXPENSE,
-                TransactionDate = CommonUtils.GetCurrentTime(),
                 Images = createFundWithdrawalModel.Images
             };
 
-            return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest);
+            return await _transactionService.CreateGroupTransactionAsync(newFundraisingRequest, currentUser.Email);
+        }
+
+        /// <summary>
+        /// tạo lời nhắc góp quỹ cho các thành viên trong nhóm (chỉ leader mới có quyền tạo)
+        /// 
+        public async Task<BaseResultModel> RemindFundraisingAsync(RemindFundraisingModel remindFundraisingModel)
+        {
+            // Get and verify current user
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // Get group with members and financial goals
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                remindFundraisingModel.GroupId,
+                include: q => q.Include(g => g.GroupMembers).Include(g => g.FinancialGoals));
+
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // Validate leader permission
+            var isLeader = groupFund.GroupMembers.Any(member =>
+                member.UserId == currentUser.Id &&
+                member.Role == RoleGroup.LEADER &&
+                member.Status == GroupMemberStatus.ACTIVE);
+
+            if (!isLeader)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status403Forbidden,
+                    Message = MessageConstants.GROUP_REMIND_FORBIDDEN
+                };
+            }
+
+            // Get active financial goal if exists
+            var activeGoal = groupFund.FinancialGoals
+                .FirstOrDefault(g => g.Status == FinancialGoalStatus.ACTIVE);
+
+            // Xác định tổng số tiền cần đóng góp
+            decimal totalRequired = 0;
+            bool hasActiveGoal = activeGoal != null;
+
+            if (hasActiveGoal)
+            {
+                totalRequired = activeGoal.TargetAmount;
+
+                // Kiểm tra tổng % đóng góp chỉ khi có mục tiêu tài chính
+                var totalPercentage = groupFund.GroupMembers
+                    .Where(m => m.Status == GroupMemberStatus.ACTIVE)
+                    .Sum(m => m.ContributionPercentage ?? 0);
+
+                if (totalPercentage != 100)
+                {
+                    throw new DefaultException("Total contribution percentage must equal 100%",
+                        MessageConstants.GROUP_INVALID_TOTAL_CONTRIBUTION);
+                }
+            }
+
+            // Process each member
+            foreach (var memberRemind in remindFundraisingModel.Members)
+            {
+                var groupMember = groupFund.GroupMembers.FirstOrDefault(m =>
+                    m.UserId == memberRemind.MemberId &&
+                    m.Status == GroupMemberStatus.ACTIVE);
+
+                if (groupMember == null)
+                {
+                    throw new NotExistException($"Member with ID {memberRemind.MemberId} not found in group",
+                        MessageConstants.GROUP_MEMBER_NOT_FOUND);
+                }
+
+                // Get member user info
+                var memberUser = await _unitOfWork.UsersRepository.GetByIdAsync(memberRemind.MemberId);
+                if (memberUser == null)
+                {
+                    throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+                }
+
+                // Xác định số tiền cuối cùng dựa vào trường hợp có goal hoặc không
+                decimal finalAmount;
+
+                if (hasActiveGoal)
+                {
+                    // Trường hợp có goal: Tính theo % đóng góp
+                    decimal expectedAmount = totalRequired * (groupMember.ContributionPercentage ?? 0) / 100m;
+                    // Nếu amount đưa xuống vượt quá số tiền dự kiến, lấy giá trị dự kiến
+                    finalAmount = Math.Min(memberRemind.Amount, expectedAmount);
+                }
+                else
+                {
+                    // Trường hợp không có goal: Lấy trực tiếp amount nhập vào
+                    finalAmount = memberRemind.Amount;
+                }
+
+                // Send notification
+                var notification = new Notification
+                {
+                    UserId = memberRemind.MemberId,
+                    Title = $"Nhắc nhở góp quỹ [{groupFund.Name}]",
+                    Message = $"Bạn cần đóng góp {finalAmount:N0} VNĐ cho quỹ nhóm '{groupFund.Name}",
+                    EntityId = groupFund.Id,
+                    Type = NotificationType.GROUP,
+                };
+                await _notificationService.AddNotificationByUserId(memberRemind.MemberId, notification);
+
+                // create transaction pending
+                var groupTransaction = new CreateGroupTransactionModel
+                {
+                    GroupId = groupFund.Id,
+                    Description = $"Nhắc nhở góp quỹ cho thành viên {memberUser.FullName}",
+                    Amount = finalAmount,
+                    Type = TransactionType.INCOME,
+                    TransactionDate = CommonUtils.GetCurrentTime()
+                };
+
+                var transactionResult = await _transactionService.CreateGroupTransactionAsync(groupTransaction, memberUser.Email);
+            }
+
+            // Add group fund log
+            groupFund.GroupFundLogs.Add(new GroupFundLog
+            {
+                ChangedBy = currentUser.FullName,
+                ChangeDescription = $"đã gửi nhắc nhở góp quỹ" + (activeGoal != null ? $" cho mục tiêu '{activeGoal.Name}'" : ""),
+                Action = GroupAction.TRANSACTION_CREATED.ToString(),
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = currentUser.Email
+            });
+
+            // Save changes
+            groupFund.UpdatedBy = currentUser.Email;
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            await _unitOfWork.SaveAsync();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.GROUP_REMIND_SUCCESS_MESSAGE
+            };
+        }
+
+        public async Task<BaseResultModel> UpdateGroupFundsAsync(UpdateGroupModel model)
+        {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (user == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            var bankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(model.AccountBankId);
+            if (bankAccount == null)
+            {
+                throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            }
+
+            // get group fund
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(model.Id);
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // check user is leader
+            var isLeader = groupFund.GroupMembers.Any(member => member.UserId == user.Id 
+                && member.Role == RoleGroup.LEADER && member.Status == GroupMemberStatus.ACTIVE);
+
+            if (!isLeader)
+            {
+                throw new DefaultException(MessageConstants.GROUP_UPDATE_FORBIDDEN_MESSAGE, MessageConstants.GROUP_UPDATE_FORBIDDEN);
+            }
+
+            // Map the model to the existing groupFund entity
+            _mapper.Map(model, groupFund);
+            groupFund.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
+            groupFund.UpdatedBy = user.Email;
+
+            // group image
+            var groupImages = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(groupFund.Id, EntityName.GROUP.ToString());
+            var groupImage = groupImages.FirstOrDefault();
+
+
+            if (groupImage == null)
+            {
+                Image newImage = null;
+
+                if (model.Image != null)
+                {
+                    newImage = new Image
+                    {
+                        EntityId = groupFund.Id,
+                        EntityName = EntityName.GROUP.ToString(),
+                        ImageUrl = model.Image,
+                        CreatedBy = user.Email
+                    };
+
+                    await _unitOfWork.ImageRepository.AddAsync(newImage);
+                    await _unitOfWork.SaveAsync();
+                }
+            }
+            else
+            {
+                if (model.Image != null)
+                {
+                    // Update the existing image entity
+                    groupImage.ImageUrl = model.Image;
+                    groupImage.UpdatedBy = user.Email;
+                    _unitOfWork.ImageRepository.UpdateAsync(groupImage);
+                    await _unitOfWork.SaveAsync();
+                }
+            }
+
+            groupFund.GroupFundLogs = new List<GroupFundLog>
+            {
+                new GroupFundLog
+                {
+                    ChangedBy = user.FullName,
+                    ChangeDescription = "đã chỉnh sửa thông tin của nhóm",
+                    Action = GroupAction.CREATED.ToString(),
+                    CreatedDate = CommonUtils.GetCurrentTime(),
+                    CreatedBy = user.Email
+                }
+            };
+            // Add the groupFund to the repository and save changes again
+            _unitOfWork.GroupFundRepository.UpdateAsync(groupFund);
+            await _unitOfWork.SaveAsync();
+
+            // Return a success result with the created groupFund
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.GROUP_UPDATE_SUCCESS_MESSAGE
+            };
+        }
+
+        public async Task LogGroupFundChange(Guid groupId, string description, GroupAction action, string userEmail)
+        {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+                ?? throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(groupId)
+                ?? throw new NotExistException("Group not found", MessageConstants.GROUP_NOT_EXIST);
+            var log = new GroupFundLog
+            {
+                GroupId = groupFund.Id,
+                ChangedBy = user.FullName,
+                ChangeDescription = description,
+                Action = action.ToString(),
+                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = user.Email,
+            };
+
+            await _unitOfWork.GroupFundLogRepository.AddAsync(log);
+            await _unitOfWork.SaveAsync();
+        }
+
+        public async Task<BaseResultModel> GetPendingRequestsAsync(Guid groupId, PaginationParameter paginationParameters)
+        {
+            // Get and verify current user
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // get group fund
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(groupId, 
+                include: g => g.Include(g => g.GroupMembers));
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // check user is leader
+            var isLeader = groupFund.GroupMembers.Any(member => member.UserId == currentUser.Id
+                && member.Role == RoleGroup.LEADER && member.Status == GroupMemberStatus.ACTIVE);
+
+            if (isLeader)
+            {
+                // get all pending requests
+                var pendingRequests = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+                    paginationParameters,
+                    filter: t => t.GroupId == groupId && t.Status == TransactionStatus.PENDING,
+                    include: q => q.Include(t => t.User),
+                    orderBy: q => q.OrderByDescending(t => t.CreatedDate)
+                );
+
+                var pendingRequestModels = _mapper.Map<List<GroupTransactionModel>>(pendingRequests);
+                var result = PaginationHelper.GetPaginationResult(pendingRequests, pendingRequestModels);
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = result
+                };
+            }
+            else
+            {
+                // get users pending requests
+                var pendingRequests = await _unitOfWork.TransactionsRepository.ToPaginationIncludeAsync(
+                    paginationParameters,
+                    filter: t => t.GroupId == groupId && t.UserId == currentUser.Id && t.Status == TransactionStatus.PENDING,
+                    include: q => q.Include(t => t.User),
+                    orderBy: q => q.OrderByDescending(t => t.CreatedDate)
+                );
+
+                var pendingRequestModels = _mapper.Map<List<GroupTransactionModel>>(pendingRequests);
+                var result = PaginationHelper.GetPaginationResult(pendingRequests, pendingRequestModels);
+                
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = result,
+                };
+            }
+        }
+
+        public async Task<BaseResultModel> GetPendingRequestDetailAsync(Guid requestId)
+        {
+            // Get and verify current user
+            var currentUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail);
+            if (currentUser == null)
+            {
+                throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // get pending requests
+            var pendingRequest = await _unitOfWork.TransactionsRepository.GetByIdIncludeAsync(
+                requestId,
+                filter: t => t.Status == TransactionStatus.PENDING,
+                include: q => q.Include(t => t.User)
+            );
+
+            // get group fund
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(pendingRequest.GroupId.Value,
+                include: g => g.Include(g => g.GroupMembers));
+            if (groupFund == null)
+            {
+                throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
+            }
+
+            // get group bank account
+            var groupBankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(groupFund.AccountBankId.Value);
+
+            if (pendingRequest.Type == TransactionType.INCOME)
+            {
+                // get info transaction fundraising request
+
+                var response = new FundraisingTransactionResponse
+                {
+                    RequestCode = pendingRequest.RequestCode,
+                    Amount = pendingRequest.Amount,
+                    Status = pendingRequest.Status.ToString(),
+                    BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
+                };
+                var response2 = new
+                {
+                    Transaction = _mapper.Map<GroupTransactionModel>(pendingRequest),
+                    BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
+                };
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = "Pending request get successfully",
+                    Data = response2
+                };
+            }
+            else
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = "Pending request get successfully",
+                    Data = _mapper.Map<TransactionModel>(pendingRequest)
+                };
+            }
         }
     }
 }

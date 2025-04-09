@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MoneyEz.Services.BusinessModels.GroupMember
+namespace MoneyEz.Services.BusinessModels.GroupFund
 {
     public class CreateGroupModel
     {

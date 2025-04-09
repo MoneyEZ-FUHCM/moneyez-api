@@ -139,6 +139,9 @@ namespace MoneyEz.Repositories.Repositories.Implements
             {
                 switch (filter.Status.ToLower())
                 {
+                    case "confirmed":
+                        query = query.Where(t => t.Status == TransactionStatus.APPROVED || t.Status == TransactionStatus.REJECTED);
+                        break;
                     case "approved":
                         query = query.Where(t => t.Status == TransactionStatus.APPROVED);
                         break;
@@ -159,7 +162,8 @@ namespace MoneyEz.Repositories.Repositories.Implements
                 query = filter.SortBy.ToLower() switch
                 {
                     "amount" => isAscending ? query.OrderBy(t => t.Amount) : query.OrderByDescending(t => t.Amount),
-                    "date" => isAscending ? query.OrderBy(t => t.TransactionDate) : query.OrderByDescending(t => t.TransactionDate),
+                    "transaction_date" => isAscending ? query.OrderBy(t => t.TransactionDate) : query.OrderByDescending(t => t.TransactionDate),
+                    "created_date" => isAscending ? query.OrderBy(t => t.CreatedDate) : query.OrderByDescending(t => t.CreatedDate),
                     _ => query.OrderByDescending(t => t.TransactionDate) // Default sort by date desc
                 };
             }

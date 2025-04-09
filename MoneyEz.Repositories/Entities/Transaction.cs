@@ -30,6 +30,14 @@ public partial class Transaction : BaseEntity
 
     public InsertType InsertType { get; set; } = InsertType.MANUAL; // default is MANUAL
 
+    public string? AccountBankNumber { get; set; }
+
+    public string? AccountBankName { get; set; }
+
+    public string? BankTransactionId { get; set; }
+
+    public DateTime? BankTransactionDate { get; set; }
+
     public virtual GroupFund? Group { get; set; }
 
     public virtual Subcategory? Subcategory { get; set; }

@@ -27,6 +27,63 @@ namespace MoneyEz.Services.Services.Implements
             _settings = settings.Value;
         }
 
+        public async Task<BaseResultModel> CancelWebhookAsync(Guid accountBankId, string serverUri)
+        {
+            // Find the bank account
+            var bankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(accountBankId);
+            if (bankAccount == null)
+            {
+                throw new NotExistException("Bank account not found", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            }
+
+            // Check if the bank account has a webhook secret key (means it has a webhook registered)
+            if (string.IsNullOrEmpty(bankAccount.WebhookSecretKey))
+            {
+                throw new DefaultException("No webhook is registered for this bank account", MessageConstants.WEBHOOK_NOT_REGISTERED);
+            }
+
+            var groupFunds = await _unitOfWork.GroupFundRepository.GetByAccountBankId(accountBankId);
+            if (groupFunds.Any())
+            {
+                throw new DefaultException("Cannot cancel webhook for a bank account with group funds", MessageConstants.WEBHOOK_CANCELLATION_FAILED);
+            }
+
+            // Build webhook cancellation request
+            var secretKey = bankAccount.WebhookSecretKey;
+
+            // Call webhook cancellation endpoint
+            var response = await _webhookClient.CancelWebhookAsync(secretKey);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Update bank account to remove webhook information
+                bankAccount.WebhookSecretKey = null;
+                bankAccount.WebhookUrl = null;
+                _unitOfWork.BankAccountRepository.UpdateAsync(bankAccount);
+                await _unitOfWork.SaveAsync();
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Message = "Webhook cancelled successfully."
+                };
+            }
+            else
+            {
+                // Read the error response
+                var errorMessage = await response.Content.ReadAsStringAsync();
+
+                return new BaseResultModel
+                {
+                    Status = (int)response.StatusCode,
+                    ErrorCode = MessageConstants.WEBHOOK_CANCELLATION_FAILED,
+                    Message = $"Failed to cancel webhook: {errorMessage}"
+                };
+            }
+
+            throw new DefaultException("Failed to cancel webhook", MessageConstants.WEBHOOK_CANCELLATION_FAILED);
+        }
+
         public async Task<BaseResultModel> RegisterWebhookAsync(Guid accountBankId, string serverUri)
         {
             // Get bank account
@@ -47,7 +104,8 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Url = $"https://{serverUri}{_settings.EndpointApi}",
                 Secret = secretKey,
-                AccountNumber = bankAccount.AccountNumber
+                AccountNumber = bankAccount.AccountNumber,
+                AccountHolder = bankAccount.AccountHolderName
             };
 
             // Send registration request
@@ -68,7 +126,7 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            throw new DefaultException($"Failed to register webhook: {await response.Content.ReadAsStringAsync()}", 
+            throw new DefaultException($"Failed to register webhook: {await response.Content.ReadAsStringAsync()}",
                 MessageConstants.WEBHOOK_REGISTRATION_FAILED);
         }
     }

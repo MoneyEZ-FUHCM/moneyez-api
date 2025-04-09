@@ -22,15 +22,11 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
     public class UserQuizResultModel
     {
         public Guid Id { get; set; }
-
-        [Required(ErrorMessage = "User ID không được để trống")]
         public Guid UserId { get; set; }
-
-        [Required(ErrorMessage = "Quiz ID không được để trống")]
         public Guid QuizId { get; set; }
-
+        public string QuizVersion { get; set; }
+        public DateTime TakenAt { get; set; }
         public string RecommendedModel { get; set; }
-
-        public List<UserQuizAnswerModel> UserAnswers { get; set; } = new List<UserQuizAnswerModel>();
+        public List<UserAnswerModel> Answers { get; set; } = new List<UserAnswerModel>();
     }
 }

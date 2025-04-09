@@ -58,6 +58,12 @@ namespace MoneyEz.API.Controllers
             return ValidateAndExecute(() => _userService.VerifyEmail(confirmOtpModel));
         }
 
+        [HttpPost("verify-email/resend-otp")]
+        public Task<IActionResult> ResendOtp([FromBody] ResendOtpModel model)
+        {
+            return ValidateAndExecute(() => _userService.ResendOtpConfirmAsync(model.Email));
+        }
+
         [HttpPost("reset-password/request")]
         public Task<IActionResult> RequestResetPassword([FromBody] string email)
         {

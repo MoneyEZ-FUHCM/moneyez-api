@@ -32,7 +32,7 @@ namespace MoneyEz.Services.Services.Interfaces
 
         public Task<BaseResultModel> ExecuteResetPassword(ResetPasswordModel resetPasswordModel);
 
-        //public Task<BaseResultModel> ResendOtpConfirmAsync(string email);
+        public Task<BaseResultModel> ResendOtpConfirmAsync(string email);
 
         //public Task<UserModel> GetLoginUserInformationAsync(string email);
 

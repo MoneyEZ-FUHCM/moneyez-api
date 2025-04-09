@@ -1,16 +1,21 @@
 ﻿using System.Net.Http.Json;
 using System.Net.WebSockets;
+using System.Text.Json;
+using AutoMapper;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Services.BusinessModels.ExternalServiceModels;
+using MoneyEz.Services.BusinessModels.KnowledgeModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
+using MoneyEz.Services.Utils;
 using Newtonsoft.Json;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -22,13 +27,15 @@ namespace MoneyEz.Services.Services.Implements
         private readonly ITransactionService _transactionService;
         private readonly IChatHistoryService _chatHistoryService;
         private readonly IUserSpendingModelService _userSpendingModelService;
+        private readonly IMapper _mapper;
 
         public ExternalApiService(HttpClient httpClient, 
             IConfiguration configuration, 
             IHttpContextAccessor httpContextAccessor,
             ITransactionService transactionService,
             IChatHistoryService chatHistoryService,
-            IUserSpendingModelService userSpendingModelService)
+            IUserSpendingModelService userSpendingModelService,
+            IMapper mapper)
         {
             _httpClient = httpClient;
             _configuration = configuration;
@@ -36,8 +43,20 @@ namespace MoneyEz.Services.Services.Implements
             _transactionService = transactionService;
             _chatHistoryService = chatHistoryService;
             _userSpendingModelService = userSpendingModelService;
+            _mapper = mapper;
             // Configure base URL from settings if needed
             // _httpClient.BaseAddress = new Uri(_configuration["ExternalApi:BaseUrl"]);
+        }
+
+        public async Task<BaseResultModel> ExecuteKnownledgeDocumentSerivce(ExternalKnowledgeRequestModel model, PaginationParameter paginationParameter)
+        {
+            switch (model.Command)
+            {
+                case "get_all_documents":
+                    return await GetAllKnowledgeDocument(paginationParameter);
+                default:
+                    throw new DefaultException("Invalid command", MessageConstants.INVALID_COMMAND);
+            }
         }
 
         public async Task<BaseResultModel> ExecuteReceiveExternalService(ExternalReciveRequestModel model)
@@ -143,7 +162,11 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     data = jsonString
                 });
-                //var response = await _httpClient.PostAsJsonAsync("http://127.0.0.1:8000/api/receive_message", request);
+
+                //var response = await _httpClient.PostAsJsonAsync("http://127.0.0.1:8000/api/receive_message", new
+                //{
+                //    data = jsonString
+                //});
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -183,6 +206,35 @@ namespace MoneyEz.Services.Services.Implements
                     Message = $"Service Error: {ex.Message}"
                 };
             }
+        }
+
+        public async Task<BaseResultModel> GetAllKnowledgeDocument(PaginationParameter paginationParameter)
+        {
+            var response = await _httpClient.GetAsync("http://178.128.118.171:8888/api/knowledge/knowledge/documents");
+            if (response.IsSuccessStatusCode)
+            {
+                // document from qdrant db - python service
+                var jsonString = await response.Content.ReadAsStringAsync();
+                var jsonData = JsonConvert.DeserializeObject<BaseResultModel>(jsonString);
+                var rawDocuments = JsonConvert.DeserializeObject<List<ResponseKnowledgeModel>>(jsonData.Data.ToString());
+
+                var documents = _mapper.Map<List<KnowledgeModel>>(rawDocuments);
+                var itemCount = documents.Count;
+                var paginatedDocuments = documents
+                    .Skip((paginationParameter.PageIndex - 1) * paginationParameter.PageSize)
+                    .Take(paginationParameter.PageSize)
+                    .ToList();
+
+                var paging = new Pagination<KnowledgeModel>(paginatedDocuments, itemCount, paginationParameter.PageIndex, paginationParameter.PageSize);
+                var result = PaginationHelper.GetPaginationResult(paging, paginatedDocuments);
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = result
+                };
+            }
+            throw new DefaultException("Failed to fetch documents", "ErrorFetchDocument");
         }
     }
 }

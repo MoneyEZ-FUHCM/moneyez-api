@@ -781,6 +781,25 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
         }
+
+        public async Task<BaseResultModel> ResendOtpConfirmAsync(string email)
+        {
+            var existUser = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email);
+
+            if (existUser == null)
+            {
+                throw new DefaultException("", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // send otp email
+            await _otpService.CreateOtpAsync(existUser.Email, "confirm", existUser.FullName);
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = $"Đã gửi OTP đến email {existUser.Email}. Vui lòng kiểm tra hộp thư hoặc hộp thư rác để lấy mã OTP.",
+            };
+        }
     }
 }
 

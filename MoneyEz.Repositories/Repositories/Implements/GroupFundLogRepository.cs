@@ -58,7 +58,10 @@ namespace MoneyEz.Repositories.Repositories.Implements
                     "group" => query.Where(g =>
                                                 g.Action == GroupAction.CREATED.ToString() ||
                                                 g.Action == GroupAction.UPDATED.ToString() ||
-                                                g.Action == GroupAction.DISBANDED.ToString()),
+                                                g.Action == GroupAction.DISBANDED.ToString() ||
+                                                g.Action == GroupAction.TRANSACTION_CREATED.ToString() ||
+                                                g.Action == GroupAction.TRANSACTION_UPDATED.ToString() ||
+                                                g.Action == GroupAction.TRANSACTION_DELETED.ToString()),
 
                     "member" => query.Where(g =>
                                                 g.Action == GroupAction.INVITED.ToString() ||

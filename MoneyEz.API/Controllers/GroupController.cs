@@ -110,7 +110,7 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundsService.SetGroupContribution(setGroupContributionModel));
         }
 
-        [HttpPost("fund-rasising/request")]
+        [HttpPost("fund-raising/request")]
         [Authorize]
         public async Task<IActionResult> CreateFundraisingRequest([FromBody] CreateFundraisingModel model)
         {
@@ -122,6 +122,13 @@ namespace MoneyEz.API.Controllers
         public async Task<IActionResult> CreateFundWithdrawalRequest([FromBody] CreateFundWithdrawalModel model)
         {
             return await ValidateAndExecute(() => _groupFundsService.CreateFundWithdrawalRequest(model));
+        }
+
+        [HttpPost("fund-raising/remind")]
+        [Authorize]
+        public async Task<IActionResult> CreateFundraisingRemind([FromBody] RemindFundraisingModel model)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.RemindFundraisingAsync(model));
         }
 
 
@@ -137,6 +144,27 @@ namespace MoneyEz.API.Controllers
         public async Task<IActionResult> GetGroupFundLogs(Guid id, [FromQuery]PaginationParameter paginationParameters, [FromQuery]GroupLogFilter filter)
         {
             return await ValidateAndExecute(() => _groupFundsService.GetGroupFundLogs(id, paginationParameters, filter));
+        }
+
+        [HttpPut]
+        [Authorize]
+        public async Task<IActionResult> UpdateGroupFund([FromBody] UpdateGroupModel model)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.UpdateGroupFundsAsync(model));
+        }
+
+        [HttpGet("pending-requests")]
+        [Authorize]
+        public async Task<IActionResult> GetPendingRequests([FromQuery] Guid groupId, [FromQuery] PaginationParameter paginationParameters)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.GetPendingRequestsAsync(groupId, paginationParameters));
+        }
+
+        [HttpGet("pending-requests/{requestId}")]
+        [Authorize]
+        public async Task<IActionResult> GetPendingRequestDetail([FromRoute] Guid requestId)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.GetPendingRequestDetailAsync(requestId));
         }
     }
 }

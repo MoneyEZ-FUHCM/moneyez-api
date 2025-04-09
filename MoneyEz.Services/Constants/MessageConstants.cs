@@ -107,6 +107,8 @@ namespace MoneyEz.Services.Constants
         public const string SPENDING_MODEL_HAS_NO_SUBCATEGORIES = "SpendingModelHasNoSubcategories";
         public const string FINANCIAL_GOAL_CANNOT_BE_DELETED = "FinancialGoalCannotBeDeleted";
         public const string GOAL_ALREADY_COMPLETED = "GoalAlreadyCompleted";
+        public const string FINACIAL_GOAL_UPDATE_FORBIDDEN = "FinancialGoalUpdateForbidden";
+        public const string FINACIAL_GOAL_DELETE_FORBIDDEN = "FinancialGoalDeleteForbidden";
         //financial report
         public const string REPORT_NOT_FOUND = "ReportNotFound";
         public const string REPORT_CREATE_FAILED = "ReportCreateFailed";
@@ -199,6 +201,7 @@ namespace MoneyEz.Services.Constants
         public const string TRANSACTION_ADMIN_ACCESS_DENIED = "TransactionAdminAccessDenied";
         public const string SPENDING_MODEL_OVER_LIMIT = "SpendingModelOverLimit";
         public const string TRANSACTION_AMOUNT_INVALID = "TransactionAmountInvalid";
+        public const string TRANSACTION_REJECTED_MISSING_REASON = "TransactionRejectMissingReason";
 
         //vote
         public const string VOTE_ALREADY_EXISTS = "VoteAlreadyExists";
@@ -214,6 +217,7 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_CLOSE_FAIL = "GroupCloseFailed";
         public const string GROUP_CLOSE_SUCCESS_MESSAGE = "Group closed successfully";
         public const string GROUP_ACCESS_DENIED = "GroupAccessDenied";
+        public const string GROUP_WITHDRAWAL_AMOUNT_INVALID = "GroupWithdrawalAmountInvalid";
 
         public const string GROUP_CLOSE_FORBIDDEN = "GroupCloseForbidden";
         public const string GROUP_REMOVE_MEMBER_FORBIDDEN = "GroupMemberNotFound";
@@ -232,6 +236,19 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_LEAVE_SUCCESS_MESSAGE = "You have left the group successfully.";
         public const string GROUP_MEMBER_ALREADY_ROLE = "MemberAlreadyRole";
         public const string GROUP_LEADER_NOT_FOUND = "GroupLeaderNotFound";
+        public const string GROUP_REMIND_FORBIDDEN = "GroupRemindForbidden";
+        public const string GROUP_REMIND_SUCCESS_MESSAGE = "Group remind successfully";
+
+        public const string GROUP_MEMBER_HAVE_TRANSACTION = "GroupMemberHaveTransaction";
+        public const string GROUP_MEMBER_HAVE_TRANSACTION_MESSAGE = "Group member has transactions and cannot be removed.";
+
+        public const string GROUP_MEMBER_HAVE_CONTRIBUTION = "GroupMemberHaveContribution";
+        public const string GROUP_MEMBER_HAVE_CONTRIBUTION_MESSAGE = "Group member has contributions and cannot be removed.";
+
+        public const string GROUP_UPDATE_FORBIDDEN = "GroupUpdateForbidden";
+        public const string GROUP_UPDATE_FORBIDDEN_MESSAGE = "Only the group leader can update the group information.";
+
+        public const string GROUP_UPDATE_SUCCESS_MESSAGE = "Group information updated successfully";
 
         // fundraising request
         public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
@@ -278,6 +295,7 @@ namespace MoneyEz.Services.Constants
         public const string BANK_ACCOUNT_ACCESS_DENIED = "BankAccountAccessDenied";
         public const string BANK_ACCOUNT_NUMBER_DUPLICATE = "BankAccountNumberDuplicate";
         public const string BANK_ACCOUNT_REGISTERED_IN_GROUP = "BankAccountRegisteredInGroup";
+        public const string BANK_ACCOUNT_VALIDATION_FAILED = "BankAccountValidationFailed";
 
         public const string BANK_ACCOUNT_LIST_GET_SUCCESS_MESSAGE = "Bank account list fetched successfully";
         public const string BANK_ACCOUNT_GET_SUCCESS_MESSAGE = "Bank account details fetched successfully";
@@ -295,11 +313,24 @@ namespace MoneyEz.Services.Constants
         public const string WEBHOOK_SERVER_ERROR = "WebhookServerError";
         public const string WEBHOOK_NOT_SUPPORTED = "WebhookNotSupported";
         public const string INVALID_WEBHOOK_SECRET = "InvalidWebhookSecret";
+        public const string WEBHOOK_CANCELLATION_FAILED = "WebhookCancellationFailed";
+        public const string WEBHOOK_NOT_REGISTERED = "WebhookNotRegistered";
+        public const string WEBHOOK_SECRET_EXISTED = "WebhookSecretExisted";
 
         // external service
         public const string INVALID_EXTERNAL_SECRET = "InvalidExternalSecret";
         public const string INVALID_COMMAND = "InvalidCommand";
         public const string MISSING_PARAMETER = "MissingParameter";
         public const string INVALID_PARAMETER_FORMAT = "InvalidParameterFormat";
+
+        // Post
+        public const string POST_NOT_FOUND = "PostNotFound";
+        public const string POST_ALREADY_EXISTS = "PostAlreadyExists";
+        public const string POST_ACCESS_DENIED = "PostAccessDenied";
+        public const string POST_CREATED_SUCCESS = "PostCreatedSuccessfully";
+        public const string POST_UPDATED_SUCCESS = "PostUpdatedSuccessfully";
+        public const string POST_DELETED_SUCCESS = "PostDeletedSuccessfully";
+        public const string POST_LIST_FETCHED_SUCCESS = "Post list fetched successfully.";
+        public const string POST_FETCHED_SUCCESS = "Post details fetched successfully.";
     }
 }

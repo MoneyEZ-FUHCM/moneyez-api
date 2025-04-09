@@ -90,7 +90,8 @@ namespace MoneyEz.API.Controllers
         [HttpPost("group/create")]
         public Task<IActionResult> CreateGroupTransaction([FromBody] CreateGroupTransactionModel model)
         {
-            return ValidateAndExecute(() => _transactionService.CreateGroupTransactionAsync(model));
+            var currentEmail = _claimsService.GetCurrentUserEmail;
+            return ValidateAndExecute(() => _transactionService.CreateGroupTransactionAsync(model, currentEmail));
         }
 
         [HttpGet("group/transaction/{transactionId}")]

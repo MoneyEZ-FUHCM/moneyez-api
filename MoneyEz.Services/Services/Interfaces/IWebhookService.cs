@@ -10,5 +10,6 @@ namespace MoneyEz.Services.Services.Interfaces
     public interface IWebhookService
     {
         public Task<BaseResultModel> RegisterWebhookAsync(Guid accountBankId, string serverUri);
+        public Task<BaseResultModel> CancelWebhookAsync(Guid accountBankId, string serverUri);
     }
 }
