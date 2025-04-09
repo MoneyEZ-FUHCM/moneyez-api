@@ -183,5 +183,17 @@ namespace MoneyEz.Repositories.Repositories.Implements
 
             return await query.SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
+
+
+        public IQueryable<Transaction> FilterByType(IQueryable<Transaction> source, ReportTransactionType type)
+        {
+            return type switch
+            {
+                ReportTransactionType.Income => source.Where(x => x.Type == TransactionType.INCOME),
+                ReportTransactionType.Expense => source.Where(x => x.Type == TransactionType.EXPENSE),
+                _ => source
+            };
+        }
+
     }
 }
