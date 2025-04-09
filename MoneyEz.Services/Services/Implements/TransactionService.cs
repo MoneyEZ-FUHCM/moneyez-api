@@ -22,6 +22,8 @@ using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.TransactionModels.Group;
 using MoneyEz.Services.BusinessModels.GroupFund;
+using MoneyEz.Services.BusinessModels.TransactionModels.Reports;
+using System.Globalization;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -398,9 +400,6 @@ namespace MoneyEz.Services.Services.Implements
         }
 
         #endregion single user
-
-
-
 
         //admin
         public async Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter)
@@ -797,7 +796,7 @@ namespace MoneyEz.Services.Services.Implements
                 if (userRequest != null)
                 {
                     await LogGroupFundChange(group, $"Giao dịch {transactionContext} [{transaction.Description}] của [{userRequest.FullName}] đã bị từ chối. " +
-                        $"\n[Lí do:] {model.Note}", 
+                        $"\n[Lí do:] {model.Note}",
                         GroupAction.TRANSACTION_UPDATED, userEmail);
                 }
                 else
@@ -985,6 +984,7 @@ namespace MoneyEz.Services.Services.Implements
 
         #endregion group
 
+        #region python webhook
         public async Task<BaseResultModel> UpdateTransactionWebhook(WebhookPayload webhookPayload)
         {
             // Get bank account to validate secret key
@@ -1247,5 +1247,242 @@ namespace MoneyEz.Services.Services.Implements
                 return await UpdateGroupTransactionAsync(updateGroupTransaction);
             }
         }
+        #endregion python webhook
+
+        #region report
+
+        public async Task<BaseResultModel> GetYearReportAsync(int year, ReportTransactionType type)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id && t.TransactionDate!.Value.Year == year
+            );
+
+            var filtered = _unitOfWork.TransactionsRepository.FilterByType(transactions.AsQueryable(), type);
+
+            var monthly = filtered
+                .GroupBy(t => t.TransactionDate!.Value.Month)
+                .Select(g => new MonthAmountModel
+                {
+                    Month = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(g.Key),
+                    Amount = g.Sum(x => x.Amount)
+                })
+                .OrderBy(m => DateTime.ParseExact(m.Month, "MMMM", CultureInfo.CurrentCulture))
+                .ToList();
+
+            var total = filtered.Sum(t => t.Amount);
+            var avg = monthly.Count > 0 ? monthly.Average(x => x.Amount) : 0;
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new YearTransactionReportModel
+                {
+                    Year = year,
+                    Type = type,
+                    Total = total,
+                    Average = avg,
+                    MonthlyData = monthly
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetCategoryYearReportAsync(int year, ReportTransactionType type)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id &&
+                             t.TransactionDate!.Value.Year == year,
+                include: q => q.Include(t => t.Subcategory!)
+            );
+
+            var filtered = _unitOfWork.TransactionsRepository
+                .FilterByType(transactions.AsQueryable(), type)
+                .Where(t => t.Subcategory != null);
+
+            var total = filtered.Sum(t => t.Amount);
+
+            var categories = filtered
+                .GroupBy(t => t.Subcategory!)
+                .Select(g => new CategoryAmountModel
+                {
+                    Name = g.Key.Name,
+                    Icon = g.Key.Icon,
+                    Amount = g.Sum(t => t.Amount),
+                    Percentage = total == 0 ? 0 : Math.Round((double)(g.Sum(t => t.Amount) / total * 100), 2)
+                })
+                .OrderByDescending(c => c.Amount)
+                .ToList();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new CategoryYearTransactionReportModel
+                {
+                    Year = year,
+                    Type = type,
+                    Total = total,
+                    Categories = categories
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetAllTimeReportAsync()
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id
+            );
+
+            var income = transactions.Where(t => t.Type == TransactionType.INCOME).Sum(t => t.Amount);
+            var expense = transactions.Where(t => t.Type == TransactionType.EXPENSE).Sum(t => t.Amount);
+            var total = income - expense;
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new AllTimeTransactionSummaryModel
+                {
+                    Income = income,
+                    Expense = expense,
+                    Total = total,
+                    InitialBalance = 0,
+                    Cumulation = total
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetAllTimeCategoryReportAsync(ReportTransactionType type)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id,
+                include: q => q.Include(t => t.Subcategory!)
+            );
+
+            var filtered = _unitOfWork.TransactionsRepository
+                .FilterByType(transactions.AsQueryable(), type)
+                .Where(t => t.Subcategory != null);
+
+            var total = filtered.Sum(t => t.Amount);
+
+            var categories = filtered
+                .GroupBy(t => t.Subcategory!)
+                .Select(g => new CategoryAmountModel
+                {
+                    Name = g.Key.Name,
+                    Icon = g.Key.Icon,
+                    Amount = g.Sum(t => t.Amount),
+                    Percentage = total == 0 ? 0 : Math.Round((double)(g.Sum(t => t.Amount) / total * 100), 2)
+                })
+                .OrderByDescending(c => c.Amount)
+                .ToList();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new AllTimeCategoryTransactionReportModel
+                {
+                    Type = type,
+                    Total = total,
+                    Categories = categories
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetBalanceYearReportAsync(int year)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id && t.TransactionDate!.Value.Year == year
+            );
+
+            var monthlyBalances = new List<MonthlyBalanceModel>();
+            decimal currentBalance = 0;
+
+            for (int month = 1; month <= 12; month++)
+            {
+                var monthTransactions = transactions
+                    .Where(t => t.TransactionDate!.Value.Month == month);
+
+                foreach (var t in monthTransactions)
+                {
+                    currentBalance += t.Type == TransactionType.INCOME ? t.Amount : -t.Amount;
+                }
+
+                monthlyBalances.Add(new MonthlyBalanceModel
+                {
+                    Month = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month),
+                    Balance = currentBalance
+                });
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new BalanceYearTransactionReportModel
+                {
+                    Year = year,
+                    Balances = monthlyBalances
+                }
+            };
+        }
+
+        #endregion report
     }
 }
