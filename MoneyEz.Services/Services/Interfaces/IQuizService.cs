@@ -1,4 +1,5 @@
 ﻿using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.QuizModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using System;
@@ -12,7 +13,7 @@ namespace MoneyEz.Services.Services.Interfaces
         // Admin functions
         Task<BaseResultModel> CreateQuizAsync(CreateQuizModel createQuizModel);
         Task<BaseResultModel> GetQuizByIdAsync(Guid id);
-        Task<BaseResultModel> GetAllQuizzesAsync(PaginationParameter paginationParameter);
+        Task<BaseResultModel> GetAllQuizzesAsync(PaginationParameter paginationParameter, FilterBase filter);
         Task<BaseResultModel> UpdateQuizAsync(UpdateQuizModel quizModel);
         Task<BaseResultModel> ActivateQuizAsync(Guid id);
         Task<BaseResultModel> DeleteQuizAsync(Guid id);
