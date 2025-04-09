@@ -1688,7 +1688,7 @@ namespace MoneyEz.Services.Services.Implements
                 
                 return new BaseResultModel
                 {
-                    Status = StatusCodes.Status403Forbidden,
+                    Status = StatusCodes.Status200OK,
                     Data = result,
                 };
             }
