@@ -39,6 +39,16 @@ namespace MoneyEz.Services.Services.Implements
             var quiz = _mapper.Map<Quiz>(createQuizModel);
             quiz.Version = CommonUtils.GetCurrentTime().ToString("yyyyMMddHHmm");
 
+            if (createQuizModel.Status == CommonsStatus.ACTIVE)
+            {
+                var allQuizzes = await _unitOfWork.QuizRepository.GetAllAsync();
+                foreach (var quiz1 in allQuizzes)
+                {
+                    quiz1.Status = CommonsStatus.INACTIVE;
+                    _unitOfWork.QuizRepository.UpdateAsync(quiz1);
+                }
+            }
+
             // Create a new quiz with versioning
             var createdQuiz = await _unitOfWork.QuizRepository.AddAsync(quiz);
             await _unitOfWork.SaveAsync();
@@ -53,7 +63,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetQuizByIdAsync(Guid id)
         {
-            var quiz = await _unitOfWork.QuizRepository.GetQuizByIdAsync(id);
+            var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(id);
             if (quiz == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
             
@@ -91,11 +101,20 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> UpdateQuizAsync(UpdateQuizModel quizModel)
         {
-            var existingQuiz = await _unitOfWork.QuizRepository.GetQuizByIdAsync(quizModel.Id);
+            var existingQuiz = await _unitOfWork.QuizRepository.GetByIdAsync(quizModel.Id);
             if (existingQuiz == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {quizModel.Id}");
 
-            _mapper.Map(existingQuiz, quizModel);
+            if (existingQuiz.Status == CommonsStatus.INACTIVE && quizModel.Status == CommonsStatus.ACTIVE)
+            {
+                await ActivateQuizAsync(quizModel.Id);
+            }
+            else if (existingQuiz.Status == CommonsStatus.ACTIVE && quizModel.Status == CommonsStatus.INACTIVE)
+            {
+                throw new DefaultException("Phải có một bộ câu hỏi được kích hoạt");
+            }
+
+            _mapper.Map(quizModel, existingQuiz);
             existingQuiz.Version = DateTime.Now.ToString("yyyyMMddHHmm");
 
             _unitOfWork.QuizRepository.UpdateAsync(existingQuiz);
@@ -111,7 +130,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> DeleteQuizAsync(Guid id)
         {
-            var existingQuiz = await _unitOfWork.QuizRepository.GetQuizByIdAsync(id);
+            var existingQuiz = await _unitOfWork.QuizRepository.GetByIdAsync(id);
             if (existingQuiz == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
 
@@ -135,7 +154,7 @@ namespace MoneyEz.Services.Services.Implements
                 _unitOfWork.QuizRepository.UpdateAsync(quiz);
             }
             
-            var quizToActivate = await _unitOfWork.QuizRepository.GetQuizByIdAsync(id);
+            var quizToActivate = await _unitOfWork.QuizRepository.GetByIdAsync(id);
             if (quizToActivate == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
             
@@ -169,7 +188,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> SubmitQuizAnswersAsync(CreateQuizAttemptModel quizAttempt)
         {
-            var quiz = await _unitOfWork.QuizRepository.GetQuizByIdAsync(quizAttempt.QuizId);
+            var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(quizAttempt.QuizId);
             if (quiz == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {quizAttempt.QuizId}");
 

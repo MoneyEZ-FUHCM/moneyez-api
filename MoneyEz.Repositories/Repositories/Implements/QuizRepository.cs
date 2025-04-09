@@ -13,21 +13,16 @@ namespace MoneyEz.Repositories.Repositories.Implements
 {
     public class QuizRepository : GenericRepository<Quiz>, IQuizRepository
     {
-        private readonly MoneyEzContext _dbContext;
+        private readonly MoneyEzContext _context;
         
         public QuizRepository(MoneyEzContext context) : base(context)
         {
-            _dbContext = context;
-        }
-        
-        public async Task<Quiz> GetQuizByIdAsync(Guid id)
-        {
-            return await _dbContext.Quizzes.FindAsync(id);
+            _context = context;
         }
 
         public async Task<Quiz> GetActiveQuizAsync()
         {
-            return await _dbContext.Quizzes
+            return await _context.Quizzes
                 .Where(q => q.Status == Enums.CommonsStatus.ACTIVE)
                 .FirstOrDefaultAsync();
         }
@@ -36,8 +31,8 @@ namespace MoneyEz.Repositories.Repositories.Implements
         {
             quiz.Version = DateTime.Now.ToString("yyyyMMddHHmm");
             
-            await _dbContext.Quizzes.AddAsync(quiz);
-            await _dbContext.SaveChangesAsync();
+            await _context.Quizzes.AddAsync(quiz);
+            await _context.SaveChangesAsync();
             
             return quiz;
         }
@@ -45,7 +40,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
         public async Task<Quiz> UpdateQuizAsync(Quiz quiz)
         {
             // Preserve original ID but create a new version
-            var existingQuiz = await _dbContext.Quizzes.FindAsync(quiz.Id);
+            var existingQuiz = await _context.Quizzes.FindAsync(quiz.Id);
             if (existingQuiz == null)
                 return null;
                 
@@ -53,15 +48,15 @@ namespace MoneyEz.Repositories.Repositories.Implements
             quiz.Version = DateTime.Now.ToString("yyyyMMddHHmm");
             
             // Update the values
-            _dbContext.Entry(existingQuiz).CurrentValues.SetValues(quiz);
-            await _dbContext.SaveChangesAsync();
+            _context.Entry(existingQuiz).CurrentValues.SetValues(quiz);
+            await _context.SaveChangesAsync();
             
             return existingQuiz;
         }
 
         public async Task<Pagination<Quiz>> GetAllQuizzesPaginatedAsync(PaginationParameter paginationParameter)
         {
-            var quizzes = _dbContext.Quizzes
+            var quizzes = _context.Quizzes
                 .OrderByDescending(q => q.CreatedDate)
                 .AsQueryable();
 

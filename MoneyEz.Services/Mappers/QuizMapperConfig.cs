@@ -65,6 +65,18 @@ namespace MoneyEz.Services.Mappers
                         }).ToList()
                     }).ToList()));
 
+            CreateMap<Quiz, UpdateQuizModel>()
+                .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.GetQuestions()
+                    .Select(q => new QuizQuestionModel
+                    {
+                        Id = q.Id,
+                        Content = q.Content,
+                        AnswerOptions = q.AnswerOptions.Select(a => new QuizAnswerOptionModel
+                        {
+                            Id = a.Id,
+                            Content = a.Content
+                        }).ToList()
+                    }).ToList()));
 
             // User quiz result mappings
             CreateMap<CreateQuizAttemptModel, UserQuizResult>()
