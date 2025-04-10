@@ -32,7 +32,7 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         [Required(ErrorMessage = "Chi tiết bộ câu hỏi không được để trống")]
         public string Description { get; set; }
 
-        public CommonsStatus? Status { get; set; }
+        //public CommonsStatus? Status { get; set; }
 
         public List<QuizQuestionModel> Questions { get; set; } = new();
     }
