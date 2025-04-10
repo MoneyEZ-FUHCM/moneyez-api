@@ -1043,6 +1043,8 @@ namespace MoneyEz.Services.Services.Implements
 
                         _unitOfWork.TransactionsRepository.UpdateAsync(updatedTransactions);
                         await _unitOfWork.SaveAsync();
+
+                        await UpdateFinancialGoalAndBalance(updatedTransactions, updatedTransactions.Amount);
                     }
                     else
                     {
