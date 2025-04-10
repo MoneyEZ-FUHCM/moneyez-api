@@ -97,12 +97,12 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {quizModel.Id}");
 
             _mapper.Map(quizModel, existingQuiz);
-            existingQuiz.Version = DateTime.Now.ToString("yyyyMMddHHmm");
+            existingQuiz.Version = CommonUtils.GetCurrentTime().ToString("yyyyMMddHHmm");
 
-            if (quizModel.Status != null)
-            {
-                existingQuiz.Status = quizModel.Status.Value;
-            }
+            //if (quizModel.Status != null)
+            //{
+            //    existingQuiz.Status = quizModel.Status.Value;
+            //}
 
             _unitOfWork.QuizRepository.UpdateAsync(existingQuiz);
             await _unitOfWork.SaveAsync();
