@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Options;
-using MoneyEz.API.RunSchedule.Job;
+using MoneyEz.Services.RunSchedule.Job;
 using Quartz;
 
-namespace MoneyEz.API.RunSchedule.Setup
+namespace MoneyEz.Services.RunSchedule.Setup
 {
     public class ScanUserSpendingModelJobSetup : IConfigureOptions<QuartzOptions>
     {

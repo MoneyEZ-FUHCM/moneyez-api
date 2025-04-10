@@ -1,6 +1,7 @@
-﻿using Quartz;
+﻿using Microsoft.Extensions.Logging;
+using Quartz;
 
-namespace MoneyEz.API.RunSchedule.Job
+namespace MoneyEz.Services.RunSchedule.Job
 {
     public class SampleJob : IJob
     {
