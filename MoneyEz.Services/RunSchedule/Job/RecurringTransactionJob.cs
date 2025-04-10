@@ -3,7 +3,7 @@ using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Repositories.Utils;
 using Quartz;
 
-namespace MoneyEz.API.RunSchedule.Job
+namespace MoneyEz.Services.RunSchedule.Job
 {
     public class RecurringTransactionJob : IJob
     {
