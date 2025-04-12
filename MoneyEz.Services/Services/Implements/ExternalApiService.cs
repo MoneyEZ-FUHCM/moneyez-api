@@ -9,13 +9,14 @@ using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Services.BusinessModels.ExternalServiceModels;
 using MoneyEz.Services.BusinessModels.KnowledgeModels;
+using MoneyEz.Services.BusinessModels.QuizModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Utils;
 using Newtonsoft.Json;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using Newtonsoft.Json.Serialization;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -241,6 +242,57 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
             throw new DefaultException("Failed to fetch documents", "ErrorFetchDocument");
+        }
+
+        public async Task<RecomendModelResponse> SuggestionSpendingModelSerivce(List<QuestionAnswerPair> answerPairs)
+        {
+            try
+            {
+                // Clear and set new headers
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("X-External-Secret", "thisIsSerectKeyPythonService");
+
+                var jsonString = JsonConvert.SerializeObject(answerPairs);
+                Console.WriteLine("JSON payload: " + jsonString);
+
+                //var response = await _httpClient.PostAsJsonAsync("http://178.128.118.171:8888/api/receive_message", new
+                //{
+                //    data = jsonString
+                //});
+
+                var response = await _httpClient.PostAsJsonAsync("http://127.0.0.1:8000/api/suggestion", new
+                {
+                    data = jsonString
+                });
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<BaseResultModel>();
+
+                    if (result != null)
+                    {
+                        // Extract the first text content from the message
+                        var parsedDataJson = result.Data?.ToString();
+
+                        var settings = new JsonSerializerSettings
+                        {
+                            ContractResolver = new DefaultContractResolver
+                            {
+                                NamingStrategy = new SnakeCaseNamingStrategy()
+                            }
+                        };
+
+                        var jsonData = JsonConvert.DeserializeObject<RecomendModelResponse>(parsedDataJson, settings);
+
+                        return jsonData;
+                    }
+                }
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }

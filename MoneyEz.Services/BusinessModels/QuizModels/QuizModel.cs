@@ -1,5 +1,6 @@
 ﻿using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -70,7 +71,10 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
     }
     public class QuestionAnswerPair
     {
+        [JsonProperty("question")]
         public string Question { get; set; } = "";
+
+        [JsonProperty("answer")]
         public string Answer { get; set; } = "";
     }
 
