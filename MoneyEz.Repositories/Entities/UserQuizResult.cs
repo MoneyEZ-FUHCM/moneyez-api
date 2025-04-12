@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -11,17 +10,17 @@ public partial class UserQuizResult : BaseEntity
 
     public Guid? QuizId { get; set; }
 
-    public string RecommendedModel { get; set; }
+    public string? RecommendedModel { get; set; }
 
     public DateTime TakenAt { get; set; }
-    
-    public string QuizVersion { get; set; }
-    
-    public string AnswersJson { get; set; }
 
-    public virtual Quiz Quiz { get; set; }
+    public string? QuizVersion { get; set; } = "";
+    
+    public string? AnswersJson { get; set; } = "";
 
-    public virtual User User { get; set; }
+    public virtual Quiz? Quiz { get; set; }
+
+    public virtual User? User { get; set; }
 
     public virtual ICollection<UserQuizAnswer> UserQuizAnswers { get; set; } = new List<UserQuizAnswer>();
     
