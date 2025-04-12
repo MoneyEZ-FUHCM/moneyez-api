@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
+using MoneyEz.Services.BusinessModels.BankAccountModels;
 using MoneyEz.Services.BusinessModels.QuizModels;
 using System;
 using System.Collections.Generic;
@@ -80,6 +82,7 @@ namespace MoneyEz.Services.Mappers
 
             // User quiz result mappings
             CreateMap<CreateQuizAttemptModel, UserQuizResult>()
+                .ForMember(dest => dest.RecommendedModel, opt => opt.Ignore())
                 .ForMember(dest => dest.AnswersJson, opt => opt.Ignore())
                 .AfterMap((src, dest) =>
                 {
@@ -105,6 +108,7 @@ namespace MoneyEz.Services.Mappers
 
             // Add mapping for UserQuizResult to UserQuizResultModel
             CreateMap<UserQuizResult, UserQuizResultModel>()
+                .ForMember(dest => dest.RecommendedModel, opt => opt.Ignore())
                 .ForMember(dest => dest.Answers, opt => opt.MapFrom(src =>
                     src.GetAnswers().Select(a => new UserAnswerModel
                     {
@@ -113,6 +117,8 @@ namespace MoneyEz.Services.Mappers
                         AnswerContent = a.AnswerContent
                     }).ToList()
                 ));
+
+            CreateMap<Pagination<UserQuizResult>, Pagination<UserQuizResultModel>>().ConvertUsing<PaginationConverter<UserQuizResult, UserQuizResultModel>>();
         }
     }
 }

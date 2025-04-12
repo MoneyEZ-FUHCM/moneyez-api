@@ -27,19 +27,16 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         public Guid QuizId { get; set; }
         public string QuizVersion { get; set; }
         public DateTime TakenAt { get; set; }
-        public RecomendModelResponse? RecomendModel { get; set; }
+        public RecomendModelResponse? RecommendedModel { get; set; }
         public List<UserAnswerModel> Answers { get; set; } = new List<UserAnswerModel>();
     }
 
     public class RecomendModelResponse
     {
-        [JsonProperty("recommended_model")]
         public RecommendModel? RecommendedModel { get; set; }
 
-        [JsonProperty("alternative_models")]
         public List<RecommendModel> AlternativeModels { get; set; } = new List<RecommendModel>();
 
-        [JsonProperty("reasoning")]
         public string? Reasoning { get; set; }
     }
 
