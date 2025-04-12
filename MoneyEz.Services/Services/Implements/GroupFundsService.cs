@@ -245,6 +245,13 @@ namespace MoneyEz.Services.Services.Implements
             // Check if the group has any transactions
             if (groupFund.Transactions.Any())
             {
+                // check group balance = 0
+                if (groupFund.CurrentBalance > 0)
+                {
+                    throw new DefaultException(MessageConstants.GROUP_BALANCE_MUST_EQUAL_ZERO_MESSAGE, 
+                        MessageConstants.GROUP_BALANCE_MUST_EQUAL_ZERO);
+                }
+
                 // Soft delete: mark the group as inactive
                 groupFund.Status = GroupStatus.DISBANDED;
                 _unitOfWork.GroupFundRepository.SoftDeleteAsync(groupFund);
@@ -1684,6 +1691,30 @@ namespace MoneyEz.Services.Services.Implements
                 );
 
                 var pendingRequestModels = _mapper.Map<List<GroupTransactionModel>>(pendingRequests);
+                // For withdrawal transactions, calculate and add withdrawal limit to notes
+                foreach (var request in pendingRequestModels.Where(r => r.Type == TransactionType.EXPENSE.ToString()))
+                {
+                    // Calculate total deposits by the group member
+                    var memberTotalDeposits = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                        filter: t => t.GroupId == groupId &&
+                                    t.UserId == request.UserId &&
+                                    t.Type == TransactionType.INCOME &&
+                                    t.Status == TransactionStatus.APPROVED
+                    );
+
+                    decimal totalDepositAmount = memberTotalDeposits.Sum(t => t.Amount);
+
+                    // Calculate current balance
+                    var memberBalance = await CalculateMemberBalanceAsync(groupId, request.UserId);
+
+                    // Determine maximum withdrawal limit
+                    decimal maxWithdrawalLimit = Math.Min(totalDepositAmount, memberBalance);
+
+                    // Add withdrawal limit info to notes
+                    request.Note = maxWithdrawalLimit > 0 ? 
+                        $"Hạn mức rút tối đa (khuyến nghị) của thành viên là: {maxWithdrawalLimit:N0} VND" :
+                        $"Thành viên chưa góp quỹ hoặc đã rút hết số tiền góp";
+                }
                 var result = PaginationHelper.GetPaginationResult(pendingRequests, pendingRequestModels);
                 
                 return new BaseResultModel
@@ -1724,15 +1755,7 @@ namespace MoneyEz.Services.Services.Implements
             if (pendingRequest.Type == TransactionType.INCOME)
             {
                 // get info transaction fundraising request
-
-                var response = new FundraisingTransactionResponse
-                {
-                    RequestCode = pendingRequest.RequestCode,
-                    Amount = pendingRequest.Amount,
-                    Status = pendingRequest.Status.ToString(),
-                    BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
-                };
-                var response2 = new
+                var response = new
                 {
                     Transaction = _mapper.Map<GroupTransactionModel>(pendingRequest),
                     BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
@@ -1741,18 +1764,63 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status200OK,
                     Message = "Pending request get successfully",
-                    Data = response2
+                    Data = response
                 };
             }
             else
             {
+                // Calculate total deposits by the group member
+                var memberTotalDeposits = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                    filter: t => t.GroupId == groupFund.Id &&
+                                t.UserId == pendingRequest.UserId &&
+                                t.Type == TransactionType.INCOME &&
+                                t.Status == TransactionStatus.APPROVED
+                );
+
+                decimal totalDepositAmount = memberTotalDeposits.Sum(t => t.Amount);
+
+                // Calculate current balance
+                var memberBalance = await CalculateMemberBalanceAsync(groupFund.Id, pendingRequest.UserId.Value);
+
+                // Determine maximum withdrawal limit
+                decimal maxWithdrawalLimit = Math.Min(totalDepositAmount, memberBalance);
+
+                var withdrawalRequest = _mapper.Map<GroupTransactionModel>(pendingRequest);
+
+                // Add withdrawal limit info to notes
+                withdrawalRequest.Note = maxWithdrawalLimit > 0 ?
+                    $"Hạn mức rút tối đa (khuyến nghị) của thành viên là: {maxWithdrawalLimit:N0} VND" :
+                    $"Thành viên chưa góp quỹ hoặc đã rút hết số tiền góp";
+
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status200OK,
                     Message = "Pending request get successfully",
-                    Data = _mapper.Map<TransactionModel>(pendingRequest)
+                    Data = withdrawalRequest
                 };
             }
+        }
+
+        // Helper method to calculate member's current balance
+        private async Task<decimal> CalculateMemberBalanceAsync(Guid groupId, Guid userId)
+        {
+            // Get all approved transactions for this member
+            var memberTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == groupId &&
+                            t.UserId == userId &&
+                            t.Status == TransactionStatus.APPROVED
+            );
+
+            // Calculate balance (deposits - withdrawals)
+            decimal totalDeposits = memberTransactions
+                .Where(t => t.Type == TransactionType.INCOME)
+                .Sum(t => t.Amount);
+
+            decimal totalWithdrawals = memberTransactions
+                .Where(t => t.Type == TransactionType.EXPENSE)
+                .Sum(t => t.Amount);
+
+            return totalDeposits - totalWithdrawals;
         }
     }
 }
