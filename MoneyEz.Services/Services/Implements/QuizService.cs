@@ -26,12 +26,14 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
+        private readonly IExternalApiService _externalApiService;
 
-        public QuizService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService)
+        public QuizService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService, IExternalApiService externalApiService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
+            _externalApiService = externalApiService;
         }
 
         // ADMIN FUNCTIONS
@@ -211,7 +213,7 @@ namespace MoneyEz.Services.Services.Implements
             }).ToList());
 
             // Calculate recommended spending model based on answers
-            var test = SummarizeQuizAnswers(quiz, quizAttempt.Answers); // cầm cục này đi test AI r recommend cho t
+            var summarizeQuizAnswers = SummarizeQuizAnswers(quiz, quizAttempt.Answers); // cầm cục này đi test AI r recommend cho t
 
             userQuizResult.RecommendedModel = "";
 
@@ -219,10 +221,20 @@ namespace MoneyEz.Services.Services.Implements
             var savedResult = await _unitOfWork.UserQuizResultRepository.CreateUserQuizResultAsync(userQuizResult);
             await _unitOfWork.SaveAsync();
 
+            // show result
+            var quizResult = _mapper.Map<UserQuizResultModel>(savedResult);
+
+            // Call external API to get recommended model
+            var responseSuggest = await _externalApiService.SuggestionSpendingModelSerivce(summarizeQuizAnswers);
+            if (responseSuggest != null)
+            {
+                quizResult.RecomendModel = responseSuggest;
+            }
+
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = _mapper.Map<UserQuizResultModel>(savedResult),
+                Data = quizResult,
                 Message = "Nộp câu trả lời thành công"
             };
         }

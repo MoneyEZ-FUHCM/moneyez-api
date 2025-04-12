@@ -1,6 +1,7 @@
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Services.BusinessModels.ExternalServiceModels;
+using MoneyEz.Services.BusinessModels.QuizModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
 
 namespace MoneyEz.Services.Services.Interfaces
@@ -14,5 +15,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> ExecuteSendExternalService(ExternalSendRequestModel model);
 
         Task<BaseResultModel> ExecuteKnownledgeDocumentSerivce(ExternalKnowledgeRequestModel model, PaginationParameter paginationParameter);
+
+        Task<RecomendModelResponse> SuggestionSpendingModelSerivce(List<QuestionAnswerPair> answerPairs);
     }
 }
