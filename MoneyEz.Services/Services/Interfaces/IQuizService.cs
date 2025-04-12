@@ -22,5 +22,6 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetActiveQuizAsync();
         Task<BaseResultModel> SubmitQuizAnswersAsync(CreateQuizAttemptModel quizAttempt);
         Task<BaseResultModel> GetUserQuizHistoryAsync(PaginationParameter paginationParameter);
+        Task<BaseResultModel> GetUserQuizHistoryByIdAsync(Guid resultId);
     }
 }

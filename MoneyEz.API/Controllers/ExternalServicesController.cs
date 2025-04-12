@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Services.BusinessModels.ExternalServiceModels;
+using MoneyEz.Services.BusinessModels.QuizModels;
 using MoneyEz.Services.Services.Implements;
 using MoneyEz.Services.Services.Interfaces;
 
@@ -28,6 +29,12 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> RequestGetFromExternalService([FromQuery] ExternalReciveRequestModel model)
         {
             return ValidateAndExecute(() => _externalApiService.ExecuteReceiveExternalService(model));
+        }
+
+        [HttpPost("suggest-model/test")]
+        public Task<IActionResult> SendToExternalService(List<QuestionAnswerPair> model)
+        {
+            return ValidateAndExecute(() => _externalApiService.SuggestionSpendingModelSerivceTest(model));
         }
     }
 }

@@ -335,5 +335,9 @@ namespace MoneyEz.Services.Constants
         public const string POST_DELETED_SUCCESS = "PostDeletedSuccessfully";
         public const string POST_LIST_FETCHED_SUCCESS = "Post list fetched successfully.";
         public const string POST_FETCHED_SUCCESS = "Post details fetched successfully.";
+
+        // quiz
+        public const string QUIZ_RESULT_NOT_FOUND = "QuizResultNotFound";
+
     }
 }

@@ -17,5 +17,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> ExecuteKnownledgeDocumentSerivce(ExternalKnowledgeRequestModel model, PaginationParameter paginationParameter);
 
         Task<RecomendModelResponse> SuggestionSpendingModelSerivce(List<QuestionAnswerPair> answerPairs);
+
+        Task<BaseResultModel> SuggestionSpendingModelSerivceTest(List<QuestionAnswerPair> answerPairs);
     }
 }
