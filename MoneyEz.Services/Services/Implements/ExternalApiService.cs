@@ -27,6 +27,7 @@ namespace MoneyEz.Services.Services.Implements
         private readonly ITransactionService _transactionService;
         private readonly IChatHistoryService _chatHistoryService;
         private readonly IUserSpendingModelService _userSpendingModelService;
+        private readonly ISpendingModelService _spendingModelService;
         private readonly IMapper _mapper;
 
         public ExternalApiService(HttpClient httpClient, 
@@ -35,7 +36,8 @@ namespace MoneyEz.Services.Services.Implements
             ITransactionService transactionService,
             IChatHistoryService chatHistoryService,
             IUserSpendingModelService userSpendingModelService,
-            IMapper mapper)
+            IMapper mapper,
+            ISpendingModelService spendingModelService)
         {
             _httpClient = httpClient;
             _configuration = configuration;
@@ -43,6 +45,7 @@ namespace MoneyEz.Services.Services.Implements
             _transactionService = transactionService;
             _chatHistoryService = chatHistoryService;
             _userSpendingModelService = userSpendingModelService;
+            _spendingModelService = spendingModelService;
             _mapper = mapper;
             // Configure base URL from settings if needed
             // _httpClient.BaseAddress = new Uri(_configuration["ExternalApi:BaseUrl"]);
@@ -137,6 +140,9 @@ namespace MoneyEz.Services.Services.Implements
                         // Call service to get subcategories for the user
                         return await _userSpendingModelService.GetSubCategoriesCurrentSpendingModelByUserIdAsync(userId);
                     }
+                case "get_speding_models":
+                    return await _spendingModelService.GetAllSpendingModelsAsync();
+
                 default:
                     throw new DefaultException("Invalid command", MessageConstants.INVALID_COMMAND);
             }

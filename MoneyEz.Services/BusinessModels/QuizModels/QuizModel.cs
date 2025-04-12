@@ -70,8 +70,8 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
     }
     public class QuestionAnswerPair
     {
-        public string Question { get; set; }
-        public string Answer { get; set; }
+        public string Question { get; set; } = "";
+        public string Answer { get; set; } = "";
     }
 
 }
