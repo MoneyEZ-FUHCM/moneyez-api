@@ -15,5 +15,6 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> AddCategoriesToSpendingModelAsync(AddCategoriesToSpendingModelModel model);
         Task<BaseResultModel> UpdateCategoryPercentageAsync(UpdateCategoryPercentageModel model);
         Task<BaseResultModel> RemoveCategoriesFromSpendingModelAsync(RemoveCategoriesFromSpendingModelModel model);
+        Task<BaseResultModel> GetAllSpendingModelsAsync();
     }
 }

@@ -211,7 +211,8 @@ namespace MoneyEz.Services.Services.Implements
             }).ToList());
 
             // Calculate recommended spending model based on answers
-            var test = await SummarizeQuizAnswers(quiz, quizAttempt.Answers); // cầm cục này đi test AI r recommend cho t
+            var test = SummarizeQuizAnswers(quiz, quizAttempt.Answers); // cầm cục này đi test AI r recommend cho t
+
             userQuizResult.RecommendedModel = "";
 
             // Save the result
@@ -294,7 +295,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        private async Task<string> SummarizeQuizAnswers(Quiz quiz, List<UserAnswerModel> answers)
+        private List<QuestionAnswerPair> SummarizeQuizAnswers(Quiz quiz, List<UserAnswerModel> answers)
         {
             var questions = quiz.GetQuestions();
 
@@ -331,11 +332,7 @@ namespace MoneyEz.Services.Services.Implements
                     Answer = answerContent
                 });
             }
-            return JsonSerializer.Serialize(questionAnswerPairs, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            return questionAnswerPairs;
         }
     }
 }

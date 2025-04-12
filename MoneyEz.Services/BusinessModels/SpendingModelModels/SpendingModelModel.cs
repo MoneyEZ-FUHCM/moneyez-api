@@ -11,7 +11,13 @@ namespace MoneyEz.Services.BusinessModels.SpendingModelModels
         public string? NameUnsign { get; set; }
         public string? Description { get; set; }
         public bool? IsTemplate { get; set; }
-
         public virtual ICollection<SpendingModelCategoryModel> SpendingModelCategories { get; set; } = new List<SpendingModelCategoryModel>();
+    }
+
+    public class SpendingModelModelExternal
+    {
+        public Guid Id { get; set; }
+        public string? Name { get; set; }
+        public string? Description { get; set; }
     }
 }
