@@ -13,6 +13,8 @@ using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Utils;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -213,9 +215,17 @@ namespace MoneyEz.Services.Services.Implements
             }).ToList());
 
             // Calculate recommended spending model based on answers
-            var summarizeQuizAnswers = SummarizeQuizAnswers(quiz, quizAttempt.Answers); // cầm cục này đi test AI r recommend cho t
-
-            userQuizResult.RecommendedModel = "";
+            var summarizeQuizAnswers = SummarizeQuizAnswers(quiz, quizAttempt.Answers);
+            var responseSuggest = await _externalApiService.SuggestionSpendingModelSerivce(summarizeQuizAnswers);
+            if (responseSuggest != null)
+            {
+                userQuizResult.RecommendedModel = JsonConvert.SerializeObject(responseSuggest).ToString();
+            }
+            else
+            {
+                // If no recommendation is received, set it to an empty string or null
+                userQuizResult.RecommendedModel = null;
+            }
 
             // Save the result
             var savedResult = await _unitOfWork.UserQuizResultRepository.CreateUserQuizResultAsync(userQuizResult);
@@ -225,10 +235,9 @@ namespace MoneyEz.Services.Services.Implements
             var quizResult = _mapper.Map<UserQuizResultModel>(savedResult);
 
             // Call external API to get recommended model
-            var responseSuggest = await _externalApiService.SuggestionSpendingModelSerivce(summarizeQuizAnswers);
             if (responseSuggest != null)
             {
-                quizResult.RecomendModel = responseSuggest;
+                quizResult.RecommendedModel = responseSuggest;
             }
 
             return new BaseResultModel
@@ -345,6 +354,27 @@ namespace MoneyEz.Services.Services.Implements
                 });
             }
             return questionAnswerPairs;
+        }
+
+        public async Task<BaseResultModel> GetUserQuizHistoryByIdAsync(Guid resultId)
+        {
+            var result = await _unitOfWork.UserQuizResultRepository.GetByIdAsync(resultId);
+            if (result == null)
+                throw new NotExistException($"Not found user quiz result id: {resultId}", MessageConstants.QUIZ_RESULT_NOT_FOUND);
+
+            var quizResult = _mapper.Map<UserQuizResultModel>(result);
+            var responseSuggest = JsonConvert.DeserializeObject<RecomendModelResponse>(result.RecommendedModel);
+
+            if (responseSuggest != null)
+            {
+                quizResult.RecommendedModel = responseSuggest;
+            }
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = quizResult,
+                Message = "Retrieved user quiz result successfully"
+            };
         }
     }
 }
