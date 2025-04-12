@@ -42,8 +42,13 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> CreateQuizAsync(CreateQuizModel createQuizModel)
         {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
             var quiz = _mapper.Map<Quiz>(createQuizModel);
             quiz.Version = CommonUtils.GetCurrentTime().ToString("yyyyMMddHHmm");
+            quiz.CreatedBy = user.Email;
+
 
             if (createQuizModel.Status == CommonsStatus.ACTIVE)
             {
@@ -51,6 +56,7 @@ namespace MoneyEz.Services.Services.Implements
                 foreach (var quiz1 in allQuizzes)
                 {
                     quiz1.Status = CommonsStatus.INACTIVE;
+                    quiz1.UpdatedBy = user.Email;
                     _unitOfWork.QuizRepository.UpdateAsync(quiz1);
                 }
             }
@@ -96,12 +102,16 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> UpdateQuizAsync(UpdateQuizModel quizModel)
         {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
             var existingQuiz = await _unitOfWork.QuizRepository.GetByIdAsync(quizModel.Id);
             if (existingQuiz == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {quizModel.Id}");
 
             _mapper.Map(quizModel, existingQuiz);
             existingQuiz.Version = CommonUtils.GetCurrentTime().ToString("yyyyMMddHHmm");
+            existingQuiz.UpdatedBy = user.Email;
 
             //if (quizModel.Status != null)
             //{
@@ -121,6 +131,9 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> DeleteQuizAsync(Guid id)
         {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
             var existingQuiz = await _unitOfWork.QuizRepository.GetByIdAsync(id);
             if (existingQuiz == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
@@ -130,6 +143,7 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Không thể xóa bộ câu hỏi đang hoạt động");
             }
 
+            existingQuiz.UpdatedBy = user.Email;
             _unitOfWork.QuizRepository.SoftDeleteAsync(existingQuiz);
             await _unitOfWork.SaveAsync();
 
@@ -143,10 +157,14 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> ActivateQuizAsync(Guid id)
         {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
             var allQuizzes = await _unitOfWork.QuizRepository.GetAllAsync();
             foreach (var quiz in allQuizzes)
             {
                 quiz.Status = CommonsStatus.INACTIVE;
+                quiz.UpdatedBy = user.Email;
                 _unitOfWork.QuizRepository.UpdateAsync(quiz);
             }
 
@@ -155,6 +173,7 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
 
             quizToActivate.Status = CommonsStatus.ACTIVE;
+            quizToActivate.UpdatedBy = user.Email;
             _unitOfWork.QuizRepository.UpdateAsync(quizToActivate);
             await _unitOfWork.SaveAsync();
 
@@ -204,7 +223,8 @@ namespace MoneyEz.Services.Services.Implements
                 UserId = userId,
                 QuizId = quiz.Id,
                 TakenAt = CommonUtils.GetCurrentTime(),
-                QuizVersion = quiz.Version
+                QuizVersion = quiz.Version,
+                CreatedBy = user.Email,
             };
 
             userQuizResult.SetAnswers(quizAttempt.Answers.Select(a => new UserAnswer
@@ -228,7 +248,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Save the result
-            var savedResult = await _unitOfWork.UserQuizResultRepository.CreateUserQuizResultAsync(userQuizResult);
+            var savedResult = await _unitOfWork.UserQuizResultRepository.AddAsync(userQuizResult);
             await _unitOfWork.SaveAsync();
 
             // show result

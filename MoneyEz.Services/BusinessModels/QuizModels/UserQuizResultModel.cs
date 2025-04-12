@@ -25,7 +25,7 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         public Guid Id { get; set; }
         public Guid UserId { get; set; }
         public Guid QuizId { get; set; }
-        public string QuizVersion { get; set; }
+        public string? QuizVersion { get; set; }
         public DateTime TakenAt { get; set; }
         public RecomendModelResponse? RecommendedModel { get; set; }
         public List<UserAnswerModel> Answers { get; set; } = new List<UserAnswerModel>();
