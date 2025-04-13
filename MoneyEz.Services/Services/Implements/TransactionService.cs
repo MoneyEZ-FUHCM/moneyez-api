@@ -1198,6 +1198,33 @@ namespace MoneyEz.Services.Services.Implements
             return await CreateTransactionAsync(newTransaction, user.Email);
         }
 
+        public async Task<BaseResultModel> CreateTransactionPythonServiceV2(CreateTransactionPythonModelV2 model)
+        {
+            // get info user
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId);
+            if (user == null)
+            {
+                throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // search subcategory
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(filter: sc => sc.Code == model.SubcategoryCode && !sc.IsDeleted);
+            if (!subcategory.Any())
+            {
+                throw new NotExistException("Subcategory not found", MessageConstants.SUBCATEGORY_NOT_FOUND);
+            }
+
+            var newTransaction = new CreateTransactionModel
+            {
+                Amount = model.Amount,
+                Description = model.Description,
+                SubcategoryId = subcategory.First().Id,
+                TransactionDate = model.TransactionDate,
+            };
+
+            return await CreateTransactionAsync(newTransaction, user.Email);
+        }
+
         public async Task<BaseResultModel> CategorizeTransactionAsync(CategorizeTransactionModel model)
         {
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
@@ -1249,6 +1276,25 @@ namespace MoneyEz.Services.Services.Implements
                 return await UpdateGroupTransactionAsync(updateGroupTransaction);
             }
         }
+
+        public async Task<BaseResultModel> GetTransactionHistorySendToPythons(Guid userId, TransactionFilter transactionFilter)
+        {
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == userId && t.GroupId == null
+                    && (!transactionFilter.FromDate.HasValue || t.TransactionDate.Value.Date >= transactionFilter.FromDate.Value.Date)
+                    && (!transactionFilter.ToDate.HasValue || t.TransactionDate.Value.Date <= transactionFilter.ToDate.Value.Date)
+                    && !t.IsDeleted && t.Status == TransactionStatus.APPROVED,
+                include: q => q.Include(t => t.Subcategory),
+                orderBy: t => t.OrderByDescending(t => t.TransactionDate)
+            );
+            var transactionModels = _mapper.Map<List<TransactionHistorySendToPython>>(transactions);
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = transactionModels
+            };
+        }
+
         #endregion python webhook
 
         #region report

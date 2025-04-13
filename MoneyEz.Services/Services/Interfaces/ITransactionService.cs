@@ -44,6 +44,8 @@ namespace MoneyEz.Services.Services.Interfaces
         #region python webhook
         Task<BaseResultModel> UpdateTransactionWebhook(WebhookPayload webhookPayload);
         Task<BaseResultModel> CreateTransactionPythonService(CreateTransactionPythonModel createTransactionPythonModel);
+        Task<BaseResultModel> CreateTransactionPythonServiceV2(CreateTransactionPythonModelV2 createTransactionPythonModel);
+        Task<BaseResultModel> GetTransactionHistorySendToPythons(Guid userId, TransactionFilter transactionFilter);
 
         #endregion python webhook
 

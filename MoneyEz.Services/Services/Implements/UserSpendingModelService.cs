@@ -1056,5 +1056,61 @@ namespace MoneyEz.Services.Services.Implements
                 Data = _mapper.Map<List<SubcategoryModel>>(subcategories)
             };
         }
+
+        public async Task<BaseResultModel> GetCurrentSpendingModelByUserIdAsync(Guid userId)
+        {
+            // Get user by ID
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // Get current active spending model with related data
+            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == userId
+                    && usm.EndDate > CommonUtils.GetCurrentTime()
+                    && usm.Status == UserSpendingModelStatus.ACTIVE
+                    && !usm.IsDeleted,
+                include: query => query
+                    .Include(usm => usm.SpendingModel)
+                    .ThenInclude(sm => sm.SpendingModelCategories)
+                    .ThenInclude(smc => smc.Category)
+            );
+
+            var currentModel = currentModels.FirstOrDefault();
+            if (currentModel == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.SPENDING_MODEL_NOT_FOUND,
+                    Message = "No active spending model found for the user"
+                };
+            }
+
+            // Map to UserSpendingModelSendToPython format
+            var modelForPython = new UserSpendingModelSendToPython
+            {
+                Name = currentModel.SpendingModel.Name,
+                Description = currentModel.SpendingModel.Description,
+                StartDate = currentModel.StartDate,
+                EndDate = currentModel.EndDate,
+                Categories = currentModel.SpendingModel.SpendingModelCategories
+                    .Select(smc => new CategorySendToPython
+                    {
+                        Name = smc.Category.Name,
+                        Description = smc.Category.Description
+                    })
+                    .ToList()
+            };
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Current spending model retrieved successfully",
+                Data = modelForPython
+            };
+        }
     }
 }
