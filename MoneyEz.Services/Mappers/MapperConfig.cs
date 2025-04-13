@@ -60,6 +60,9 @@ namespace MoneyEz.Services.Mappers
 
             // knowledge mapper
             KnowledgeMapperConfig();
+
+            // post mapper
+            PostMapperConfig();
         }
 
         partial void UserMapperConfig();
@@ -85,6 +88,8 @@ namespace MoneyEz.Services.Mappers
         partial void GroupFundLogConfig();
 
         partial void KnowledgeMapperConfig();
+
+        partial void PostMapperConfig();
     }
 
     public class PaginationConverter<TSource, TDestination> : ITypeConverter<Pagination<TSource>, Pagination<TDestination>>

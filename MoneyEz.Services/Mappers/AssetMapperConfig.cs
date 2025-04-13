@@ -1,11 +1,12 @@
-﻿using MoneyEz.Repositories.Entities;
+﻿using AutoMapper;
+using MoneyEz.Repositories.Entities;
 using MoneyEz.Services.BusinessModels.AssetModels;
 using MoneyEz.Services.Utils;
 
 
 namespace MoneyEz.Services.Mappers
 {
-    public partial class MapperConfig
+    public partial class MapperConfig : Profile
     {
         partial void AssetMapperConfig()
         {
