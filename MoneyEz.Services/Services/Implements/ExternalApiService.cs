@@ -6,6 +6,8 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
+using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Services.BusinessModels.ExternalServiceModels;
 using MoneyEz.Services.BusinessModels.KnowledgeModels;
@@ -89,6 +91,20 @@ namespace MoneyEz.Services.Services.Implements
                     };
                     // Call service to create transaction
                     return await _transactionService.CreateTransactionPythonService(createTransactionModel);
+                case "create_transaction_v2":
+                    var dataV2 = model.Data as dynamic;
+                    var parsedDataJsonV2 = dataV2?.ToString();
+                    var jsonDataV2 = JsonConvert.DeserializeObject<dynamic>(parsedDataJsonV2);
+                    var createTransactionModelV2 = new CreateTransactionPythonModelV2
+                    {
+                        Amount = jsonDataV2?.Amount ?? 0,
+                        SubcategoryCode = jsonDataV2?.SubcategoryCode ?? string.Empty,
+                        Description = jsonDataV2?.Description ?? string.Empty,
+                        UserId = jsonDataV2?.UserId ?? Guid.Empty,
+                        TransactionDate = jsonDataV2?.TransactionDate ?? CommonUtils.GetCurrentTime()
+                    };
+                    // Call service to create transaction
+                    return await _transactionService.CreateTransactionPythonServiceV2(createTransactionModelV2);
                 case "get_chat_messages":
                     // Extract userId from query parameter (e.g., user_id=abc)
                     if (string.IsNullOrEmpty(model.Query))
@@ -143,7 +159,109 @@ namespace MoneyEz.Services.Services.Implements
                     }
                 case "get_speding_models":
                     return await _spendingModelService.GetAllSpendingModelsAsync();
+                case "get_transaction_histories_user":
+                    // Extract param from query parameter (e.g., user_id=abc)
+                    if (string.IsNullOrEmpty(model.Query))
+                    {
+                        throw new DefaultException("Missing user_id parameter", MessageConstants.MISSING_PARAMETER);
+                    }
+                    else
+                    {
+                        // initialize filter
+                        var filter = new TransactionFilter
+                        {
+                            FromDate = null,
+                            ToDate = null,
+                        };
+                        // Parse the query string to get parameters
+                        var queryParams = new Dictionary<string, string>();
+                        if (model.Query.Contains(","))
+                        {
+                            // Multiple parameters in query string separated by commas
+                            var parameters = model.Query.Split(',');
+                            foreach (var param in parameters)
+                            {
+                                if (param.Contains("="))
+                                {
+                                    var parts = param.Split('=', 2);
+                                    queryParams[parts[0].Trim()] = parts[1].Trim();
+                                }
+                            }
+                        }
+                        else if (model.Query.Contains("="))
+                        {
+                            // Single parameter with key=value format
+                            var parts = model.Query.Split('=', 2);
+                            queryParams[parts[0].Trim()] = parts[1].Trim();
+                        }
+                        else
+                        {
+                            // Assume it's just the userId with no key
+                            queryParams["user_id"] = model.Query.Trim();
+                        }
 
+                        // Get userId
+                        if (!queryParams.TryGetValue("user_id", out string userIdStr) || string.IsNullOrEmpty(userIdStr))
+                        {
+                            throw new DefaultException("Missing user_id parameter", MessageConstants.MISSING_PARAMETER);
+                        }
+                        if (!Guid.TryParse(userIdStr, out Guid userId))
+                        {
+                            throw new DefaultException("Invalid user_id format", MessageConstants.INVALID_PARAMETER_FORMAT);
+                        }
+                        
+                        // Parse from_date if provided
+                        if (queryParams.TryGetValue("from_date", out string fromDateStr) && !string.IsNullOrEmpty(fromDateStr))
+                        {
+                            if (DateTime.TryParse(fromDateStr, out DateTime fromDate))
+                            {
+                                filter.FromDate = fromDate;
+                            }
+                            else
+                            {
+                                throw new DefaultException("Invalid from_date format", MessageConstants.INVALID_PARAMETER_FORMAT);
+                            }
+                        }
+                        
+                        // Parse to_date if provided
+                        if (queryParams.TryGetValue("to_date", out string toDateStr) && !string.IsNullOrEmpty(toDateStr))
+                        {
+                            if (DateTime.TryParse(toDateStr, out DateTime toDate))
+                            {
+                                filter.ToDate = toDate;
+                            }
+                            else
+                            {
+                                throw new DefaultException("Invalid to_date format", MessageConstants.INVALID_PARAMETER_FORMAT);
+                            }
+                        }
+                        
+                        // Call service to get transaction histories for the user with date filters
+                        return await _transactionService.GetTransactionHistorySendToPythons(userId, filter);
+                    }
+                case "get_user_spending_model":
+                    // Extract userId from query parameter (e.g., user_id=abc)
+                    if (string.IsNullOrEmpty(model.Query))
+                    {
+                        throw new DefaultException("Missing user_id parameter", MessageConstants.MISSING_PARAMETER);
+                    }
+                    else
+                    {
+                        // Parse the query string to get the userId
+                        string userIdStr = model.Query;
+                        if (model.Query.Contains("user_id="))
+                        {
+                            userIdStr = model.Query.Split('=')[1];
+                        }
+
+                        if (!Guid.TryParse(userIdStr, out Guid userId))
+                        {
+                            throw new DefaultException("Invalid user_id format", MessageConstants.INVALID_PARAMETER_FORMAT);
+                        }
+
+                        // Call service to get subcategories for the user
+                        return await _userSpendingModelService.GetCurrentSpendingModelByUserIdAsync(userId);
+                    }
                 default:
                     throw new DefaultException("Invalid command", MessageConstants.INVALID_COMMAND);
             }
