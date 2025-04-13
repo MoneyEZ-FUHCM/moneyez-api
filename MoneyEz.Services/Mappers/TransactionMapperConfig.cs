@@ -44,6 +44,9 @@ namespace MoneyEz.Services.Mappers
             CreateMap<Pagination<Transaction>, Pagination<TransactionModel>>()
                 .ConvertUsing<PaginationConverter<Transaction, TransactionModel>>();
 
+            CreateMap<Transaction, TransactionHistorySendToPython>()
+                .ForMember(dest => dest.SubcategoryName, opt => opt.MapFrom(src => src.Subcategory.Name));
+
 
 
             #region report

@@ -22,6 +22,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetSubCategoriesCurrentSpendingModelAsync(CategoryCurrentSpendingModelFiter fiter);
         Task<BaseResultModel> GetCategoriesCurrentSpendingModelAsync();
         Task<BaseResultModel> GetSubCategoriesCurrentSpendingModelByUserIdAsync(Guid userId);
+        Task<BaseResultModel> GetCurrentSpendingModelByUserIdAsync(Guid userId);
 
     }
 }
