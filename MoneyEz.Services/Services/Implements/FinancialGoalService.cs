@@ -250,16 +250,36 @@ namespace MoneyEz.Services.Services.Implements
                 filter: fg => fg.Id == model.Id
                             && fg.UserId == user.Id
                             && fg.GroupId == null
-                            && fg.Status == FinancialGoalStatus.ACTIVE
+                            //&& fg.Status == FinancialGoalStatus.ACTIVE
                             && !fg.IsDeleted
             );
 
             if (!financialGoal.Any())
             {
-                throw new NotExistException(MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
+                throw new NotExistException("", MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
+            // BR: Nếu mục tiêu tài chính đang ở trạng thái COMPLETED nhưng chưa tới deadline thì cho người dùng cập nhật lại sang ACTIVE
+
             var goalToUpdate = financialGoal.First();
+
+            // Check if the goal is already completed
+            if (goalToUpdate.Status == FinancialGoalStatus.COMPLETED)
+            {
+                if (goalToUpdate.Deadline < CommonUtils.GetCurrentTime())
+                {
+                    goalToUpdate.Status = FinancialGoalStatus.ACTIVE;
+                }
+                else
+                {
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        ErrorCode = MessageConstants.FINANCIAL_GOAL_ALREADY_COMPLETED,
+                        Message = "Mục tiêu tài chính này đã hoàn thành."
+                    };
+                }
+            }
 
             if (model.TargetAmount <= 0)
             {
