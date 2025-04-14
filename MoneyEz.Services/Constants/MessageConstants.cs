@@ -109,6 +109,7 @@ namespace MoneyEz.Services.Constants
         public const string GOAL_ALREADY_COMPLETED = "GoalAlreadyCompleted";
         public const string FINACIAL_GOAL_UPDATE_FORBIDDEN = "FinancialGoalUpdateForbidden";
         public const string FINACIAL_GOAL_DELETE_FORBIDDEN = "FinancialGoalDeleteForbidden";
+        public const string FINANCIAL_GOAL_ALREADY_COMPLETED = "FinancialGoalAlreadyCompleted";
         //financial report
         public const string REPORT_NOT_FOUND = "ReportNotFound";
         public const string REPORT_CREATE_FAILED = "ReportCreateFailed";
