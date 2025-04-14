@@ -157,7 +157,7 @@ namespace MoneyEz.Services.Services.Implements
                         // Call service to get subcategories for the user
                         return await _userSpendingModelService.GetSubCategoriesCurrentSpendingModelByUserIdAsync(userId);
                     }
-                case "get_speding_models":
+                case "get_spending_models":
                     return await _spendingModelService.GetAllSpendingModelsAsync();
                 case "get_transaction_histories_user":
                     // Extract param from query parameter (e.g., user_id=abc)
@@ -283,15 +283,15 @@ namespace MoneyEz.Services.Services.Implements
                 var jsonString = JsonConvert.SerializeObject(request);
                 Console.WriteLine("JSON payload: " + jsonString);
 
-                var response = await _httpClient.PostAsJsonAsync("http://178.128.118.171:8888/api/receive_message", new
-                {
-                    data = jsonString
-                });
-
-                //var response = await _httpClient.PostAsJsonAsync("http://127.0.0.1:8000/api/receive_message", new
+                //var response = await _httpClient.PostAsJsonAsync("http://178.128.118.171:8888/api/receive_message", new
                 //{
                 //    data = jsonString
                 //});
+
+                var response = await _httpClient.PostAsJsonAsync("http://127.0.0.1:8000/api/receive_message", new
+                {
+                    data = jsonString
+                });
 
                 if (response.IsSuccessStatusCode)
                 {
