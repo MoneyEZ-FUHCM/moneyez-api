@@ -385,7 +385,7 @@ namespace MoneyEz.Services.Services.Implements
 
             if (financialGoal.CurrentAmount >= financialGoal.TargetAmount)
             {
-                financialGoal.CurrentAmount = financialGoal.TargetAmount;
+                //financialGoal.CurrentAmount = financialGoal.TargetAmount;
                 financialGoal.Status = FinancialGoalStatus.COMPLETED;
                 financialGoal.ApprovalStatus = ApprovalStatus.APPROVED;
 
