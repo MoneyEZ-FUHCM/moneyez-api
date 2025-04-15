@@ -259,7 +259,8 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
-            // BR: Nếu mục tiêu tài chính đang ở trạng thái COMPLETED nhưng chưa tới deadline thì cho người dùng cập nhật lại sang ACTIVE
+            // BR: Nếu mục tiêu tài chính đang ở trạng thái COMPLETED nhưng chưa tới deadline
+            // thì cho người dùng cập nhật lại sang ACTIVE
 
             var goalToUpdate = financialGoal.First();
 
@@ -309,6 +310,13 @@ namespace MoneyEz.Services.Services.Implements
                     ErrorCode = MessageConstants.INVALID_DEADLINE,
                     Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai."
                 };
+            }
+
+            var availableBudget = await CalculateMaximumTargetAmountSubcategory(goalToUpdate.SubcategoryId.Value, user.Id);
+            if (model.TargetAmount > availableBudget)
+            {
+                throw new DefaultException($"Số tiền mục tiêu không được lớn hơn số tiền hiện có ({availableBudget}).",
+                    MessageConstants.INVALID_TARGET_AMOUNT);
             }
 
             goalToUpdate.Name = model.Name;
