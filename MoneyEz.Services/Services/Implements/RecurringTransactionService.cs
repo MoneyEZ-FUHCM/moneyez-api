@@ -60,15 +60,10 @@ namespace MoneyEz.Services.Services.Implements
         {
             var user = await GetCurrentUserAsync();
 
-            var transactions = await _unitOfWork.RecurringTransactionRepository.ToPaginationIncludeAsync(
+            var transactions = await _unitOfWork.RecurringTransactionRepository.GetRecurringTransactionsFilterAsync(
                 paginationParameter,
-                filter: t => t.UserId == user.Id
-                    && (!filter.SubcategoryId.HasValue || t.SubcategoryId == filter.SubcategoryId)
-                    && (!filter.FromDate.HasValue || t.StartDate >= filter.FromDate.Value)
-                    && (!filter.ToDate.HasValue || t.StartDate <= filter.ToDate.Value)
-                    && (!filter.IsActive.HasValue || (filter.IsActive.Value
-                        ? t.Status == (int)CommonsStatus.ACTIVE
-                        : t.Status != (int)CommonsStatus.ACTIVE)),
+                filter,
+                condition: t => t.UserId == user.Id,
                 include: q => q.Include(t => t.Subcategory)
             );
 
@@ -82,6 +77,7 @@ namespace MoneyEz.Services.Services.Implements
                 Data = result
             };
         }
+
 
         public async Task<BaseResultModel> GetRecurringTransactionByIdAsync(Guid id)
         {
