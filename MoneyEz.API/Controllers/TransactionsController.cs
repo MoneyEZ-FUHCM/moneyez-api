@@ -179,6 +179,13 @@ namespace MoneyEz.API.Controllers
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
+        [HttpGet("report/category-year-v2")]
+        public Task<IActionResult> GetCategoryYearReportV2([FromQuery] int year, [FromQuery] string type)
+        {
+            return ValidateAndExecute(() => _transactionService.GetCategoryYearReportAsyncV2(year, type));
+        }
+
+        [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("report/all-time")]
         public Task<IActionResult> GetAllTimeReport()
         {

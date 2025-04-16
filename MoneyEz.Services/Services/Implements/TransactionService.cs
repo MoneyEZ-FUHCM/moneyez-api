@@ -1390,7 +1390,7 @@ namespace MoneyEz.Services.Services.Implements
                 Data = new CategoryYearTransactionReportModel
                 {
                     Year = year,
-                    Type = type,
+                    Type = type.ToString(),
                     Total = total,
                     Categories = categories
                 }
@@ -1562,6 +1562,92 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Year = year,
                     Balances = monthlyBalances
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetCategoryYearReportAsyncV2(int year, string type)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id &&
+                             t.TransactionDate!.Value.Year == year,
+                include: q => q.Include(t => t.Subcategory)
+                    .ThenInclude(c => c.CategorySubcategories)
+                    .ThenInclude(cs => cs.Category)
+            );
+
+            // parse type to enum
+            ReportTransactionType reportTransactionType;
+            switch (type.ToLower())
+            {
+                case "expense":
+                    reportTransactionType = ReportTransactionType.Expense;
+                    break;
+                case "income":
+                    reportTransactionType = ReportTransactionType.Income;
+                    break;
+                case "total":
+                    reportTransactionType = ReportTransactionType.Total;
+                    break;
+                default:
+                    reportTransactionType = ReportTransactionType.Total;
+                    break;
+            }
+
+            // Filter transactions and join with category information
+            var transactionsWithCategory = transactions
+                .Where(t => t.Subcategory != null)
+                .SelectMany(t => t.Subcategory.CategorySubcategories
+                    .Select(cs => new {
+                        Transaction = t,
+                        CategoryType = cs.Category.Type
+                    }))
+                .Where(x => reportTransactionType == ReportTransactionType.Total ||
+                           (reportTransactionType == ReportTransactionType.Expense && x.CategoryType == TransactionType.EXPENSE) ||
+                           (reportTransactionType == ReportTransactionType.Income && x.CategoryType == TransactionType.INCOME))
+                .ToList();
+
+            var total = transactionsWithCategory.Sum(t => t.Transaction.Amount);
+
+            var categories = transactionsWithCategory
+                .GroupBy(x => new {
+                    SubcategoryId = x.Transaction.SubcategoryId,
+                    SubcategoryName = x.Transaction.Subcategory.Name,
+                    SubcategoryIcon = x.Transaction.Subcategory.Icon,
+                    CategoryType = x.CategoryType
+                })
+                .Select(g => new CategoryAmountModel
+                {
+                    Name = g.Key.SubcategoryName,
+                    Icon = g.Key.SubcategoryIcon,
+                    Amount = g.Sum(x => x.Transaction.Amount),
+                    Percentage = total == 0 ? 0 : Math.Round((double)(g.Sum(x => x.Transaction.Amount) / total * 100), 2),
+                    CategoryType = g.Key.CategoryType.ToString()
+                })
+                .OrderByDescending(c => c.Amount)
+                .ToList();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new CategoryYearTransactionReportModel
+                {
+                    Year = year,
+                    Type = reportTransactionType.ToString().ToUpper(),
+                    Total = total,
+                    Categories = categories
                 }
             };
         }

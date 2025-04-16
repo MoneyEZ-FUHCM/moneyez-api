@@ -52,6 +52,7 @@ namespace MoneyEz.Services.Services.Interfaces
         #region report
         Task<BaseResultModel> GetYearReportAsync(int year, ReportTransactionType type);
         Task<BaseResultModel> GetCategoryYearReportAsync(int year, ReportTransactionType type);
+        Task<BaseResultModel> GetCategoryYearReportAsyncV2(int year, string type);
         Task<BaseResultModel> GetAllTimeReportAsync();
         Task<BaseResultModel> GetAllTimeCategoryReportAsync(string type);
         Task<BaseResultModel> GetBalanceYearReportAsync(int year);
