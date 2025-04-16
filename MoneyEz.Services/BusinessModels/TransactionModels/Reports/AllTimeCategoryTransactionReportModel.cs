@@ -9,7 +9,7 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Reports
 {
     public class AllTimeCategoryTransactionReportModel
     {
-        public string? Type { get; set; }
+        public ReportTransactionType Type { get; set; }
         public decimal Total { get; set; }
         public List<CategoryAmountModel> Categories { get; set; } = new();
     }

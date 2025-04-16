@@ -21,11 +21,11 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model);
         Task<BaseResultModel> DeleteTransactionAsync(Guid transactionId);
         #endregion personal
-      
+
         Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter);
 
         #region group
-        Task<BaseResultModel> GetTransactionByGroupIdAsync(Guid groupId, 
+        Task<BaseResultModel> GetTransactionByGroupIdAsync(Guid groupId,
             PaginationParameter paginationParameter, TransactionFilter transactionFilter);
         Task<BaseResultModel> CategorizeTransactionAsync(CategorizeTransactionModel model);
         Task<BaseResultModel> CreateGroupTransactionAsync(CreateGroupTransactionModel model, string currentEmail);
@@ -52,10 +52,12 @@ namespace MoneyEz.Services.Services.Interfaces
         #region report
         Task<BaseResultModel> GetYearReportAsync(int year, ReportTransactionType type);
         Task<BaseResultModel> GetCategoryYearReportAsync(int year, ReportTransactionType type);
-        Task<BaseResultModel> GetCategoryYearReportAsyncV2(int year, string type);
         Task<BaseResultModel> GetAllTimeReportAsync();
-        Task<BaseResultModel> GetAllTimeCategoryReportAsync(string type);
         Task<BaseResultModel> GetBalanceYearReportAsync(int year);
+        Task<BaseResultModel> GetAllTimeCategoryReportAsync(ReportTransactionType type);
+
+        /*        Task<BaseResultModel> GetCategoryYearReportAsyncV2(int year, string type);*/
+        /*        Task<BaseResultModel> GetAllTimeCategoryReportAsyncV2(string type);*/
 
         #endregion report
     }

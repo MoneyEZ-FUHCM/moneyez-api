@@ -15,25 +15,32 @@ var builder = WebApplication.CreateBuilder(args);
 
 DotNetEnv.Env.Load();
 
-builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
-{
-    options.InvalidModelStateResponseFactory = context =>
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
     {
-        var errors = context.ModelState
-            .Where(m => m.Value.Errors.Count > 0)
-            .SelectMany(m => m.Value.Errors)
-            .Select(e => e.ErrorMessage)
-            .ToList();
-
-        var response = new BaseResultModel
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false)
+        );
+    })
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
         {
-            Status = StatusCodes.Status400BadRequest,
-            Message = string.Join("; ", errors)
-        };
+            var errors = context.ModelState
+                .Where(m => m.Value.Errors.Count > 0)
+                .SelectMany(m => m.Value.Errors)
+                .Select(e => e.ErrorMessage)
+                .ToList();
 
-        return new BadRequestObjectResult(response);
-    };
-});
+            var response = new BaseResultModel
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Message = string.Join("; ", errors)
+            };
+
+            return new BadRequestObjectResult(response);
+        };
+    });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
