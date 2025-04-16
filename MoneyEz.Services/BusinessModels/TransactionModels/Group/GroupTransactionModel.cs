@@ -26,5 +26,6 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Group
         public string? AccountBankName { get; set; }
         public string? BankTransactionId { get; set; }
         public DateTime? BankTransactionDate { get; set; }
+        public string? Note { get; set; }
     }
 }

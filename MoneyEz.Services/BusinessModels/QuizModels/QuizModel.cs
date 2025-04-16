@@ -1,5 +1,6 @@
 ﻿using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -12,32 +13,42 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
     public class CreateQuizModel
     {
         [Required(ErrorMessage = "Tiêu đề bộ quiz không được để trống")]
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
         [Required(ErrorMessage = "Chi tiết bộ câu hỏi không được để trống")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         public CommonsStatus Status { get; set; } = CommonsStatus.INACTIVE;
 
         public List<QuizQuestionModel> Questions { get; set; } = new();
     }
 
-    public class UpdateQuizModel : CreateQuizModel
+    public class UpdateQuizModel 
     {
         public Guid Id { get; set; }
+
+        [Required(ErrorMessage = "Tiêu đề bộ quiz không được để trống")]
+        public string? Title { get; set; }
+
+        [Required(ErrorMessage = "Chi tiết bộ câu hỏi không được để trống")]
+        public string? Description { get; set; }
+
+        //public CommonsStatus? Status { get; set; }
+
+        public List<QuizQuestionModel> Questions { get; set; } = new();
     }
 
     public class QuizModel : BaseEntity
     {
         [Required(ErrorMessage = "Tiêu đề bộ quiz không được để trống")]
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
         [Required(ErrorMessage = "Chi tiết bộ câu hỏi không được để trống")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         public CommonsStatus Status { get; set; }
         
-        public string Version { get; set; }
+        public string? Version { get; set; }
 
         public List<QuizQuestionModel> Questions { get; set; } = new();
     }
@@ -47,7 +58,7 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
         public Guid Id { get; set; } = Guid.NewGuid();
         
         [Required(ErrorMessage = "Nội dung câu hỏi không được để trống")]
-        public string Content { get; set; }
+        public string? Content { get; set; }
         
         [MinLength(2, ErrorMessage = "Phải có ít nhất 2 câu trả lời cho câu hỏi")]
         public List<QuizAnswerOptionModel> AnswerOptions { get; set; } = new();
@@ -56,6 +67,15 @@ namespace MoneyEz.Services.BusinessModels.QuizModels
     public class QuizAnswerOptionModel
     {
         public Guid Id { get; set; } = Guid.NewGuid();
-        public string Content { get; set; }
+        public string? Content { get; set; }
     }
+    public class QuestionAnswerPair
+    {
+        [JsonProperty("question")]
+        public string Question { get; set; } = "";
+
+        [JsonProperty("answer")]
+        public string Answer { get; set; } = "";
+    }
+
 }

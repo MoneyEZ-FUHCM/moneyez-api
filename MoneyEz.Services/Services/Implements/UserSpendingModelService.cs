@@ -227,6 +227,7 @@ namespace MoneyEz.Services.Services.Implements
                 filter: usm => usm.UserId == user.Id
                             && usm.SpendingModelId == spendingModelId
                             && usm.EndDate > CommonUtils.GetCurrentTime()
+                            && usm.Status == UserSpendingModelStatus.ACTIVE
                             && !usm.IsDeleted,
                 include: query => query.Include(usm => usm.SpendingModel)
                                        .ThenInclude(sm => sm.SpendingModelCategories)
@@ -247,6 +248,15 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            // check xem có transaction nào không
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id
+                            && t.GroupId == null
+                            && t.UserSpendingModelId == spendingModel.Id
+                            && t.Status == TransactionStatus.APPROVED
+            );
+
+
             // Lấy danh sách Subcategory
             var subcategoryIds = spendingModel.SpendingModel.SpendingModelCategories
                 .SelectMany(smc => smc.Category.CategorySubcategories)
@@ -255,22 +265,52 @@ namespace MoneyEz.Services.Services.Implements
                 .ToList();
 
             // Kiểm tra xem có FinancialGoal nào liên quan đến Subcategory trong mô hình này không
-            var existingGoals = await _unitOfWork.FinancialGoalRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = 1, PageIndex = 1 },
-                filter: fg => fg.UserId == user.Id && subcategoryIds.Contains(fg.SubcategoryId.Value)
+            var existingGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
+                filter: fg => fg.UserId == user.Id 
+                    && subcategoryIds.Contains(fg.SubcategoryId.Value)
+                    && fg.StartDate == spendingModel.StartDate
+                    && fg.Deadline == spendingModel.EndDate
+                    && !fg.IsDeleted
             );
 
             if (existingGoals.Any())
             {
-                return new BaseResultModel
+                // nếu có mục tiêu nào đang active sẽ không được xóa
+                if (existingGoals.Any(g => g.Status == FinancialGoalStatus.ACTIVE))
                 {
-                    Status = StatusCodes.Status400BadRequest,
-                    ErrorCode = MessageConstants.CANNOT_CANCEL_SPENDING_MODEL_HAS_GOALS,
-                    Message = "You cannot cancel this spending model because some subcategories are linked to active financial goals."
-                };
+                    // nếu có transaction và mục tiêu - không xóa
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        ErrorCode = MessageConstants.CANNOT_CANCEL_SPENDING_MODEL_HAS_GOALS,
+                        Message = "You cannot cancel this spending model because some subcategories are linked to active financial goals."
+                    };
+                }
+                else
+                {
+                    // cập nhật lại deadline cho goal trùng với ngày xóa
+                    foreach (var goal in existingGoals)
+                    {
+                        goal.Deadline = CommonUtils.GetCurrentTime();
+                        _unitOfWork.FinancialGoalRepository.UpdateAsync(goal);
+                    }
+                }
             }
 
-            _unitOfWork.UserSpendingModelRepository.SoftDeleteAsync(spendingModel);
+            if (!transactions.Any() && !existingGoals.Any())
+            {
+                // nếu có transaction và mục tiêu - xóa mềm
+                // update lại deadline cho mô hình trùng với ngày xóa
+                spendingModel.EndDate = CommonUtils.GetCurrentTime();
+                spendingModel.IsDeleted = true;
+                _unitOfWork.UserSpendingModelRepository.UpdateAsync(spendingModel);
+            }
+            else
+            {
+                // nếu không có transaction và mục tiêu - xóa vĩnh viễn
+                _unitOfWork.UserSpendingModelRepository.PermanentDeletedAsync(spendingModel);
+            }
+
             _unitOfWork.Save();
 
             return new BaseResultModel
@@ -1054,6 +1094,62 @@ namespace MoneyEz.Services.Services.Implements
                 Status = StatusCodes.Status200OK,
                 Message = "Subcategories retrieved successfully",
                 Data = _mapper.Map<List<SubcategoryModel>>(subcategories)
+            };
+        }
+
+        public async Task<BaseResultModel> GetCurrentSpendingModelByUserIdAsync(Guid userId)
+        {
+            // Get user by ID
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // Get current active spending model with related data
+            var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.UserId == userId
+                    && usm.EndDate > CommonUtils.GetCurrentTime()
+                    && usm.Status == UserSpendingModelStatus.ACTIVE
+                    && !usm.IsDeleted,
+                include: query => query
+                    .Include(usm => usm.SpendingModel)
+                    .ThenInclude(sm => sm.SpendingModelCategories)
+                    .ThenInclude(smc => smc.Category)
+            );
+
+            var currentModel = currentModels.FirstOrDefault();
+            if (currentModel == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.SPENDING_MODEL_NOT_FOUND,
+                    Message = "No active spending model found for the user"
+                };
+            }
+
+            // Map to UserSpendingModelSendToPython format
+            var modelForPython = new UserSpendingModelSendToPython
+            {
+                Name = currentModel.SpendingModel.Name,
+                Description = currentModel.SpendingModel.Description,
+                StartDate = currentModel.StartDate,
+                EndDate = currentModel.EndDate,
+                Categories = currentModel.SpendingModel.SpendingModelCategories
+                    .Select(smc => new CategorySendToPython
+                    {
+                        Name = smc.Category.Name,
+                        Description = smc.Category.Description
+                    })
+                    .ToList()
+            };
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = "Current spending model retrieved successfully",
+                Data = modelForPython
             };
         }
     }

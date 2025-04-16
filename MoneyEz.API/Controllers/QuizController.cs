@@ -89,12 +89,18 @@ namespace MoneyEz.API.Controllers
 
         #region User Quiz Results Endpoints
 
-        [HttpGet]
-        [Route("user-quiz-results")]
+        [HttpGet("user-quiz-results")]
         [Authorize]
         public Task<IActionResult> GetAllUserQuizResults([FromQuery] PaginationParameter paginationParameter)
         {
             return ValidateAndExecute(() => _quizService.GetUserQuizHistoryAsync(paginationParameter));
+        }
+
+        [HttpGet("user-quiz-results/{resultId}")]
+        [Authorize]
+        public Task<IActionResult> GetUserQuizResults(Guid resultId)
+        {
+            return ValidateAndExecute(() => _quizService.GetUserQuizHistoryByIdAsync(resultId));
         }
 
         #endregion

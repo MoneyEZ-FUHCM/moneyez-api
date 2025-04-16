@@ -109,6 +109,7 @@ namespace MoneyEz.Services.Constants
         public const string GOAL_ALREADY_COMPLETED = "GoalAlreadyCompleted";
         public const string FINACIAL_GOAL_UPDATE_FORBIDDEN = "FinancialGoalUpdateForbidden";
         public const string FINACIAL_GOAL_DELETE_FORBIDDEN = "FinancialGoalDeleteForbidden";
+        public const string FINANCIAL_GOAL_ALREADY_COMPLETED = "FinancialGoalAlreadyCompleted";
         //financial report
         public const string REPORT_NOT_FOUND = "ReportNotFound";
         public const string REPORT_CREATE_FAILED = "ReportCreateFailed";
@@ -250,6 +251,9 @@ namespace MoneyEz.Services.Constants
 
         public const string GROUP_UPDATE_SUCCESS_MESSAGE = "Group information updated successfully";
 
+        public const string GROUP_BALANCE_MUST_EQUAL_ZERO = "GroupBalanceMustEqualZero";
+        public const string GROUP_BALANCE_MUST_EQUAL_ZERO_MESSAGE = "The group balance must be zero before closing the group.";
+
         // fundraising request
         public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
         public const string FUNDRAISING_REQUEST_ACCESS_DENIED = "FundraisingRequestAccessDenied";
@@ -332,5 +336,9 @@ namespace MoneyEz.Services.Constants
         public const string POST_DELETED_SUCCESS = "PostDeletedSuccessfully";
         public const string POST_LIST_FETCHED_SUCCESS = "Post list fetched successfully.";
         public const string POST_FETCHED_SUCCESS = "Post details fetched successfully.";
+
+        // quiz
+        public const string QUIZ_RESULT_NOT_FOUND = "QuizResultNotFound";
+
     }
 }

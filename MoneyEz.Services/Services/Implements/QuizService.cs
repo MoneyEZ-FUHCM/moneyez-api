@@ -13,9 +13,12 @@ using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Utils;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace MoneyEz.Services.Services.Implements
@@ -25,20 +28,27 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
+        private readonly IExternalApiService _externalApiService;
 
-        public QuizService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService)
+        public QuizService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService, IExternalApiService externalApiService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
+            _externalApiService = externalApiService;
         }
 
         // ADMIN FUNCTIONS
 
         public async Task<BaseResultModel> CreateQuizAsync(CreateQuizModel createQuizModel)
         {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
             var quiz = _mapper.Map<Quiz>(createQuizModel);
             quiz.Version = CommonUtils.GetCurrentTime().ToString("yyyyMMddHHmm");
+            quiz.CreatedBy = user.Email;
+
 
             if (createQuizModel.Status == CommonsStatus.ACTIVE)
             {
@@ -46,6 +56,7 @@ namespace MoneyEz.Services.Services.Implements
                 foreach (var quiz1 in allQuizzes)
                 {
                     quiz1.Status = CommonsStatus.INACTIVE;
+                    quiz1.UpdatedBy = user.Email;
                     _unitOfWork.QuizRepository.UpdateAsync(quiz1);
                 }
             }
@@ -91,21 +102,21 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> UpdateQuizAsync(UpdateQuizModel quizModel)
         {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
             var existingQuiz = await _unitOfWork.QuizRepository.GetByIdAsync(quizModel.Id);
             if (existingQuiz == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {quizModel.Id}");
 
-            if (existingQuiz.Status == CommonsStatus.INACTIVE && quizModel.Status == CommonsStatus.ACTIVE)
-            {
-                await ActivateQuizAsync(quizModel.Id);
-            }
-            else if (existingQuiz.Status == CommonsStatus.ACTIVE && quizModel.Status == CommonsStatus.INACTIVE)
-            {
-                throw new DefaultException("Phải có một bộ câu hỏi được kích hoạt");
-            }
-
             _mapper.Map(quizModel, existingQuiz);
-            existingQuiz.Version = DateTime.Now.ToString("yyyyMMddHHmm");
+            existingQuiz.Version = CommonUtils.GetCurrentTime().ToString("yyyyMMddHHmm");
+            existingQuiz.UpdatedBy = user.Email;
+
+            //if (quizModel.Status != null)
+            //{
+            //    existingQuiz.Status = quizModel.Status.Value;
+            //}
 
             _unitOfWork.QuizRepository.UpdateAsync(existingQuiz);
             await _unitOfWork.SaveAsync();
@@ -120,6 +131,9 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> DeleteQuizAsync(Guid id)
         {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
             var existingQuiz = await _unitOfWork.QuizRepository.GetByIdAsync(id);
             if (existingQuiz == null)
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
@@ -129,6 +143,7 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Không thể xóa bộ câu hỏi đang hoạt động");
             }
 
+            existingQuiz.UpdatedBy = user.Email;
             _unitOfWork.QuizRepository.SoftDeleteAsync(existingQuiz);
             await _unitOfWork.SaveAsync();
 
@@ -142,10 +157,14 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> ActivateQuizAsync(Guid id)
         {
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(_claimsService.GetCurrentUserEmail)
+                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+
             var allQuizzes = await _unitOfWork.QuizRepository.GetAllAsync();
             foreach (var quiz in allQuizzes)
             {
                 quiz.Status = CommonsStatus.INACTIVE;
+                quiz.UpdatedBy = user.Email;
                 _unitOfWork.QuizRepository.UpdateAsync(quiz);
             }
 
@@ -154,6 +173,7 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException($"Không tìm thấy bộ câu hỏi với ID: {id}");
 
             quizToActivate.Status = CommonsStatus.ACTIVE;
+            quizToActivate.UpdatedBy = user.Email;
             _unitOfWork.QuizRepository.UpdateAsync(quizToActivate);
             await _unitOfWork.SaveAsync();
 
@@ -203,7 +223,8 @@ namespace MoneyEz.Services.Services.Implements
                 UserId = userId,
                 QuizId = quiz.Id,
                 TakenAt = CommonUtils.GetCurrentTime(),
-                QuizVersion = quiz.Version
+                QuizVersion = quiz.Version,
+                CreatedBy = user.Email,
             };
 
             userQuizResult.SetAnswers(quizAttempt.Answers.Select(a => new UserAnswer
@@ -214,16 +235,35 @@ namespace MoneyEz.Services.Services.Implements
             }).ToList());
 
             // Calculate recommended spending model based on answers
-            userQuizResult.RecommendedModel = await CalculateRecommendedModel(quiz, quizAttempt.Answers);
+            var summarizeQuizAnswers = SummarizeQuizAnswers(quiz, quizAttempt.Answers);
+            var responseSuggest = await _externalApiService.SuggestionSpendingModelSerivce(summarizeQuizAnswers);
+            if (responseSuggest != null)
+            {
+                userQuizResult.RecommendedModel = JsonConvert.SerializeObject(responseSuggest).ToString();
+            }
+            else
+            {
+                // If no recommendation is received, set it to an empty string or null
+                userQuizResult.RecommendedModel = null;
+            }
 
             // Save the result
-            var savedResult = await _unitOfWork.UserQuizResultRepository.CreateUserQuizResultAsync(userQuizResult);
+            var savedResult = await _unitOfWork.UserQuizResultRepository.AddAsync(userQuizResult);
             await _unitOfWork.SaveAsync();
+
+            // show result
+            var quizResult = _mapper.Map<UserQuizResultModel>(savedResult);
+
+            // Call external API to get recommended model
+            if (responseSuggest != null)
+            {
+                quizResult.RecommendedModel = responseSuggest;
+            }
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
-                Data = _mapper.Map<UserQuizResultModel>(savedResult),
+                Data = quizResult,
                 Message = "Nộp câu trả lời thành công"
             };
         }
@@ -296,9 +336,65 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        private async Task<string> CalculateRecommendedModel(Quiz quiz, List<UserAnswerModel> answers)
+        private List<QuestionAnswerPair> SummarizeQuizAnswers(Quiz quiz, List<UserAnswerModel> answers)
         {
-            return "50-30-20";
+            var questions = quiz.GetQuestions();
+
+            var questionDict = questions.ToDictionary(q => q.Id, q => q.Content);
+
+            var answerOptionsDict = new Dictionary<Guid, string>();
+            foreach (var question in questions)
+            {
+                foreach (var option in question.AnswerOptions)
+                {
+                    answerOptionsDict[option.Id] = option.Content;
+                }
+            }
+
+            var questionAnswerPairs = new List<QuestionAnswerPair>();
+
+            foreach (var answer in answers)
+            {
+                if (answer.QuestionId == null || !questionDict.ContainsKey(answer.QuestionId.Value))
+                    continue;
+
+                string question = questionDict[answer.QuestionId.Value];
+
+                string answerContent = answer.AnswerContent;
+                if (string.IsNullOrEmpty(answerContent) && answer.AnswerOptionId.HasValue &&
+                    answerOptionsDict.ContainsKey(answer.AnswerOptionId.Value))
+                {
+                    answerContent = answerOptionsDict[answer.AnswerOptionId.Value];
+                }
+
+                questionAnswerPairs.Add(new QuestionAnswerPair
+                {
+                    Question = question,
+                    Answer = answerContent
+                });
+            }
+            return questionAnswerPairs;
+        }
+
+        public async Task<BaseResultModel> GetUserQuizHistoryByIdAsync(Guid resultId)
+        {
+            var result = await _unitOfWork.UserQuizResultRepository.GetByIdAsync(resultId);
+            if (result == null)
+                throw new NotExistException($"Not found user quiz result id: {resultId}", MessageConstants.QUIZ_RESULT_NOT_FOUND);
+
+            var quizResult = _mapper.Map<UserQuizResultModel>(result);
+            var responseSuggest = JsonConvert.DeserializeObject<RecomendModelResponse>(result.RecommendedModel);
+
+            if (responseSuggest != null)
+            {
+                quizResult.RecommendedModel = responseSuggest;
+            }
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = quizResult,
+                Message = "Retrieved user quiz result successfully"
+            };
         }
     }
 }

@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using MoneyEz.API.RunSchedule.Setup;
+using MoneyEz.Services.RunSchedule.Setup;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Repositories.Implements;
 using MoneyEz.Repositories.Repositories.Interfaces;

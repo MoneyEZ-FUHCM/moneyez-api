@@ -444,6 +444,15 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-
+        public async Task<BaseResultModel> GetAllSpendingModelsAsync()
+        {
+            var spendingModels = await _unitOfWork.SpendingModelRepository.GetAllAsync();
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = MessageConstants.SPENDING_MODEL_LIST_FETCHED_SUCCESS,
+                Data = _mapper.Map<List<SpendingModelModelExternal>>(spendingModels)
+            };
+        }
     }
 }
