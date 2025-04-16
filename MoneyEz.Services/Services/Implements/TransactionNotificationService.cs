@@ -144,7 +144,7 @@ namespace MoneyEz.Services.Services.Implements
                 await _notificationService.AddNotificationByUserId(member.UserId, new Notification
                 {
                     Title = transaction.Type == TransactionType.INCOME ? "Góp quỹ thành công" : "Rút quỹ thành công",
-                    Message = $"{creator.FullName} {action} {transaction.Amount:N0} vào {group.Name} với lời nhắn \"{transaction.Description}\"",
+                    Message = $"{creator.FullName} {action} {transaction.Amount:N0} trong nhóm {group.Name} với lời nhắn \"{transaction.Description}\"",
                     Type = NotificationType.GROUP,
                     EntityId = transaction.Id
                 });
@@ -157,6 +157,17 @@ namespace MoneyEz.Services.Services.Implements
             {
                 Title = "Hoàn thành mục tiêu tài chính!",
                 Message = $"Mục tiêu '{goal.Name}' đã đạt được!",
+                Type = NotificationType.USER,
+                EntityId = goal.Id
+            });
+        }
+
+        public async Task NotifyGoalDueAsync(FinancialGoal goal)
+        {
+            await _notificationService.AddNotificationByUserId(goal.UserId, new Notification
+            {
+                Title = "Mục tiêu tài chính kết thúc!",
+                Message = $"Mục tiêu '{goal.Name}' đã kết thúc!",
                 Type = NotificationType.USER,
                 EntityId = goal.Id
             });

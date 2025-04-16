@@ -22,6 +22,8 @@ using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.TransactionModels.Group;
 using MoneyEz.Services.BusinessModels.GroupFund;
+using MoneyEz.Services.BusinessModels.TransactionModels.Reports;
+using System.Globalization;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -125,7 +127,8 @@ namespace MoneyEz.Services.Services.Implements
         }
         public async Task<BaseResultModel> CreateTransactionAsync(CreateTransactionModel model, string email)
         {
-            var user = await GetCurrentUserAsync();
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(email)
+                ?? throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             await ValidateSubcategoryInCurrentSpendingModel(model.SubcategoryId, user.Id);
 
             var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(model.SubcategoryId)
@@ -166,7 +169,8 @@ namespace MoneyEz.Services.Services.Implements
             return new BaseResultModel
             {
                 Status = StatusCodes.Status201Created,
-                Message = MessageConstants.TRANSACTION_CREATED_SUCCESS
+                Message = MessageConstants.TRANSACTION_CREATED_SUCCESS,
+                Data = _mapper.Map<TransactionModel>(transaction)
             };
         }
         public async Task<BaseResultModel> UpdateTransactionAsync(UpdateTransactionModel model)
@@ -381,7 +385,7 @@ namespace MoneyEz.Services.Services.Implements
 
             if (financialGoal.CurrentAmount >= financialGoal.TargetAmount)
             {
-                financialGoal.CurrentAmount = financialGoal.TargetAmount;
+                //financialGoal.CurrentAmount = financialGoal.TargetAmount;
                 financialGoal.Status = FinancialGoalStatus.COMPLETED;
                 financialGoal.ApprovalStatus = ApprovalStatus.APPROVED;
 
@@ -396,9 +400,6 @@ namespace MoneyEz.Services.Services.Implements
         }
 
         #endregion single user
-
-
-
 
         //admin
         public async Task<BaseResultModel> GetAllTransactionsForAdminAsync(PaginationParameter paginationParameter, TransactionFilter transactionFilter)
@@ -528,10 +529,9 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> CreateGroupTransactionAsync(CreateGroupTransactionModel model)
+        public async Task<BaseResultModel> CreateGroupTransactionAsync(CreateGroupTransactionModel model, string currentEmail)
         {
-            string userEmail = _claimsService.GetCurrentUserEmail;
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(currentEmail)
                 ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
 
             var group = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
@@ -553,29 +553,32 @@ namespace MoneyEz.Services.Services.Implements
             if (!Enum.IsDefined(typeof(TransactionType), model.Type))
                 throw new DefaultException("Loại giao dịch không hợp lệ.");
 
-            var now = CommonUtils.GetCurrentTime().Date;
-            if (model.TransactionDate.Date > now)
-                throw new DefaultException("Không được tạo giao dịch cho ngày trong tương lai.");
+            //var now = CommonUtils.GetCurrentTime().Date;
+            //if (model.TransactionDate.Date > now)
+            //    throw new DefaultException("Không được tạo giao dịch cho ngày trong tương lai.");
 
-            if (model.TransactionDate < now.AddYears(-5) || model.TransactionDate > now.AddMonths(1))
-                throw new DefaultException("Ngày giao dịch không hợp lệ.");
+            //if (model.TransactionDate < now.AddYears(-5) || model.TransactionDate > now.AddMonths(1))
+            //    throw new DefaultException("Ngày giao dịch không hợp lệ.");
 
             if (model.Description?.Length > 1000)
                 throw new DefaultException("Mô tả giao dịch quá dài (tối đa 1000 ký tự).");
 
             bool requiresApproval = groupMember.Role != RoleGroup.LEADER;
             TransactionStatus transactionStatus = requiresApproval ? TransactionStatus.PENDING : TransactionStatus.APPROVED;
-
-            if (groupMember.Role == RoleGroup.LEADER && model.Type == TransactionType.EXPENSE && model.RequireVote)
+            if (!requiresApproval)
             {
-                transactionStatus = TransactionStatus.PENDING;
+                model.TransactionDate = CommonUtils.GetCurrentTime();
+            }
+            else
+            {
+                model.TransactionDate = null;
             }
 
             // Generate random 10-digit code
             var requestCode = StringUtils.GenerateRandomUppercaseString(8);
 
             // Format final request code with bank short name
-            var finalRequestCode = $"{requestCode}_{groupBankAccount.BankShortName}";
+            var finalRequestCode = model.Type == TransactionType.INCOME ? $"GOPQUY-{requestCode}" : $"RUTQUY-{requestCode}";
 
             var transaction = _mapper.Map<Transaction>(model);
             transaction.UserId = user.Id;
@@ -605,8 +608,6 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             await _unitOfWork.SaveAsync();
-
-            await UpdateFinancialGoalAndBalance(transaction, model.Amount);
 
             if (requiresApproval)
             {
@@ -743,24 +744,26 @@ namespace MoneyEz.Services.Services.Implements
         public async Task<BaseResultModel> ResponseGroupTransactionAsync(ResponseGroupTransactionModel model)
         {
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.TransactionId)
-                ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
+                ?? throw new NotExistException("", MessageConstants.TRANSACTION_NOT_FOUND);
 
             var userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
-                ?? throw new NotExistException(MessageConstants.ACCOUNT_NOT_EXIST);
+                ?? throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
 
-            var group = await _unitOfWork.GroupFundRepository.GetByIdAsync(transaction.GroupId.Value)
-                ?? throw new NotExistException(MessageConstants.GROUP_NOT_EXIST);
+            var group = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(transaction.GroupId.Value, include: gr => gr.Include(x => x.GroupMembers))
+                ?? throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
 
             var groupMember = group.GroupMembers.FirstOrDefault(m => m.UserId == user.Id)
-                ?? throw new DefaultException(MessageConstants.USER_NOT_IN_GROUP);
+                ?? throw new DefaultException("", MessageConstants.USER_NOT_IN_GROUP);
 
             if (groupMember.Role != RoleGroup.LEADER)
-                throw new DefaultException(MessageConstants.PERMISSION_DENIED);
+                throw new DefaultException("", MessageConstants.PERMISSION_DENIED);
 
             if (model.IsApprove)
             {
                 transaction.Status = TransactionStatus.APPROVED;
+                transaction.TransactionDate = CommonUtils.GetCurrentTime();
+
                 _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
                 await _unitOfWork.SaveAsync();
 
@@ -776,11 +779,30 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
+                if (string.IsNullOrWhiteSpace(model.Note))
+                    throw new DefaultException("Reason for rejection cannot be left blank.", MessageConstants.TRANSACTION_REJECTED_MISSING_REASON);
+
                 transaction.Status = TransactionStatus.REJECTED;
+                transaction.TransactionDate = CommonUtils.GetCurrentTime();
                 _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
                 await _unitOfWork.SaveAsync();
 
                 await _transactionNotificationService.NotifyTransactionApprovalRequestAsync(group, transaction, user);
+
+                string transactionContext = transaction.Type == TransactionType.INCOME ? "góp quỹ" : "rút quỹ";
+
+                // get info transaction fundraising request
+                var userRequest = await _unitOfWork.UsersRepository.GetByIdAsync(transaction.UserId.Value);
+                if (userRequest != null)
+                {
+                    await LogGroupFundChange(group, $"Giao dịch {transactionContext} [{transaction.Description}] của [{userRequest.FullName}] đã bị từ chối. " +
+                        $"\n[Lí do:] {model.Note}",
+                        GroupAction.TRANSACTION_UPDATED, userEmail);
+                }
+                else
+                {
+                    throw new NotExistException("Not found user created transaction", MessageConstants.ACCOUNT_NOT_EXIST);
+                }
 
                 return new BaseResultModel
                 {
@@ -962,6 +984,7 @@ namespace MoneyEz.Services.Services.Implements
 
         #endregion group
 
+        #region python webhook
         public async Task<BaseResultModel> UpdateTransactionWebhook(WebhookPayload webhookPayload)
         {
             // Get bank account to validate secret key
@@ -973,13 +996,6 @@ namespace MoneyEz.Services.Services.Implements
                     MessageConstants.BANK_ACCOUNT_NOT_FOUND);
             }
 
-            // get info user
-            var user = await _unitOfWork.UsersRepository.GetByIdAsync(bankAccount.UserId);
-            if (user == null)
-            {
-                throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
-            }
-
             // Get secret key from header
             var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-Webhook-Secret"].ToString();
 
@@ -988,13 +1004,123 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("Invalid webhook secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
             }
 
-            // Get transaction by request code
+            // kiểm tra số tài khoản ngân hàng đã được liên kết với nhóm chưa
+            GroupFund groupBankAccount = null;
+            var groupFunds = await _unitOfWork.GroupFundRepository.GetByAccountBankId(bankAccount.Id);
+            if (groupFunds.Any())
+            {
+                groupBankAccount = groupFunds.First();
+            }
+
+            // lấy thông tin người dùng (chủ tài khoản)
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(bankAccount.UserId);
+            if (user == null)
+            {
+                throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // lấy transaction by request code (nếu có thì cập nhật trạng thái / nếu không thì tạo mới)
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
                 filter: t => t.RequestCode == webhookPayload.Description);
             var updatedTransactions = transactions.FirstOrDefault();
 
-            if (updatedTransactions == null)
+            // trường hợp có giao dịch trùng với request code
+            if (updatedTransactions != null)
             {
+                // trường hợp đã liên kết ngân hàng với nhóm
+                if (groupBankAccount != null)
+                {
+                    // trường hợp số tiền giao dịch hợp lệ
+                    if (updatedTransactions.Amount == webhookPayload.Amount)
+                    {
+                        // cập nhật lại giao dịch đã có trước đó (từ việc góp quỹ, rút quỹ)
+                        updatedTransactions.Status = TransactionStatus.APPROVED;
+                        updatedTransactions.UpdatedBy = user.Email;
+                        updatedTransactions.BankTransactionId = webhookPayload.TransactionId;
+                        updatedTransactions.TransactionDate = webhookPayload.Timestamp;
+                        updatedTransactions.AccountBankNumber = webhookPayload.AccountNumber;
+                        updatedTransactions.AccountBankName = webhookPayload.BankName;
+
+                        _unitOfWork.TransactionsRepository.UpdateAsync(updatedTransactions);
+                        await _unitOfWork.SaveAsync();
+
+                        await UpdateFinancialGoalAndBalance(updatedTransactions, updatedTransactions.Amount);
+                    }
+                    else
+                    {
+                        // trường hợp giao dịch số tiền không hợp lệ
+                        // tạo transaction mới cho group
+                        var newTransactionGroup = new CreateGroupTransactionModel
+                        {
+                            Amount = webhookPayload.Amount,
+                            Description = "[Ngân hàng] " + webhookPayload.Description,
+                            Type = webhookPayload.TransactionType,
+                            TransactionDate = webhookPayload.Timestamp,
+                            GroupId = groupBankAccount.Id,
+                            InsertType = InsertType.BANKING,
+                            AccountBankNumber = webhookPayload.AccountNumber,
+                            AccountBankName = webhookPayload.BankName,
+                            BankTransactionDate = webhookPayload.Timestamp,
+                            BankTransactionId = webhookPayload.TransactionId
+                        };
+
+                        return await CreateGroupTransactionAsync(newTransactionGroup, user.Email);
+                    }
+                }
+                else
+                {
+                    // trường hợp không liên kết ngân hàng với nhóm
+                    // tạo mới transaction cho user
+                    // chỉ hỗ trợ thêm giao dịch vào nếu user đã có mô hình chi tiêu
+
+                    // search user spending model
+                    var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id);
+                    if (userSpendingModel == null)
+                    {
+                        throw new NotExistException("User spending model not found", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
+                    }
+
+                    // create new transaction
+                    var newTransaction = new Transaction
+                    {
+                        Amount = webhookPayload.Amount,
+                        Description = "[Ngân hàng] " + webhookPayload.Description,
+                        Status = TransactionStatus.PENDING,
+                        Type = webhookPayload.TransactionType,
+                        TransactionDate = webhookPayload.Timestamp,
+                        UserId = bankAccount.UserId,
+                        CreatedBy = user.Email,
+                        ApprovalRequired = false,
+                        InsertType = InsertType.BANKING,
+                        UserSpendingModelId = userSpendingModel.Id,
+                        BankTransactionDate = webhookPayload.Timestamp,
+                        BankTransactionId = webhookPayload.TransactionId,
+                        AccountBankNumber = webhookPayload.AccountNumber,
+                        AccountBankName = webhookPayload.BankName
+                    };
+
+                    // tự phân loại giao dịch với tiền lương
+                    var isSalary = StringUtils.IsDescriptionContainsSalaryKeywords(webhookPayload.Description);
+                    if (isSalary)
+                    {
+                        var salarySubcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(
+                            filter: sc => sc.Code == "sc-luong" && !sc.IsDeleted);
+                        if (salarySubcategory.Any())
+                        {
+                            newTransaction.SubcategoryId = salarySubcategory.First().Id;
+                        }
+                    }
+
+                    await _unitOfWork.TransactionsRepository.AddAsync(newTransaction);
+                    await _unitOfWork.SaveAsync();
+                }
+            }
+            else
+            {
+                // trường hợp không liên kết ngân hàng với nhóm
+                // tạo mới transaction cho user
+                // chỉ hỗ trợ thêm giao dịch vào nếu user đã có mô hình chi tiêu
+
                 // search user spending model
                 var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id);
                 if (userSpendingModel == null)
@@ -1012,51 +1138,41 @@ namespace MoneyEz.Services.Services.Implements
                     TransactionDate = webhookPayload.Timestamp,
                     UserId = bankAccount.UserId,
                     CreatedBy = user.Email,
-                    ApprovalRequired = true,
+                    ApprovalRequired = false,
                     InsertType = InsertType.BANKING,
+                    UserSpendingModelId = userSpendingModel.Id,
+                    BankTransactionDate = webhookPayload.Timestamp,
+                    BankTransactionId = webhookPayload.TransactionId,
+                    AccountBankNumber = webhookPayload.AccountNumber,
+                    AccountBankName = webhookPayload.BankName
                 };
+
+                // tự phân loại giao dịch với tiền lương
+                var isSalary = StringUtils.IsDescriptionContainsSalaryKeywords(webhookPayload.Description);
+                if (isSalary)
+                {
+                    var salarySubcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(
+                        filter: sc => sc.Code == "sc-luong" && !sc.IsDeleted);
+                    if (salarySubcategory.Any())
+                    {
+                        newTransaction.SubcategoryId = salarySubcategory.First().Id;
+                    }
+                }
 
                 await _unitOfWork.TransactionsRepository.AddAsync(newTransaction);
                 await _unitOfWork.SaveAsync();
-
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status201Created,
-                    Message = "Transaction created successfully"
-                };
             }
-
-            // update transaction pending to approved
-
-            if (updatedTransactions.Amount != webhookPayload.Amount)
-            {
-                throw new DefaultException("Transaction amount invalid", MessageConstants.TRANSACTION_AMOUNT_INVALID);
-            }
-
-            // Update transaction status
-            updatedTransactions.Status = TransactionStatus.APPROVED;
-            updatedTransactions.UpdatedBy = user.Email;
-
-            _unitOfWork.TransactionsRepository.UpdateAsync(updatedTransactions);
-            await _unitOfWork.SaveAsync();
 
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
                 Message = "Transaction status updated successfully"
             };
+
         }
 
         public async Task<BaseResultModel> CreateTransactionPythonService(CreateTransactionPythonModel model)
         {
-            // Get secret key from header
-            var secretKey = _httpContextAccessor.HttpContext?.Request.Headers["X-Webhook-Secret"].ToString();
-
-            if (string.IsNullOrEmpty(secretKey) || secretKey != "thisIsSerectKeyPythonService")
-            {
-                throw new DefaultException("Invalid webhook secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
-            }
-
             // get info user
             var user = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId);
             if (user == null)
@@ -1066,7 +1182,7 @@ namespace MoneyEz.Services.Services.Implements
 
             // search subcategory
             var subcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(filter: sc => sc.Code == model.SubcategoryCode && !sc.IsDeleted);
-            if (subcategory.Any())
+            if (!subcategory.Any())
             {
                 throw new NotExistException("Subcategory not found", MessageConstants.SUBCATEGORY_NOT_FOUND);
             }
@@ -1077,6 +1193,33 @@ namespace MoneyEz.Services.Services.Implements
                 Description = model.Description,
                 SubcategoryId = subcategory.First().Id,
                 TransactionDate = CommonUtils.GetCurrentTime()
+            };
+
+            return await CreateTransactionAsync(newTransaction, user.Email);
+        }
+
+        public async Task<BaseResultModel> CreateTransactionPythonServiceV2(CreateTransactionPythonModelV2 model)
+        {
+            // get info user
+            var user = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId);
+            if (user == null)
+            {
+                throw new NotExistException("User not found", MessageConstants.ACCOUNT_NOT_EXIST);
+            }
+
+            // search subcategory
+            var subcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(filter: sc => sc.Code == model.SubcategoryCode && !sc.IsDeleted);
+            if (!subcategory.Any())
+            {
+                throw new NotExistException("Subcategory not found", MessageConstants.SUBCATEGORY_NOT_FOUND);
+            }
+
+            var newTransaction = new CreateTransactionModel
+            {
+                Amount = model.Amount,
+                Description = model.Description,
+                SubcategoryId = subcategory.First().Id,
+                TransactionDate = model.TransactionDate,
             };
 
             return await CreateTransactionAsync(newTransaction, user.Email);
@@ -1133,5 +1276,382 @@ namespace MoneyEz.Services.Services.Implements
                 return await UpdateGroupTransactionAsync(updateGroupTransaction);
             }
         }
+
+        public async Task<BaseResultModel> GetTransactionHistorySendToPythons(Guid userId, TransactionFilter transactionFilter)
+        {
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == userId && t.GroupId == null
+                    && (!transactionFilter.FromDate.HasValue || t.TransactionDate.Value.Date >= transactionFilter.FromDate.Value.Date)
+                    && (!transactionFilter.ToDate.HasValue || t.TransactionDate.Value.Date <= transactionFilter.ToDate.Value.Date)
+                    && !t.IsDeleted && t.Status == TransactionStatus.APPROVED,
+                include: q => q.Include(t => t.Subcategory),
+                orderBy: t => t.OrderByDescending(t => t.TransactionDate)
+            );
+            var transactionModels = _mapper.Map<List<TransactionHistorySendToPython>>(transactions);
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = transactionModels
+            };
+        }
+
+        #endregion python webhook
+
+        #region report
+
+        public async Task<BaseResultModel> GetYearReportAsync(int year, ReportTransactionType type)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id && t.TransactionDate!.Value.Year == year
+            );
+
+            var filtered = _unitOfWork.TransactionsRepository.FilterByType(transactions.AsQueryable(), type);
+
+            var monthly = filtered
+                .GroupBy(t => t.TransactionDate!.Value.Month)
+                .Select(g => new MonthAmountModel
+                {
+                    Month = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(g.Key),
+                    Amount = g.Sum(x => x.Amount)
+                })
+                .OrderBy(m => DateTime.ParseExact(m.Month, "MMMM", CultureInfo.CurrentCulture))
+                .ToList();
+
+            var total = filtered.Sum(t => t.Amount);
+            var avg = monthly.Count > 0 ? monthly.Average(x => x.Amount) : 0;
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new YearTransactionReportModel
+                {
+                    Year = year,
+                    Type = type,
+                    Total = total,
+                    Average = avg,
+                    MonthlyData = monthly
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetCategoryYearReportAsync(int year, ReportTransactionType type)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id &&
+                             t.TransactionDate!.Value.Year == year,
+                include: q => q.Include(t => t.Subcategory!)
+            );
+
+            var filtered = _unitOfWork.TransactionsRepository
+                .FilterByType(transactions.AsQueryable(), type)
+                .Where(t => t.Subcategory != null);
+
+            var total = filtered.Sum(t => t.Amount);
+
+            var categories = filtered
+                .GroupBy(t => t.Subcategory!)
+                .Select(g => new CategoryAmountModel
+                {
+                    Name = g.Key.Name,
+                    Icon = g.Key.Icon,
+                    Amount = g.Sum(t => t.Amount),
+                    Percentage = total == 0 ? 0 : Math.Round((double)(g.Sum(t => t.Amount) / total * 100), 2)
+                })
+                .OrderByDescending(c => c.Amount)
+                .ToList();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new CategoryYearTransactionReportModel
+                {
+                    Year = year,
+                    Type = type.ToString(),
+                    Total = total,
+                    Categories = categories
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetAllTimeReportAsync()
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id
+            );
+
+            var income = transactions.Where(t => t.Type == TransactionType.INCOME).Sum(t => t.Amount);
+            var expense = transactions.Where(t => t.Type == TransactionType.EXPENSE).Sum(t => t.Amount);
+            var total = income - expense;
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new AllTimeTransactionSummaryModel
+                {
+                    Income = income,
+                    Expense = expense,
+                    Total = total,
+                    InitialBalance = 0,
+                    Cumulation = total
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetAllTimeCategoryReportAsync(string type)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id,
+                include: q => q.Include(t => t.Subcategory)
+                    .ThenInclude(c => c.CategorySubcategories)
+                    .ThenInclude(cs => cs.Category)
+            );
+
+            // parse type to enum
+            ReportTransactionType reportTransactionType;
+            switch (type.ToLower())
+            {
+                case "expense":
+                    reportTransactionType = ReportTransactionType.Expense;
+                    break;
+                case "income":
+                    reportTransactionType = ReportTransactionType.Income;
+                    break;
+                case "total":
+                    reportTransactionType = ReportTransactionType.Total;
+                    break;
+                default:
+                    reportTransactionType = ReportTransactionType.Total;
+                    break;
+            }
+
+            // Filter transactions and join with category information
+            var transactionsWithCategory = transactions
+                .Where(t => t.Subcategory != null)
+                .SelectMany(t => t.Subcategory.CategorySubcategories
+                    .Select(cs => new {
+                        Transaction = t,
+                        CategoryType = cs.Category.Type
+                    }))
+                .Where(x => reportTransactionType == ReportTransactionType.Total ||
+                           (reportTransactionType == ReportTransactionType.Expense && x.CategoryType == TransactionType.EXPENSE) ||
+                           (reportTransactionType == ReportTransactionType.Income && x.CategoryType == TransactionType.INCOME))
+                .ToList();
+
+            var total = transactionsWithCategory.Sum(t => t.Transaction.Amount);
+
+            var categories = transactionsWithCategory
+                .GroupBy(x => new {
+                    SubcategoryId = x.Transaction.SubcategoryId,
+                    SubcategoryName = x.Transaction.Subcategory.Name,
+                    SubcategoryIcon = x.Transaction.Subcategory.Icon,
+                    CategoryType = x.CategoryType
+                })
+                .Select(g => new CategoryAmountModel
+                {
+                    Name = g.Key.SubcategoryName,
+                    Icon = g.Key.SubcategoryIcon,
+                    Amount = g.Sum(x => x.Transaction.Amount),
+                    Percentage = total == 0 ? 0 : Math.Round((double)(g.Sum(x => x.Transaction.Amount) / total * 100), 2),
+                    CategoryType = g.Key.CategoryType.ToString()
+                })
+                .OrderByDescending(c => c.Amount)
+                .ToList();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new AllTimeCategoryTransactionReportModel
+                {
+                    Type = reportTransactionType.ToString().ToUpper(),
+                    Total = total,
+                    Categories = categories
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetBalanceYearReportAsync(int year)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id && t.TransactionDate!.Value.Year == year
+            );
+
+            var monthlyBalances = new List<MonthlyBalanceModel>();
+            decimal currentBalance = 0;
+
+            for (int month = 1; month <= 12; month++)
+            {
+                var monthTransactions = transactions
+                    .Where(t => t.TransactionDate!.Value.Month == month);
+
+                foreach (var t in monthTransactions)
+                {
+                    currentBalance += t.Type == TransactionType.INCOME ? t.Amount : -t.Amount;
+                }
+
+                monthlyBalances.Add(new MonthlyBalanceModel
+                {
+                    Month = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month),
+                    Balance = currentBalance
+                });
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new BalanceYearTransactionReportModel
+                {
+                    Year = year,
+                    Balances = monthlyBalances
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetCategoryYearReportAsyncV2(int year, string type)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id &&
+                             t.TransactionDate!.Value.Year == year,
+                include: q => q.Include(t => t.Subcategory)
+                    .ThenInclude(c => c.CategorySubcategories)
+                    .ThenInclude(cs => cs.Category)
+            );
+
+            // parse type to enum
+            ReportTransactionType reportTransactionType;
+            switch (type.ToLower())
+            {
+                case "expense":
+                    reportTransactionType = ReportTransactionType.Expense;
+                    break;
+                case "income":
+                    reportTransactionType = ReportTransactionType.Income;
+                    break;
+                case "total":
+                    reportTransactionType = ReportTransactionType.Total;
+                    break;
+                default:
+                    reportTransactionType = ReportTransactionType.Total;
+                    break;
+            }
+
+            // Filter transactions and join with category information
+            var transactionsWithCategory = transactions
+                .Where(t => t.Subcategory != null)
+                .SelectMany(t => t.Subcategory.CategorySubcategories
+                    .Select(cs => new {
+                        Transaction = t,
+                        CategoryType = cs.Category.Type
+                    }))
+                .Where(x => reportTransactionType == ReportTransactionType.Total ||
+                           (reportTransactionType == ReportTransactionType.Expense && x.CategoryType == TransactionType.EXPENSE) ||
+                           (reportTransactionType == ReportTransactionType.Income && x.CategoryType == TransactionType.INCOME))
+                .ToList();
+
+            var total = transactionsWithCategory.Sum(t => t.Transaction.Amount);
+
+            var categories = transactionsWithCategory
+                .GroupBy(x => new {
+                    SubcategoryId = x.Transaction.SubcategoryId,
+                    SubcategoryName = x.Transaction.Subcategory.Name,
+                    SubcategoryIcon = x.Transaction.Subcategory.Icon,
+                    CategoryType = x.CategoryType
+                })
+                .Select(g => new CategoryAmountModel
+                {
+                    Name = g.Key.SubcategoryName,
+                    Icon = g.Key.SubcategoryIcon,
+                    Amount = g.Sum(x => x.Transaction.Amount),
+                    Percentage = total == 0 ? 0 : Math.Round((double)(g.Sum(x => x.Transaction.Amount) / total * 100), 2),
+                    CategoryType = g.Key.CategoryType.ToString()
+                })
+                .OrderByDescending(c => c.Amount)
+                .ToList();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new CategoryYearTransactionReportModel
+                {
+                    Year = year,
+                    Type = reportTransactionType.ToString().ToUpper(),
+                    Total = total,
+                    Categories = categories
+                }
+            };
+        }
+
+        #endregion report
     }
 }

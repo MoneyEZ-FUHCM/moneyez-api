@@ -76,6 +76,9 @@ namespace MoneyEz.Repositories.UnitOfWork
         IQuestionRepository QuestionRepository { get; }
         IUserQuizAnswerRepository UserQuizAnswerRepository { get; }
 
+        // post
+        IPostRepository PostRepository { get; }
+
         int Save();
         void Commit();
         void Rollback();

@@ -90,7 +90,8 @@ namespace MoneyEz.API.Controllers
         [HttpPost("group/create")]
         public Task<IActionResult> CreateGroupTransaction([FromBody] CreateGroupTransactionModel model)
         {
-            return ValidateAndExecute(() => _transactionService.CreateGroupTransactionAsync(model));
+            var currentEmail = _claimsService.GetCurrentUserEmail;
+            return ValidateAndExecute(() => _transactionService.CreateGroupTransactionAsync(model, currentEmail));
         }
 
         [HttpGet("group/transaction/{transactionId}")]
@@ -140,6 +141,8 @@ namespace MoneyEz.API.Controllers
         #endregion vote
 
         #endregion group
+
+        #region duc
         [HttpPost("webhook")]
         public Task<IActionResult> UpdateTransactionWebhook(WebhookPayload webhookPayload)
         {
@@ -157,5 +160,52 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _transactionService.CategorizeTransactionAsync(model));
         }
+        #endregion duc
+
+        #region report
+
+        [Authorize(Roles = nameof(RolesEnum.USER))]
+        [HttpGet("report/year")]
+        public Task<IActionResult> GetYearReport([FromQuery] int year, [FromQuery] ReportTransactionType type = ReportTransactionType.Expense)
+        {
+            return ValidateAndExecute(() => _transactionService.GetYearReportAsync(year, type));
+        }
+
+        [Authorize(Roles = nameof(RolesEnum.USER))]
+        [HttpGet("report/category-year")]
+        public Task<IActionResult> GetCategoryYearReport([FromQuery] int year, [FromQuery] ReportTransactionType type = ReportTransactionType.Expense)
+        {
+            return ValidateAndExecute(() => _transactionService.GetCategoryYearReportAsync(year, type));
+        }
+
+        [Authorize(Roles = nameof(RolesEnum.USER))]
+        [HttpGet("report/category-year-v2")]
+        public Task<IActionResult> GetCategoryYearReportV2([FromQuery] int year, [FromQuery] string type)
+        {
+            return ValidateAndExecute(() => _transactionService.GetCategoryYearReportAsyncV2(year, type));
+        }
+
+        [Authorize(Roles = nameof(RolesEnum.USER))]
+        [HttpGet("report/all-time")]
+        public Task<IActionResult> GetAllTimeReport()
+        {
+            return ValidateAndExecute(() => _transactionService.GetAllTimeReportAsync());
+        }
+
+        [Authorize(Roles = nameof(RolesEnum.USER))]
+        [HttpGet("report/all-time-category")]
+        public Task<IActionResult> GetAllTimeCategoryReport([FromQuery] string type)
+        {
+            return ValidateAndExecute(() => _transactionService.GetAllTimeCategoryReportAsync(type));
+        }
+
+        [Authorize(Roles = nameof(RolesEnum.USER))]
+        [HttpGet("report/balance-year")]
+        public Task<IActionResult> GetBalanceYearReport([FromQuery] int year)
+        {
+            return ValidateAndExecute(() => _transactionService.GetBalanceYearReportAsync(year));
+        }
+
+        #endregion report
     }
 }

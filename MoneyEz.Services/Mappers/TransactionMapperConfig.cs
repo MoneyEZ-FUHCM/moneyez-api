@@ -4,6 +4,7 @@ using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
 using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.BusinessModels.TransactionModels.Group;
+using MoneyEz.Services.BusinessModels.TransactionModels.Reports;
 using MoneyEz.Services.Utils;
 
 namespace MoneyEz.Services.Mappers
@@ -42,6 +43,35 @@ namespace MoneyEz.Services.Mappers
 
             CreateMap<Pagination<Transaction>, Pagination<TransactionModel>>()
                 .ConvertUsing<PaginationConverter<Transaction, TransactionModel>>();
+
+            CreateMap<Transaction, TransactionHistorySendToPython>()
+                .ForMember(dest => dest.SubcategoryName, opt => opt.MapFrom(src => src.Subcategory.Name));
+
+
+
+            #region report
+
+            CreateMap<Transaction, MonthAmountModel>()
+                 .ForMember(dest => dest.Month, opt => opt.MapFrom(src => src.TransactionDate.HasValue
+                                                                            ? src.TransactionDate.Value.ToString("MMMM")
+                                                                            : string.Empty))
+                 .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount));
+
+            CreateMap<IGrouping<Subcategory, Transaction>, CategoryAmountModel>()
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Key.Name))
+                .ForMember(dest => dest.Icon, opt => opt.MapFrom(src => src.Key.Icon))
+                .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Sum(t => t.Amount)))
+                .ForMember(dest => dest.Percentage, opt => opt.Ignore());
+
+            CreateMap<Transaction, MonthlyBalanceModel>()
+                .ForMember(dest => dest.Month, opt => opt.MapFrom(src => src.TransactionDate.HasValue
+                                                                                ? src.TransactionDate.Value.ToString("MMMM")
+                                                                                : string.Empty))
+                .ForMember(dest => dest.Balance, opt => opt.Ignore());
+
+
+            #endregion report
+
         }
     }
 }

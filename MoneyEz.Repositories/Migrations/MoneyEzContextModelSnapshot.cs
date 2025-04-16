@@ -52,12 +52,11 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("Id")
-                        .HasName("PK__AnswerOption__3214EC07");
+                    b.HasKey("Id");
 
                     b.HasIndex("QuestionId");
 
-                    b.ToTable("AnswerOption", (string)null);
+                    b.ToTable("AnswerOption");
                 });
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Asset", b =>
@@ -904,6 +903,50 @@ namespace MoneyEz.Repositories.Migrations
                     b.ToTable("PlanSetting", (string)null);
                 });
 
+            modelBuilder.Entity("MoneyEz.Repositories.Entities.Post", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ShortContent")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Thumbnail")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id")
+                        .HasName("PK__Post__3214EC0790D5D4E0");
+
+                    b.ToTable("Post", (string)null);
+                });
+
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Question", b =>
                 {
                     b.Property<Guid>("Id")
@@ -931,12 +974,11 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("Id")
-                        .HasName("PK__Question__3214EC07");
+                    b.HasKey("Id");
 
                     b.HasIndex("QuizId");
 
-                    b.ToTable("Question", (string)null);
+                    b.ToTable("Question");
                 });
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Quiz", b =>
@@ -957,6 +999,9 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<string>("QuestionsJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -968,6 +1013,10 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id")
                         .HasName("PK__Quiz__3214EC07459B7BE7");
@@ -993,10 +1042,10 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateOnly?>("EndDate")
-                        .HasColumnType("date");
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
 
-                    b.Property<int?>("FrequencyType")
+                    b.Property<int>("FrequencyType")
                         .HasColumnType("int");
 
                     b.Property<int>("Interval")
@@ -1005,10 +1054,10 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<DateOnly>("StartDate")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
 
-                    b.Property<int?>("Status")
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<Guid>("SubcategoryId")
@@ -1017,7 +1066,7 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<string>("Tags")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("Type")
+                    b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.Property<string>("UpdatedBy")
@@ -1263,6 +1312,14 @@ namespace MoneyEz.Repositories.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AccountBankName")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("AccountBankNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(15, 2)");
 
@@ -1270,6 +1327,13 @@ namespace MoneyEz.Repositories.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("BankTransactionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("BankTransactionId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
@@ -1483,14 +1547,13 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<Guid?>("UserQuizResultId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("Id")
-                        .HasName("PK__UserQuizAnswer__3214EC07");
+                    b.HasKey("Id");
 
                     b.HasIndex("AnswerOptionId");
 
                     b.HasIndex("UserQuizResultId");
 
-                    b.ToTable("UserQuizAnswer", (string)null);
+                    b.ToTable("UserQuizAnswer");
                 });
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.UserQuizResult", b =>
@@ -1498,6 +1561,9 @@ namespace MoneyEz.Repositories.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AnswersJson")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
@@ -1510,6 +1576,10 @@ namespace MoneyEz.Repositories.Migrations
 
                     b.Property<Guid?>("QuizId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("QuizVersion")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("RecommendedModel")
                         .HasColumnType("nvarchar(max)");
@@ -1637,8 +1707,7 @@ namespace MoneyEz.Repositories.Migrations
                         .WithMany("AnswerOptions")
                         .HasForeignKey("QuestionId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK__AnswerOption__QuestionId");
+                        .IsRequired();
 
                     b.Navigation("Question");
                 });
@@ -1823,11 +1892,10 @@ namespace MoneyEz.Repositories.Migrations
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Question", b =>
                 {
                     b.HasOne("MoneyEz.Repositories.Entities.Quiz", "Quiz")
-                        .WithMany("Questions")
+                        .WithMany()
                         .HasForeignKey("QuizId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK__Question__QuizId");
+                        .IsRequired();
 
                     b.Navigation("Quiz");
                 });
@@ -1924,13 +1992,11 @@ namespace MoneyEz.Repositories.Migrations
                 {
                     b.HasOne("MoneyEz.Repositories.Entities.AnswerOption", "AnswerOption")
                         .WithMany("UserQuizAnswers")
-                        .HasForeignKey("AnswerOptionId")
-                        .HasConstraintName("FK__UserQuizAnswer__AnswerOptionId");
+                        .HasForeignKey("AnswerOptionId");
 
                     b.HasOne("MoneyEz.Repositories.Entities.UserQuizResult", "UserQuizResult")
                         .WithMany("UserQuizAnswers")
-                        .HasForeignKey("UserQuizResultId")
-                        .HasConstraintName("FK__UserQuizAnswer__UserQuizResultId");
+                        .HasForeignKey("UserQuizResultId");
 
                     b.Navigation("AnswerOption");
 
@@ -2019,8 +2085,6 @@ namespace MoneyEz.Repositories.Migrations
 
             modelBuilder.Entity("MoneyEz.Repositories.Entities.Quiz", b =>
                 {
-                    b.Navigation("Questions");
-
                     b.Navigation("UserQuizResults");
                 });
 

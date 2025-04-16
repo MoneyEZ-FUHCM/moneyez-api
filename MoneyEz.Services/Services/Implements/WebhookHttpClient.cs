@@ -23,9 +23,20 @@ namespace MoneyEz.Services.Services.Implements
             _httpClient.BaseAddress = new Uri(_settings.BaseUrl);
         }
 
+        public async Task<HttpResponseMessage> CancelWebhookAsync(string secret)
+        {
+            var endpoint = $"{_settings.BaseUrl}{_settings.RegistrationEndpoint}/cancel/{secret}";
+            return  await _httpClient.DeleteAsync(endpoint);
+        }
+
         public async Task<HttpResponseMessage> RegisterWebhookAsync(WebhookRequestModel request)
         {
             return await _httpClient.PostAsJsonAsync(_settings.RegistrationEndpoint, request);
+        }
+
+        public async Task<HttpResponseMessage> ValidateBankAccount(ValidateBankAccountRequestModel request)
+        {
+            return await _httpClient.PostAsJsonAsync(_settings.ValidateEndpoint, request);
         }
     }
 }

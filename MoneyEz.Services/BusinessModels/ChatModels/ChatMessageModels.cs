@@ -1,9 +1,13 @@
+using MoneyEz.Services.BusinessModels.ChatHistoryModels;
+
 namespace MoneyEz.Services.BusinessModels.ChatModels
 {
     public class ChatMessageRequest
     {
         public string Message { get; set; } = "";
-        public string Language { get; set; } = "vi"; // Default to Vietnamese
+        public Guid UserId { get; set; }
+        public Guid ConversationId { get; set; }
+        public List<SendChatToExternalModel> PreviousMessages = new List<SendChatToExternalModel>();
     }
 
     public class ChatMessageResponse
@@ -13,10 +17,8 @@ namespace MoneyEz.Services.BusinessModels.ChatModels
 
     public class ChatMessageExternalResponse
     {
-        public int? HttpCode { get; set; }
+        public bool? IsSuccess { get; set; }
         public string? Message { get; set; }
-        public string? Command { get; set; }
-        public ChatResponseCreateTransaction? Data { get; set; }
     }
 
     public class ChatResponseCreateTransaction

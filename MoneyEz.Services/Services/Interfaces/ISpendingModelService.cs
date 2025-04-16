@@ -1,4 +1,5 @@
 ﻿using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using MoneyEz.Services.BusinessModels.SpendingModelModels;
 
@@ -6,7 +7,7 @@ namespace MoneyEz.Services.Services.Interfaces
 {
     public interface ISpendingModelService
     {
-        Task<BaseResultModel> GetSpendingModelsPaginationAsync(PaginationParameter paginationParameter);
+        Task<BaseResultModel> GetSpendingModelsPaginationAsync(PaginationParameter paginationParameter, SpendingModelFilter filter);
         Task<BaseResultModel> GetSpendingModelByIdAsync(Guid id);
         Task<BaseResultModel> AddSpendingModelsAsync(List<CreateSpendingModelModel> models);
         Task<BaseResultModel> UpdateSpendingModelAsync(UpdateSpendingModelModel model);
@@ -14,5 +15,6 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> AddCategoriesToSpendingModelAsync(AddCategoriesToSpendingModelModel model);
         Task<BaseResultModel> UpdateCategoryPercentageAsync(UpdateCategoryPercentageModel model);
         Task<BaseResultModel> RemoveCategoriesFromSpendingModelAsync(RemoveCategoriesFromSpendingModelModel model);
+        Task<BaseResultModel> GetAllSpendingModelsAsync();
     }
 }

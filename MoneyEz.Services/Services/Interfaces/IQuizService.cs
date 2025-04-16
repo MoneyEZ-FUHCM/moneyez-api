@@ -1,31 +1,27 @@
 ﻿using MoneyEz.Repositories.Commons;
-using MoneyEz.Repositories.Entities;
-using MoneyEz.Services.BusinessModels.ChatModels;
+using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.BusinessModels.QuizModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MoneyEz.Services.Services.Interfaces
 {
     public interface IQuizService
     {
+        // Admin functions
         Task<BaseResultModel> CreateQuizAsync(CreateQuizModel createQuizModel);
-        Task<BaseResultModel> SubmitQuizAttemptAsync(CreateQuizAttemptModel quizAttemptModel);
-        Task<BaseResultModel> GetQuizByIdAsync(Guid quizId);
-        Task<BaseResultModel> GetQuizListAsync(PaginationParameter paginationParameter);
-        Task<BaseResultModel> UpdateQuizAsync(QuizModel quizModel);
-        Task<BaseResultModel> DeleteQuizAsync(Guid quizId);
-        Task<BaseResultModel> GetQuestionsByQuizIdAsync(Guid quizId);
-        Task<BaseResultModel> CreateQuestionAsync(Guid quizId, CreateQuestionModel questionModel);
-        Task<BaseResultModel> UpdateQuestionAsync(QuestionModel questionModel);
-        Task<BaseResultModel> DeleteQuestionAsync(Guid questionId);
-        Task<BaseResultModel> CreateAnswerOptionAsync(Guid questionId, CreateAnswerOptionModel answerOptionModel);
-        Task<BaseResultModel> UpdateAnswerOptionAsync(AnswerOptionModel answerOptionModel);
-        Task<BaseResultModel> DeleteAnswerOptionAsync(Guid answerOptionId);
-        Task<BaseResultModel> GetAllUserQuizResultsAsync(PaginationParameter paginationParameter);
-        Task<BaseResultModel> GetUserQuizResultByIdAsync(Guid id);
-        Task<BaseResultModel> GetUserQuizResultsByUserIdAsync(PaginationParameter paginationParameter);
-        
-        Task<BaseResultModel> SetActiveQuizAsync(Guid quizId);
+        Task<BaseResultModel> GetQuizByIdAsync(Guid id);
+        Task<BaseResultModel> GetAllQuizzesAsync(PaginationParameter paginationParameter, FilterBase filter);
+        Task<BaseResultModel> UpdateQuizAsync(UpdateQuizModel quizModel);
+        Task<BaseResultModel> ActivateQuizAsync(Guid id);
+        Task<BaseResultModel> DeleteQuizAsync(Guid id);
+
+        // User functions
         Task<BaseResultModel> GetActiveQuizAsync();
+        Task<BaseResultModel> SubmitQuizAnswersAsync(CreateQuizAttemptModel quizAttempt);
+        Task<BaseResultModel> GetUserQuizHistoryAsync(PaginationParameter paginationParameter);
+        Task<BaseResultModel> GetUserQuizHistoryByIdAsync(Guid resultId);
     }
 }

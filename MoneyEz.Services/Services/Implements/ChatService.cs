@@ -18,25 +18,33 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IExternalApiService _externalApiService;
         private readonly ITransactionService _transactionService;
+        private readonly IChatHistoryService _chatHistoryService;
 
-        public ChatService(IUnitOfWork unitOfWork, IExternalApiService externalApiService, ITransactionService transactionService)
+        public ChatService(IUnitOfWork unitOfWork, IExternalApiService externalApiService, 
+            ITransactionService transactionService, IChatHistoryService chatHistoryService)
         {
             _unitOfWork = unitOfWork;
             _externalApiService = externalApiService;
             _transactionService = transactionService;
+            _chatHistoryService = chatHistoryService;
         }
 
         public async Task<ChatMessageResponse> ProcessMessageAsync(Guid userId, string message)
         {
             try
             {
+                // get chat history of user
+                var chatHistories = await _chatHistoryService.GetChatMessageHistoriesExternalByUser(userId);
+
                 // Process message through external API
                 var apiResponse = await _externalApiService.ProcessMessageAsync(new ChatMessageRequest
                 {
-                    Message = message
+                    UserId = userId,
+                    Message = message,
+                    ConversationId = chatHistories.FirstOrDefault().ConversationId
                 });
 
-                if (apiResponse.HttpCode == 400)
+                if (apiResponse.IsSuccess == false)
                 {
                     return new ChatMessageResponse
                     {
@@ -44,45 +52,9 @@ namespace MoneyEz.Services.Services.Implements
                     };
                 }
 
-                // get user
-                var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId);
-                if (user != null)
-                {
-                    // process message (answer) from bot
-
-                    if (apiResponse.Command == "ADD_TRANSACTION" && apiResponse.Data != null)
-                    {
-                        // find subcategory
-                        var subCategories = await _unitOfWork.SubcategoryRepository.GetAllAsync();
-                        var subCategory = subCategories.FirstOrDefault(x => x.Name == apiResponse.Data.SubCategoryName);
-                        if (subCategory != null)
-                        {
-                            // Add transaction to database
-                            var newTransaction = new CreateTransactionModel
-                            {
-                                Amount = apiResponse.Data.Amount.Value,
-                                SubcategoryId = subCategory.Id,
-                                Description = apiResponse.Data.Description,
-                                TransactionDate = CommonUtils.GetCurrentTime(),
-                            };
-
-                            await _transactionService.CreateTransactionAsync(newTransaction, user.Email);
-
-                            return new ChatMessageResponse
-                            {
-                                Message = $"Đã thêm thành công {newTransaction.Amount} VNĐ vào mục {subCategory.Name}"
-                            };
-
-                        }
-                    }
-                    else
-                    {
-                        // TODO: Handle other commands
-                    }
-                }
                 return new ChatMessageResponse
                 {
-                    Message = "Có lỗi trong quá trình xử lí. Thử lại sau."
+                    Message = apiResponse.Message,
                 };
             }
             catch

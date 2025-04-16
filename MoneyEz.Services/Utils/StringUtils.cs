@@ -53,5 +53,36 @@ namespace MoneyEz.Services.Utils
                 .ToArray());
         }
 
+        public static bool IsDescriptionContainsSalaryKeywords(string description)
+        {
+            if (string.IsNullOrEmpty(description))
+                return false;
+
+            // Convert to lowercase for case-insensitive matching
+            string lowerDescription = description.ToLower();
+
+            // Vietnamese keywords
+            if (lowerDescription.Contains("luong") ||
+                lowerDescription.Contains("lương") ||
+                lowerDescription.Contains("tien luong") ||
+                lowerDescription.Contains("tiền lương"))
+                return true;
+
+            // English keywords
+            string[] salaryKeywords = new[] {
+                "salary",
+                "wage",
+                "payroll",
+                "compensation",
+                "pay",
+                "stipend",
+                "earnings",
+                "income",
+                "remuneration"
+            };
+
+            return salaryKeywords.Any(keyword => lowerDescription.Contains(keyword));
+        }
+
     }
 }

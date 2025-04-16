@@ -2,6 +2,7 @@
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Repositories.Entities;
+using MoneyEz.Repositories.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -23,6 +24,8 @@ namespace MoneyEz.Repositories.Repositories.Interfaces
                         Func<IQueryable<Transaction>, IIncludableQueryable<Transaction, object>>? include = null);
 
         Task<decimal> GetToalIncomeByUserSpendingModelAsync(Guid userSpendingModelId);
+
+        public IQueryable<Transaction> FilterByType(IQueryable<Transaction> source, ReportTransactionType type);
 
     }
 }

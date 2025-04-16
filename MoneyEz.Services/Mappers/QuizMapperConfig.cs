@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using MoneyEz.Repositories.Commons;
 using MoneyEz.Repositories.Entities;
+using MoneyEz.Services.BusinessModels.BankAccountModels;
 using MoneyEz.Services.BusinessModels.QuizModels;
 using System;
 using System.Collections.Generic;
@@ -13,31 +15,110 @@ namespace MoneyEz.Services.Mappers
     {
         public QuizMapperConfig()
         {
+            // Quiz mappings
             CreateMap<CreateQuizModel, Quiz>()
-                .ForMember(dest => dest.Questions, opt => opt.Ignore());
+                .ForMember(dest => dest.QuestionsJson, opt => opt.Ignore())
+                .AfterMap((src, dest) =>
+                {
+                    // Convert Questions to JSON format
+                    var quizQuestions = src.Questions.Select(q => new QuizQuestion
+                    {
+                        Id = q.Id,
+                        Content = q.Content,
+                        AnswerOptions = q.AnswerOptions.Select(a => new QuizAnswerOption
+                        {
+                            Id = a.Id,
+                            Content = a.Content
+                        }).ToList()
+                    }).ToList();
 
-            CreateMap<CreateQuestionModel, Question>()
-                .ForMember(dest => dest.AnswerOptions, opt => opt.Ignore());
+                    dest.SetQuestions(quizQuestions);
+                });
 
-            CreateMap<CreateAnswerOptionModel, AnswerOption>();
+            CreateMap<UpdateQuizModel, Quiz>()
+                .ForMember(dest => dest.QuestionsJson, opt => opt.Ignore())
+                .AfterMap((src, dest) =>
+                {
+                    // Convert Questions to JSON format
+                    var quizQuestions = src.Questions.Select(q => new QuizQuestion
+                    {
+                        Id = q.Id,
+                        Content = q.Content,
+                        AnswerOptions = q.AnswerOptions.Select(a => new QuizAnswerOption
+                        {
+                            Id = a.Id,
+                            Content = a.Content
+                        }).ToList()
+                    }).ToList();
 
-            CreateMap<CreateUserQuizAnswerModel, UserQuizAnswer>();
+                    dest.SetQuestions(quizQuestions);
+                });
 
             CreateMap<Quiz, QuizModel>()
-                .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.Questions));
+                .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.GetQuestions()
+                    .Select(q => new QuizQuestionModel
+                    {
+                        Id = q.Id,
+                        Content = q.Content,
+                        AnswerOptions = q.AnswerOptions.Select(a => new QuizAnswerOptionModel
+                        {
+                            Id = a.Id,
+                            Content = a.Content
+                        }).ToList()
+                    }).ToList()));
 
-            CreateMap<Question, QuestionModel>()
-                .ForMember(dest => dest.AnswerOptions, opt => opt.MapFrom(src => src.AnswerOptions));
+            CreateMap<Quiz, UpdateQuizModel>()
+                .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.GetQuestions()
+                    .Select(q => new QuizQuestionModel
+                    {
+                        Id = q.Id,
+                        Content = q.Content,
+                        AnswerOptions = q.AnswerOptions.Select(a => new QuizAnswerOptionModel
+                        {
+                            Id = a.Id,
+                            Content = a.Content
+                        }).ToList()
+                    }).ToList()));
 
-            CreateMap<AnswerOption, AnswerOptionModel>();
+            // User quiz result mappings
+            CreateMap<CreateQuizAttemptModel, UserQuizResult>()
+                .ForMember(dest => dest.RecommendedModel, opt => opt.Ignore())
+                .ForMember(dest => dest.AnswersJson, opt => opt.Ignore())
+                .AfterMap((src, dest) =>
+                {
+                    var answers = src.Answers.Select(a => new UserAnswer
+                    {
+                        QuestionId = a.QuestionId ?? Guid.Empty,
+                        AnswerOptionId = a.AnswerOptionId,
+                        AnswerContent = a.AnswerContent
+                    }).ToList();
 
-            CreateMap<UserQuizAnswer, UserQuizAnswerModel>();
+                    dest.SetAnswers(answers);
+                });
 
+            CreateMap<UserQuizResult, QuizAttemptModel>()
+                .ForMember(dest => dest.Answers, opt => opt.MapFrom(src =>
+                    src.GetAnswers().Select(a => new UserAnswerModel
+                    {
+                        QuestionId = a.QuestionId == Guid.Empty ? null : a.QuestionId,
+                        AnswerOptionId = a.AnswerOptionId,
+                        AnswerContent = a.AnswerContent
+                    }).ToList()
+                 ));
+
+            // Add mapping for UserQuizResult to UserQuizResultModel
             CreateMap<UserQuizResult, UserQuizResultModel>()
-                .ForMember(dest => dest.UserAnswers, opt => opt.MapFrom(src => src.UserQuizAnswers));
+                .ForMember(dest => dest.RecommendedModel, opt => opt.Ignore())
+                .ForMember(dest => dest.Answers, opt => opt.MapFrom(src =>
+                    src.GetAnswers().Select(a => new UserAnswerModel
+                    {
+                        QuestionId = a.QuestionId == Guid.Empty ? null : a.QuestionId,
+                        AnswerOptionId = a.AnswerOptionId,
+                        AnswerContent = a.AnswerContent
+                    }).ToList()
+                ));
 
-            CreateMap<CreateUserQuizResultModel, UserQuizResult>()
-                .ForMember(dest => dest.UserQuizAnswers, opt => opt.MapFrom(src => src.UserQuizAnswers));
+            CreateMap<Pagination<UserQuizResult>, Pagination<UserQuizResultModel>>().ConvertUsing<PaginationConverter<UserQuizResult, UserQuizResultModel>>();
         }
     }
 }

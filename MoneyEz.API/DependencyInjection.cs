@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using MoneyEz.API.RunSchedule.Setup;
+using MoneyEz.Services.RunSchedule.Setup;
 using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Repositories.Implements;
 using MoneyEz.Repositories.Repositories.Interfaces;
@@ -108,6 +108,7 @@ namespace MoneyEz.API
                         .AllowAnyHeader()
                         .WithExposedHeaders("X-Pagination")
                         .WithExposedHeaders("X-Webhook-Secret")
+                        .WithExposedHeaders("X-External-Secret")
                         .AllowAnyMethod();
                     });
             });
@@ -253,6 +254,11 @@ namespace MoneyEz.API
             services.AddScoped<IBankAccountService, BankAccountService>();
             // config chat service
             services.AddScoped<IChatService, ChatService>();
+
+            // config external service
+            services.AddScoped<IExternalApiService, ExternalApiService>();
+            services.AddScoped<IAIKnowledgeService, AIKnowledgeService>();
+
             // Register HTTP client with optional configuration
             services.AddHttpClient<IExternalApiService, ExternalApiService>(client =>
             {
@@ -276,6 +282,13 @@ namespace MoneyEz.API
             services.AddScoped<IUserQuizResultRepository, UserQuizResultRepository>();
             services.AddScoped<IAnswerOptionRepository, AnswerOptionRepository>();
             services.AddScoped<IQuestionRepository, QuestionRepository>();
+
+            // config admin dashboard service
+            services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+
+            // config post service
+            services.AddScoped<IPostRepository, PostRepository>();
+            services.AddScoped<IPostService, PostService>();
             #endregion
 
             #region config database
@@ -284,6 +297,8 @@ namespace MoneyEz.API
 
             services.AddDbContext<MoneyEzContext>(options =>
             {
+                //options.UseSqlServer(config.GetConnectionString("MoneyEzLocal"));
+                options.UseSqlServer(config.GetConnectionString("MoneyEzDbVps"));
             });
 
             #endregion

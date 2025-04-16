@@ -32,6 +32,8 @@ namespace MoneyEz.Services.Mappers
             // Map từ Pagination<SpendingModel> -> Pagination<SpendingModelModel>
             CreateMap<Pagination<SpendingModel>, Pagination<SpendingModelModel>>()
               .ConvertUsing<PaginationConverter<SpendingModel, SpendingModelModel>>();
+
+            CreateMap<SpendingModel, SpendingModelModelExternal>();
         }
     }
 }

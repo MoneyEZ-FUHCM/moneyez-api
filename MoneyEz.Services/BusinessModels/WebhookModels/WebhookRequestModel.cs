@@ -14,5 +14,13 @@ namespace MoneyEz.Services.BusinessModels.WebhookModels
         public required string Secret { get; set; }
 
         public required string AccountNumber { get; set; }
+
+        public required string AccountHolder { get; set; }
+    }
+
+    public class ValidateBankAccountRequestModel
+    {
+        public required string AccountHolder { get; set; }
+        public required string AccountNumber { get; set; }
     }
 }

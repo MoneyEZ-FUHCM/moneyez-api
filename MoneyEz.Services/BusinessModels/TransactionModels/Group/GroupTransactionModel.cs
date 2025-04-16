@@ -14,7 +14,7 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Group
         public Guid UserId { get; set; }
         public decimal Amount { get; set; }
         public string? Type { get; set; }
-        public DateTime TransactionDate { get; set; }
+        public DateTime? TransactionDate { get; set; }
         public string? Description { get; set; }
         public List<string>? Images { get; set; }
         public string? Status { get; set; } = TransactionStatus.PENDING.ToString();
@@ -22,5 +22,10 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Group
         public string? RequestCode { get; set; }
         public string? InsertType { get; set; }
         public string? AvatarUrl { get; set; }
+        public string? AccountBankNumber { get; set; }
+        public string? AccountBankName { get; set; }
+        public string? BankTransactionId { get; set; }
+        public DateTime? BankTransactionDate { get; set; }
+        public string? Note { get; set; }
     }
 }

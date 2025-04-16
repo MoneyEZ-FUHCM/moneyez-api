@@ -34,6 +34,8 @@ namespace MoneyEz.Repositories.Repositories.Implements
 
             if (groupId.HasValue)
                 query = query.Where(t => t.GroupId == groupId.Value);
+            else
+                query = query.Where(t => t.GroupId == null);
 
             return await query.SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
@@ -48,6 +50,8 @@ namespace MoneyEz.Repositories.Repositories.Implements
 
             if (groupId.HasValue)
                 query = query.Where(t => t.GroupId == groupId.Value);
+            else
+                query = query.Where(t => t.GroupId == null);
 
             return await query.SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
@@ -135,6 +139,9 @@ namespace MoneyEz.Repositories.Repositories.Implements
             {
                 switch (filter.Status.ToLower())
                 {
+                    case "confirmed":
+                        query = query.Where(t => t.Status == TransactionStatus.APPROVED || t.Status == TransactionStatus.REJECTED);
+                        break;
                     case "approved":
                         query = query.Where(t => t.Status == TransactionStatus.APPROVED);
                         break;
@@ -155,7 +162,8 @@ namespace MoneyEz.Repositories.Repositories.Implements
                 query = filter.SortBy.ToLower() switch
                 {
                     "amount" => isAscending ? query.OrderBy(t => t.Amount) : query.OrderByDescending(t => t.Amount),
-                    "date" => isAscending ? query.OrderBy(t => t.TransactionDate) : query.OrderByDescending(t => t.TransactionDate),
+                    "transaction_date" => isAscending ? query.OrderBy(t => t.TransactionDate) : query.OrderByDescending(t => t.TransactionDate),
+                    "created_date" => isAscending ? query.OrderBy(t => t.CreatedDate) : query.OrderByDescending(t => t.CreatedDate),
                     _ => query.OrderByDescending(t => t.TransactionDate) // Default sort by date desc
                 };
             }
@@ -175,5 +183,17 @@ namespace MoneyEz.Repositories.Repositories.Implements
 
             return await query.SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
+
+
+        public IQueryable<Transaction> FilterByType(IQueryable<Transaction> source, ReportTransactionType type)
+        {
+            return type switch
+            {
+                ReportTransactionType.Income => source.Where(x => x.Type == TransactionType.INCOME),
+                ReportTransactionType.Expense => source.Where(x => x.Type == TransactionType.EXPENSE),
+                _ => source
+            };
+        }
+
     }
 }

@@ -17,6 +17,7 @@ namespace MoneyEz.Services.Services.Interfaces
     public interface IGroupFundsService
     {
         Task<BaseResultModel> CreateGroupFundsAsync(CreateGroupModel model);
+        Task<BaseResultModel> UpdateGroupFundsAsync(UpdateGroupModel model);
         Task<BaseResultModel> GetAllGroupFunds(PaginationParameter paginationParameters, GroupFilter groupFilter);
         Task<BaseResultModel> CloseGroupFundAsync(Guid groupId);
         Task<BaseResultModel> RemoveMemberByLeaderAsync(Guid groupId, Guid memberId);
@@ -31,11 +32,15 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> SetGroupContribution(SetGroupContributionModel setGroupContributionModel);
         Task<BaseResultModel> CreateFundraisingRequest(CreateFundraisingModel createFundraisingModel);
         Task<BaseResultModel> CreateFundWithdrawalRequest(CreateFundWithdrawalModel createFundWithdrawalModel);
-        Task<BaseResultModel> GetGroupFundLogs(Guid groupId, PaginationParameter paginationParameters, GroupLogFilter filter);    
-        
+        Task<BaseResultModel> GetGroupFundLogs(Guid groupId, PaginationParameter paginationParameters, GroupLogFilter filter);
+        Task<BaseResultModel> RemindFundraisingAsync(RemindFundraisingModel remindFundraisingModel);
+        Task<BaseResultModel> GetPendingRequestsAsync(Guid groupId, PaginationParameter paginationParameters);
+        Task<BaseResultModel> GetPendingRequestDetailAsync(Guid requestId);
+
         // utils
         Task<GroupMember> GetGroupLeader(Guid groupId);
         Task<List<GroupMember>> GetGroupMembers(Guid groupId);
+        Task LogGroupFundChange(Guid groupId, string description, GroupAction action, string userEmail);
 
     }
 }
