@@ -21,5 +21,6 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Reports
         public decimal Amount { get; set; }
         public double Percentage { get; set; }
         public string? Icon { get; set; }
+        public string? CategoryType { get; set; }
     }
 }
