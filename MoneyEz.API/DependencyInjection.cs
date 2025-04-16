@@ -14,6 +14,8 @@ using MoneyEz.Services.Services.Interfaces;
 using MoneyEz.Services.Settings;
 using Quartz;
 using System.Text;
+using Microsoft.OpenApi.Any;
+using MoneyEz.Repositories.Enums;
 
 namespace MoneyEz.API
 {
@@ -27,6 +29,15 @@ namespace MoneyEz.API
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "MoneyEz API", Version = "v.1.0" });
+                c.MapType<ReportTransactionType>(() => new OpenApiSchema
+                {
+                    Type = "string",
+                    Enum = Enum.GetNames(typeof(ReportTransactionType))
+                        .Select(n => new OpenApiString(n))
+                        .Cast<IOpenApiAny>()
+                        .ToList()
+                                });
+
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     In = ParameterLocation.Header,
