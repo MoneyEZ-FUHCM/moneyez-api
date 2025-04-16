@@ -1281,7 +1281,7 @@ namespace MoneyEz.Services.Services.Implements
                     .Where(t => t.TransactionDate!.Value.Month == month)
                     .AsQueryable();
 
-                var value = type == ReportTransactionType.Total
+                var value = type == ReportTransactionType.TOTAL
                     ? GetIncomeExpenseTotal(monthTransactions).total
                     : GetTotalByType(monthTransactions, type);
 
@@ -1292,7 +1292,7 @@ namespace MoneyEz.Services.Services.Implements
                 });
             }
 
-            decimal total = type == ReportTransactionType.Total
+            decimal total = type == ReportTransactionType.TOTAL
                 ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
                 : GetTotalByType(transactions.AsQueryable(), type);
 
@@ -1338,7 +1338,7 @@ namespace MoneyEz.Services.Services.Implements
             var filtered = _unitOfWork.TransactionsRepository
                 .FilterByType(transactions.AsQueryable(), type);
 
-            decimal total = type == ReportTransactionType.Total
+            decimal total = type == ReportTransactionType.TOTAL
                 ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
                 : filtered.Sum(t => t.Amount);
 
@@ -1422,7 +1422,7 @@ namespace MoneyEz.Services.Services.Implements
             var filtered = _unitOfWork.TransactionsRepository
                 .FilterByType(transactions.AsQueryable(), type);
 
-            decimal total = type == ReportTransactionType.Total
+            decimal total = type == ReportTransactionType.TOTAL
                 ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
                 : filtered.Sum(t => t.Amount);
 
@@ -1507,11 +1507,11 @@ namespace MoneyEz.Services.Services.Implements
         private (decimal income, decimal expense, decimal total) GetIncomeExpenseTotal(IQueryable<Transaction> source)
         {
             var income = _unitOfWork.TransactionsRepository
-                .FilterByType(source, ReportTransactionType.Income)
+                .FilterByType(source, ReportTransactionType.INCOME)
                 .Sum(t => t.Amount);
 
             var expense = _unitOfWork.TransactionsRepository
-                .FilterByType(source, ReportTransactionType.Expense)
+                .FilterByType(source, ReportTransactionType.EXPENSE)
                 .Sum(t => t.Amount);
 
             return (income, expense, income - expense);
