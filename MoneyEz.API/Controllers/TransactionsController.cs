@@ -187,7 +187,7 @@ namespace MoneyEz.API.Controllers
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("report/all-time-category")]
-        public Task<IActionResult> GetAllTimeCategoryReport([FromQuery] ReportTransactionType type = ReportTransactionType.Expense)
+        public Task<IActionResult> GetAllTimeCategoryReport([FromQuery] string type)
         {
             return ValidateAndExecute(() => _transactionService.GetAllTimeCategoryReportAsync(type));
         }
