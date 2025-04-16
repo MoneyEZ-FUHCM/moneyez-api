@@ -187,12 +187,18 @@ namespace MoneyEz.Repositories.Repositories.Implements
 
         public IQueryable<Transaction> FilterByType(IQueryable<Transaction> source, ReportTransactionType type)
         {
-            return type switch
+            if (type == ReportTransactionType.Total)
             {
-                ReportTransactionType.Income => source.Where(x => x.Type == TransactionType.INCOME),
-                ReportTransactionType.Expense => source.Where(x => x.Type == TransactionType.EXPENSE),
-                _ => source
-            };
+                return source;
+            }
+
+            var desiredType = type == ReportTransactionType.Income ? TransactionType.INCOME : TransactionType.EXPENSE;
+
+            return source.Where(t =>
+                t.Subcategory != null &&
+                t.Subcategory.CategorySubcategories.Any(cs =>
+                    cs.Category != null && cs.Category.Type == desiredType
+                ));
         }
 
     }

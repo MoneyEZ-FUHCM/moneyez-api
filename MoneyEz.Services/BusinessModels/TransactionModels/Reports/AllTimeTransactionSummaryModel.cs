@@ -11,7 +11,5 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Reports
         public decimal Income { get; set; }
         public decimal Expense { get; set; }
         public decimal Total { get; set; }
-        public decimal InitialBalance { get; set; }
-        public decimal Cumulation { get; set; }
     }
 }
