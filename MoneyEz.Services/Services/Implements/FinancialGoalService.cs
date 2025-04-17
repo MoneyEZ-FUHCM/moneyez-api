@@ -643,7 +643,7 @@ namespace MoneyEz.Services.Services.Implements
 
             // Get transactions for this subcategory within the time range
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.UserId == user.Id
+                filter: t => t.UserId == user.Id && t.GroupId == null
                           && t.SubcategoryId == financialGoal.SubcategoryId
                           && t.TransactionDate >= startDate
                           && t.TransactionDate <= endDate
@@ -693,7 +693,7 @@ namespace MoneyEz.Services.Services.Implements
                     groupedData.Add(new GoalChartDataPoint
                     {
                         Label = month.Date.ToString("MM/yy"),
-                        Amount = runningTotal,
+                        Amount = monthAmount,
                         Date = month.Date
                     });
                 }
@@ -743,7 +743,7 @@ namespace MoneyEz.Services.Services.Implements
                     groupedData.Add(new GoalChartDataPoint
                     {
                         Label = $"{weekStart:dd/MM}-{weekEnd:dd/MM}",
-                        Amount = runningTotal,
+                        Amount = weekAmount,
                         Date = weekStart
                     });
                 }
