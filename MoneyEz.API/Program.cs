@@ -19,7 +19,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(
-            new System.Text.Json.Serialization.JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false)
+            new System.Text.Json.Serialization.JsonStringEnumConverter()
         );
     })
     .ConfigureApiBehaviorOptions(options =>
@@ -59,11 +59,9 @@ builder.Services.Configure<SendgridConfig>(options =>
     options.FromName = sendgrid.FromName;
 });
 
-// config firebase
 FirebaseApp.Create(new AppOptions()
 {
     Credential = GoogleCredential.FromFile("firebase-adminsdk.json")
-});
 
 var app = builder.Build();
 
