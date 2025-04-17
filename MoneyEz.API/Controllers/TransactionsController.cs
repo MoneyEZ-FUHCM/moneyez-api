@@ -166,14 +166,14 @@ namespace MoneyEz.API.Controllers
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("report/year")]
-        public Task<IActionResult> GetYearReport([FromQuery] int year, [FromQuery] ReportTransactionType type = ReportTransactionType.EXPENSE)
+        public Task<IActionResult> GetYearReport([FromQuery] int year, [FromQuery] string type)
         {
             return ValidateAndExecute(() => _transactionService.GetYearReportAsync(year, type));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("report/category-year")]
-        public Task<IActionResult> GetCategoryYearReport([FromQuery] int year, [FromQuery] ReportTransactionType type = ReportTransactionType.EXPENSE)
+        public Task<IActionResult> GetCategoryYearReport([FromQuery] int year, [FromQuery] string type)
         {
             return ValidateAndExecute(() => _transactionService.GetCategoryYearReportAsync(year, type));
         }
@@ -187,7 +187,7 @@ namespace MoneyEz.API.Controllers
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("report/all-time-category")]
-        public Task<IActionResult> GetAllTimeCategoryReport([FromQuery] ReportTransactionType type = ReportTransactionType.EXPENSE)
+        public Task<IActionResult> GetAllTimeCategoryReport([FromQuery] string type)
         {
             return ValidateAndExecute(() => _transactionService.GetAllTimeCategoryReportAsync(type));
         }

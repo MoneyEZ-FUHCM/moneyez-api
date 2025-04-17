@@ -10,7 +10,7 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels.Reports
     public class YearTransactionReportModel
     {
         public int Year { get; set; }
-        public ReportTransactionType Type { get; set; }
+        public string? Type { get; set; }
         public decimal Total { get; set; }
         public decimal Average { get; set; }
         public List<MonthAmountModel> MonthlyData { get; set; } = new();
