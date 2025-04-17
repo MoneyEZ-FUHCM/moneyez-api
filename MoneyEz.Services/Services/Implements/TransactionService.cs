@@ -1300,7 +1300,7 @@ namespace MoneyEz.Services.Services.Implements
 
         #region report
 
-        public async Task<BaseResultModel> GetYearReportAsync(int year, ReportTransactionType type)
+        public async Task<BaseResultModel> GetYearReportAsync(int year, string type)
         {
             var userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
@@ -1321,6 +1321,8 @@ namespace MoneyEz.Services.Services.Implements
                 include: IncludeFullCategoryNavigation()
             );
 
+            var reportType = ConvertReportTransactionType(type);
+
             var monthly = new List<MonthAmountModel>();
 
             for (int month = 1; month <= 12; month++)
@@ -1329,9 +1331,9 @@ namespace MoneyEz.Services.Services.Implements
                     .Where(t => t.TransactionDate!.Value.Month == month)
                     .AsQueryable();
 
-                var value = type == ReportTransactionType.TOTAL
+                var value = reportType == ReportTransactionType.TOTAL
                     ? GetIncomeExpenseTotal(monthTransactions).total
-                    : GetTotalByType(monthTransactions, type);
+                    : GetTotalByType(monthTransactions, reportType);
 
                 monthly.Add(new MonthAmountModel
                 {
@@ -1340,9 +1342,9 @@ namespace MoneyEz.Services.Services.Implements
                 });
             }
 
-            decimal total = type == ReportTransactionType.TOTAL
+            decimal total = reportType == ReportTransactionType.TOTAL
                 ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
-                : GetTotalByType(transactions.AsQueryable(), type);
+                : GetTotalByType(transactions.AsQueryable(), reportType);
 
             var currentMonth = DateTime.Now.Month;
             var monthsElapsed = (year == DateTime.Now.Year) ? currentMonth : 12;
@@ -1354,7 +1356,7 @@ namespace MoneyEz.Services.Services.Implements
                 Data = new YearTransactionReportModel
                 {
                     Year = year,
-                    Type = type,
+                    Type = reportType.ToString(),
                     Total = total,
                     Average = avg,
                     MonthlyData = monthly
@@ -1362,7 +1364,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetCategoryYearReportAsync(int year, ReportTransactionType type)
+        public async Task<BaseResultModel> GetCategoryYearReportAsync(int year, string type)
         {
             var userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
@@ -1383,10 +1385,12 @@ namespace MoneyEz.Services.Services.Implements
                 include: IncludeFullCategoryNavigation()
             );
 
-            var filtered = _unitOfWork.TransactionsRepository
-                .FilterByType(transactions.AsQueryable(), type);
+            var reportType = ConvertReportTransactionType(type);
 
-            decimal total = type == ReportTransactionType.TOTAL
+            var filtered = _unitOfWork.TransactionsRepository
+                .FilterByType(transactions.AsQueryable(), reportType);
+
+            decimal total = reportType == ReportTransactionType.TOTAL
                 ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
                 : filtered.Sum(t => t.Amount);
 
@@ -1408,7 +1412,7 @@ namespace MoneyEz.Services.Services.Implements
                 Data = new CategoryYearTransactionReportModel
                 {
                     Year = year,
-                    Type = type,
+                    Type = reportType.ToString(),
                     Total = total,
                     Categories = categories
                 }
@@ -1448,7 +1452,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetAllTimeCategoryReportAsync(ReportTransactionType type)
+        public async Task<BaseResultModel> GetAllTimeCategoryReportAsync(string type)
         {
             var userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
@@ -1467,10 +1471,12 @@ namespace MoneyEz.Services.Services.Implements
                 include: IncludeFullCategoryNavigation()
             );
 
-            var filtered = _unitOfWork.TransactionsRepository
-                .FilterByType(transactions.AsQueryable(), type);
+            var reportType = ConvertReportTransactionType(type);
 
-            decimal total = type == ReportTransactionType.TOTAL
+            var filtered = _unitOfWork.TransactionsRepository
+                .FilterByType(transactions.AsQueryable(), reportType);
+
+            decimal total = reportType == ReportTransactionType.TOTAL
                 ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
                 : filtered.Sum(t => t.Amount);
 
@@ -1491,7 +1497,7 @@ namespace MoneyEz.Services.Services.Implements
                 Status = StatusCodes.Status200OK,
                 Data = new AllTimeCategoryTransactionReportModel
                 {
-                    Type = type,
+                    Type = reportType.ToString(),
                     Total = total,
                     Categories = categories
                 }
@@ -1748,6 +1754,17 @@ namespace MoneyEz.Services.Services.Implements
                 .Include(t => t.Subcategory!)
                 .ThenInclude(sc => sc.CategorySubcategories)
                 .ThenInclude(cs => cs.Category);
+        }
+
+        private ReportTransactionType ConvertReportTransactionType(string type)
+        {
+            return type.ToLower() switch
+            {
+                "income" => ReportTransactionType.INCOME,
+                "expense" => ReportTransactionType.EXPENSE,
+                "total" => ReportTransactionType.TOTAL,
+                _ => ReportTransactionType.TOTAL
+            };
         }
 
         #endregion helper
