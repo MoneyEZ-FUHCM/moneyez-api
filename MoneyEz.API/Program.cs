@@ -59,9 +59,11 @@ builder.Services.Configure<SendgridConfig>(options =>
     options.FromName = sendgrid.FromName;
 });
 
+// config firebase
 FirebaseApp.Create(new AppOptions()
 {
     Credential = GoogleCredential.FromFile("firebase-adminsdk.json")
+});
 
 var app = builder.Build();
 
