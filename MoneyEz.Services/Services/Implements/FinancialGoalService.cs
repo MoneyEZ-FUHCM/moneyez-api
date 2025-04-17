@@ -439,7 +439,10 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     SubcategoryId = goal.SubcategoryId,
                 },
-                condition: t => t.UserId == user.Id,
+                condition: t => t.UserId == user.Id && t.GroupId == null
+                    && t.UserSpendingModelId == userSpendingModel.Id
+                    && t.Status == TransactionStatus.APPROVED
+                    && !t.IsDeleted,
                 include: query => query
                     .Include(t => t.Subcategory)
             );
