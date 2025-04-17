@@ -254,6 +254,9 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_BALANCE_MUST_EQUAL_ZERO = "GroupBalanceMustEqualZero";
         public const string GROUP_BALANCE_MUST_EQUAL_ZERO_MESSAGE = "The group balance must be zero before closing the group.";
 
+        public const string GROUP_REMIND_AMOUNT_INVALID = "GroupRemindAmountInvalid";
+        public const string GROUP_REMIND_AMOUNT_INVALID_MESSAGE = "The remind amount must be greater than zero.";
+
         // fundraising request
         public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
         public const string FUNDRAISING_REQUEST_ACCESS_DENIED = "FundraisingRequestAccessDenied";
