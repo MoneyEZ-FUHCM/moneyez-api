@@ -19,7 +19,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(
-            new System.Text.Json.Serialization.JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false)
+            new System.Text.Json.Serialization.JsonStringEnumConverter()
         );
     })
     .ConfigureApiBehaviorOptions(options =>
