@@ -24,6 +24,7 @@ using MoneyEz.Services.BusinessModels.TransactionModels.Group;
 using MoneyEz.Services.BusinessModels.GroupFund;
 using MoneyEz.Services.BusinessModels.TransactionModels.Reports;
 using System.Globalization;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -1314,23 +1315,38 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.UserId == user.Id && t.TransactionDate!.Value.Year == year
+                filter: t => t.UserId == user.Id &&
+                             t.TransactionDate!.Value.Year == year &&
+                             t.SubcategoryId != null,
+                include: IncludeFullCategoryNavigation()
             );
 
-            var filtered = _unitOfWork.TransactionsRepository.FilterByType(transactions.AsQueryable(), type);
+            var monthly = new List<MonthAmountModel>();
 
-            var monthly = filtered
-                .GroupBy(t => t.TransactionDate!.Value.Month)
-                .Select(g => new MonthAmountModel
+            for (int month = 1; month <= 12; month++)
+            {
+                var monthTransactions = transactions
+                    .Where(t => t.TransactionDate!.Value.Month == month)
+                    .AsQueryable();
+
+                var value = type == ReportTransactionType.TOTAL
+                    ? GetIncomeExpenseTotal(monthTransactions).total
+                    : GetTotalByType(monthTransactions, type);
+
+                monthly.Add(new MonthAmountModel
                 {
-                    Month = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(g.Key),
-                    Amount = g.Sum(x => x.Amount)
-                })
-                .OrderBy(m => DateTime.ParseExact(m.Month, "MMMM", CultureInfo.CurrentCulture))
-                .ToList();
+                    Month = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month),
+                    Amount = value
+                });
+            }
 
-            var total = filtered.Sum(t => t.Amount);
-            var avg = monthly.Count > 0 ? monthly.Average(x => x.Amount) : 0;
+            decimal total = type == ReportTransactionType.TOTAL
+                ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
+                : GetTotalByType(transactions.AsQueryable(), type);
+
+            var currentMonth = DateTime.Now.Month;
+            var monthsElapsed = (year == DateTime.Now.Year) ? currentMonth : 12;
+            var avg = monthsElapsed > 0 ? total / monthsElapsed : 0;
 
             return new BaseResultModel
             {
@@ -1362,15 +1378,17 @@ namespace MoneyEz.Services.Services.Implements
 
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
                 filter: t => t.UserId == user.Id &&
-                             t.TransactionDate!.Value.Year == year,
-                include: q => q.Include(t => t.Subcategory!)
+                             t.TransactionDate!.Value.Year == year &&
+                             t.SubcategoryId != null,
+                include: IncludeFullCategoryNavigation()
             );
 
             var filtered = _unitOfWork.TransactionsRepository
-                .FilterByType(transactions.AsQueryable(), type)
-                .Where(t => t.Subcategory != null);
+                .FilterByType(transactions.AsQueryable(), type);
 
-            var total = filtered.Sum(t => t.Amount);
+            decimal total = type == ReportTransactionType.TOTAL
+                ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
+                : filtered.Sum(t => t.Amount);
 
             var categories = filtered
                 .GroupBy(t => t.Subcategory!)
@@ -1390,7 +1408,7 @@ namespace MoneyEz.Services.Services.Implements
                 Data = new CategoryYearTransactionReportModel
                 {
                     Year = year,
-                    Type = type.ToString(),
+                    Type = type,
                     Total = total,
                     Categories = categories
                 }
@@ -1412,12 +1430,11 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.UserId == user.Id
+                filter: t => t.UserId == user.Id && t.SubcategoryId != null,
+                include: IncludeFullCategoryNavigation()
             );
 
-            var income = transactions.Where(t => t.Type == TransactionType.INCOME).Sum(t => t.Amount);
-            var expense = transactions.Where(t => t.Type == TransactionType.EXPENSE).Sum(t => t.Amount);
-            var total = income - expense;
+            var (income, expense, total) = GetIncomeExpenseTotal(transactions.AsQueryable());
 
             return new BaseResultModel
             {
@@ -1426,14 +1443,113 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Income = income,
                     Expense = expense,
-                    Total = total,
-                    InitialBalance = 0,
-                    Cumulation = total
+                    Total = total
                 }
             };
         }
 
-        public async Task<BaseResultModel> GetAllTimeCategoryReportAsync(string type)
+        public async Task<BaseResultModel> GetAllTimeCategoryReportAsync(ReportTransactionType type)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id && t.SubcategoryId != null,
+                include: IncludeFullCategoryNavigation()
+            );
+
+            var filtered = _unitOfWork.TransactionsRepository
+                .FilterByType(transactions.AsQueryable(), type);
+
+            decimal total = type == ReportTransactionType.TOTAL
+                ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
+                : filtered.Sum(t => t.Amount);
+
+            var categories = filtered
+                .GroupBy(t => t.Subcategory!)
+                .Select(g => new CategoryAmountModel
+                {
+                    Name = g.Key.Name,
+                    Icon = g.Key.Icon,
+                    Amount = g.Sum(t => t.Amount),
+                    Percentage = total == 0 ? 0 : Math.Round((double)(g.Sum(t => t.Amount) / total * 100), 2)
+                })
+                .OrderByDescending(c => c.Amount)
+                .ToList();
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new AllTimeCategoryTransactionReportModel
+                {
+                    Type = type,
+                    Total = total,
+                    Categories = categories
+                }
+            };
+        }
+
+        public async Task<BaseResultModel> GetBalanceYearReportAsync(int year)
+        {
+            var userEmail = _claimsService.GetCurrentUserEmail;
+            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+            if (user == null)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                    Message = "User not found."
+                };
+            }
+
+            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.UserId == user.Id &&
+                             t.TransactionDate!.Value.Year == year &&
+                             t.SubcategoryId != null,
+                include: IncludeFullCategoryNavigation()
+            );
+
+            var monthlyBalances = new List<MonthlyBalanceModel>();
+            decimal currentBalance = 0;
+
+            for (int month = 1; month <= 12; month++)
+            {
+                var monthTransactions = transactions
+                    .Where(t => t.TransactionDate!.Value.Month == month)
+                    .AsQueryable();
+
+                var (income, expense, delta) = GetIncomeExpenseTotal(monthTransactions);
+                currentBalance += delta;
+
+                monthlyBalances.Add(new MonthlyBalanceModel
+                {
+                    Month = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month),
+                    Balance = currentBalance
+                });
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Data = new BalanceYearTransactionReportModel
+                {
+                    Year = year,
+                    Balances = monthlyBalances
+                }
+            };
+        }
+
+     /*   public async Task<BaseResultModel> GetAllTimeCategoryReportAsyncV2(string type)
         {
             var userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
@@ -1513,55 +1629,6 @@ namespace MoneyEz.Services.Services.Implements
                     Type = reportTransactionType.ToString().ToUpper(),
                     Total = total,
                     Categories = categories
-                }
-            };
-        }
-
-        public async Task<BaseResultModel> GetBalanceYearReportAsync(int year)
-        {
-            var userEmail = _claimsService.GetCurrentUserEmail;
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
-            if (user == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
-                    Message = "User not found."
-                };
-            }
-
-            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.UserId == user.Id && t.TransactionDate!.Value.Year == year
-            );
-
-            var monthlyBalances = new List<MonthlyBalanceModel>();
-            decimal currentBalance = 0;
-
-            for (int month = 1; month <= 12; month++)
-            {
-                var monthTransactions = transactions
-                    .Where(t => t.TransactionDate!.Value.Month == month);
-
-                foreach (var t in monthTransactions)
-                {
-                    currentBalance += t.Type == TransactionType.INCOME ? t.Amount : -t.Amount;
-                }
-
-                monthlyBalances.Add(new MonthlyBalanceModel
-                {
-                    Month = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month),
-                    Balance = currentBalance
-                });
-            }
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Data = new BalanceYearTransactionReportModel
-                {
-                    Year = year,
-                    Balances = monthlyBalances
                 }
             };
         }
@@ -1650,8 +1717,39 @@ namespace MoneyEz.Services.Services.Implements
                     Categories = categories
                 }
             };
-        }
+        }*/
 
         #endregion report
+
+        #region helper
+        private (decimal income, decimal expense, decimal total) GetIncomeExpenseTotal(IQueryable<Transaction> source)
+        {
+            var income = _unitOfWork.TransactionsRepository
+                .FilterByType(source, ReportTransactionType.INCOME)
+                .Sum(t => t.Amount);
+
+            var expense = _unitOfWork.TransactionsRepository
+                .FilterByType(source, ReportTransactionType.EXPENSE)
+                .Sum(t => t.Amount);
+
+            return (income, expense, income - expense);
+        }
+
+        private decimal GetTotalByType(IQueryable<Transaction> source, ReportTransactionType type)
+        {
+            return _unitOfWork.TransactionsRepository
+                .FilterByType(source, type)
+                .Sum(t => t.Amount);
+        }
+
+        private Func<IQueryable<Transaction>, IIncludableQueryable<Transaction, object>> IncludeFullCategoryNavigation()
+        {
+            return q => q
+                .Include(t => t.Subcategory!)
+                .ThenInclude(sc => sc.CategorySubcategories)
+                .ThenInclude(cs => cs.Category);
+        }
+
+        #endregion helper
     }
 }

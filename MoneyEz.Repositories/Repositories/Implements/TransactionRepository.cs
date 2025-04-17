@@ -78,7 +78,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
                 .SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
 
-        public async Task<Pagination<Transaction>> GetTransactionsFilterAsync(PaginationParameter paginationParameter, 
+        public async Task<Pagination<Transaction>> GetTransactionsFilterAsync(PaginationParameter paginationParameter,
                         TransactionFilter transactionFilter,
                         Expression<Func<Transaction, bool>>? condition = null,
                         Func<IQueryable<Transaction>, IIncludableQueryable<Transaction, object>>? include = null)
@@ -187,12 +187,18 @@ namespace MoneyEz.Repositories.Repositories.Implements
 
         public IQueryable<Transaction> FilterByType(IQueryable<Transaction> source, ReportTransactionType type)
         {
-            return type switch
+            if (type == ReportTransactionType.TOTAL)
             {
-                ReportTransactionType.Income => source.Where(x => x.Type == TransactionType.INCOME),
-                ReportTransactionType.Expense => source.Where(x => x.Type == TransactionType.EXPENSE),
-                _ => source
-            };
+                return source;
+            }
+
+            var desiredType = type == ReportTransactionType.INCOME ? TransactionType.INCOME : TransactionType.EXPENSE;
+
+            return source.Where(t =>
+                t.Subcategory != null &&
+                t.Subcategory.CategorySubcategories.Any(cs =>
+                    cs.Category != null && cs.Category.Type == desiredType
+                ));
         }
 
     }

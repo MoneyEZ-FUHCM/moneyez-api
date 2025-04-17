@@ -8,8 +8,8 @@ namespace MoneyEz.Repositories.Enums
 {
     public enum ReportTransactionType
     {
-        Expense,
-        Income,
-        Total
+        EXPENSE,
+        INCOME,
+        TOTAL
     }
 }

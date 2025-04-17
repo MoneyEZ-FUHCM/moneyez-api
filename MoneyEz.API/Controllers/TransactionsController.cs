@@ -166,23 +166,16 @@ namespace MoneyEz.API.Controllers
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("report/year")]
-        public Task<IActionResult> GetYearReport([FromQuery] int year, [FromQuery] ReportTransactionType type = ReportTransactionType.Expense)
+        public Task<IActionResult> GetYearReport([FromQuery] int year, [FromQuery] ReportTransactionType type = ReportTransactionType.EXPENSE)
         {
             return ValidateAndExecute(() => _transactionService.GetYearReportAsync(year, type));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("report/category-year")]
-        public Task<IActionResult> GetCategoryYearReport([FromQuery] int year, [FromQuery] ReportTransactionType type = ReportTransactionType.Expense)
+        public Task<IActionResult> GetCategoryYearReport([FromQuery] int year, [FromQuery] ReportTransactionType type = ReportTransactionType.EXPENSE)
         {
             return ValidateAndExecute(() => _transactionService.GetCategoryYearReportAsync(year, type));
-        }
-
-        [Authorize(Roles = nameof(RolesEnum.USER))]
-        [HttpGet("report/category-year-v2")]
-        public Task<IActionResult> GetCategoryYearReportV2([FromQuery] int year, [FromQuery] string type)
-        {
-            return ValidateAndExecute(() => _transactionService.GetCategoryYearReportAsyncV2(year, type));
         }
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
@@ -194,7 +187,7 @@ namespace MoneyEz.API.Controllers
 
         [Authorize(Roles = nameof(RolesEnum.USER))]
         [HttpGet("report/all-time-category")]
-        public Task<IActionResult> GetAllTimeCategoryReport([FromQuery] string type)
+        public Task<IActionResult> GetAllTimeCategoryReport([FromQuery] ReportTransactionType type = ReportTransactionType.EXPENSE)
         {
             return ValidateAndExecute(() => _transactionService.GetAllTimeCategoryReportAsync(type));
         }
@@ -205,6 +198,13 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _transactionService.GetBalanceYearReportAsync(year));
         }
+
+        /*  [Authorize(Roles = nameof(RolesEnum.USER))]
+        [HttpGet("report/category-year-v2")]
+        public Task<IActionResult> GetCategoryYearReportV2([FromQuery] int year, [FromQuery] string type)
+        {
+            return ValidateAndExecute(() => _transactionService.GetCategoryYearReportAsyncV2(year, type));
+        }*/
 
         #endregion report
     }
