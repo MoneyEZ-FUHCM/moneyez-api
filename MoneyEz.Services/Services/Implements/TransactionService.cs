@@ -684,7 +684,6 @@ namespace MoneyEz.Services.Services.Implements
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.Id)
                 ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
 
-            await UpdateFinancialGoalAndBalance(transaction, -transaction.Amount);
             _mapper.Map(model, transaction);
             await UpdateFinancialGoalAndBalance(transaction, model.Amount ?? transaction.Amount);
 
@@ -721,7 +720,7 @@ namespace MoneyEz.Services.Services.Implements
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId)
                 ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
 
-            await UpdateFinancialGoalAndBalance(transaction, -transaction.Amount);
+            await UpdateFinancialGoalAndBalance(transaction, transaction.Amount);
 
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             if (images.Any())
@@ -933,13 +932,21 @@ namespace MoneyEz.Services.Services.Implements
                     .GetActiveGoalByUserAndSubcategory(transaction.UserId.Value, transaction.SubcategoryId.Value);
             }
 
-            if (activeGoal != null && activeGoal.Status == FinancialGoalStatus.ACTIVE && activeGoal.Deadline > DateTime.UtcNow)
+            if (activeGoal != null && activeGoal.Status == FinancialGoalStatus.ACTIVE && activeGoal.Deadline > CommonUtils.GetCurrentTime())
             {
-                activeGoal.CurrentAmount += amount;
+                // Adjust the amount based on transaction type
+                decimal adjustedAmount = transaction.Type == TransactionType.INCOME ? amount : -amount;
+                
+                activeGoal.CurrentAmount += adjustedAmount;
+
+                // Ensure CurrentAmount doesn't go below zero
+                if (activeGoal.CurrentAmount < 0)
+                {
+                    activeGoal.CurrentAmount = 0;
+                }
 
                 if (activeGoal.CurrentAmount >= activeGoal.TargetAmount)
                 {
-                    activeGoal.CurrentAmount = activeGoal.TargetAmount;
                     activeGoal.Status = FinancialGoalStatus.COMPLETED;
 
                     // get user
