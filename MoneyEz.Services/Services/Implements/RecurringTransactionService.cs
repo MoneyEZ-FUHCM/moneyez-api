@@ -9,6 +9,7 @@ using MoneyEz.Repositories.UnitOfWork;
 using MoneyEz.Repositories.Utils;
 using MoneyEz.Services.BusinessModels.RecurringTransactionModels;
 using MoneyEz.Services.BusinessModels.ResultModels;
+using MoneyEz.Services.BusinessModels.TransactionModels;
 using MoneyEz.Services.Constants;
 using MoneyEz.Services.Exceptions;
 using MoneyEz.Services.Services.Interfaces;
@@ -25,12 +26,14 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
+        private readonly ITransactionService _transactionService;
 
-        public RecurringTransactionService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService)
+        public RecurringTransactionService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService, ITransactionService transactionService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
+            _transactionService = transactionService;
         }
 
         public async Task<BaseResultModel> AddRecurringTransactionAsync(CreateRecurringTransactionModel model)
@@ -288,25 +291,39 @@ namespace MoneyEz.Services.Services.Implements
 
                 if (existing.Any()) continue;
 
-                var transaction = new Transaction
+                // get user onwer
+                var user = await _unitOfWork.UsersRepository.GetByIdAsync(rt.UserId);
+
+                if (user == null) continue;
+
+                var newTransaction = new CreateTransactionModel
                 {
                     Amount = rt.Amount,
                     Description = $"[Recurring] {rt.Description}",
                     TransactionDate = today,
-                    Status = TransactionStatus.APPROVED,
-                    Type = rt.Type,
                     SubcategoryId = rt.SubcategoryId,
-                    UserId = rt.UserId,
-                    CreatedDate = today,
-                    CreatedBy = "RecurringJob",
-                    ApprovalRequired = false,
                     InsertType = InsertType.RECURRENCE
                 };
 
-                await _unitOfWork.TransactionsRepository.AddAsync(transaction);
-            }
+                await _transactionService.CreateTransactionAsync(newTransaction, user.Email);
 
-            await _unitOfWork.SaveAsync();
+                //var transaction = new Transaction
+                //{
+                //    Amount = rt.Amount,
+                //    Description = $"[Recurring] {rt.Description}",
+                //    TransactionDate = today,
+                //    Status = TransactionStatus.APPROVED,
+                //    Type = rt.Type,
+                //    SubcategoryId = rt.SubcategoryId,
+                //    UserId = rt.UserId,
+                //    CreatedDate = today,
+                //    CreatedBy = "RecurringJob",
+                //    ApprovalRequired = false,
+                //    InsertType = InsertType.RECURRENCE
+                //};
+
+                //await _unitOfWork.TransactionsRepository.AddAsync(transaction);
+            }
         }
 
         private bool IsRecurringDueToday(RecurringTransaction rt, DateTime today)
