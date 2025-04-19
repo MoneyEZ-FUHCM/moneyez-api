@@ -105,7 +105,7 @@ namespace MoneyEz.API.Controllers
         [HttpGet("scan")]
         public Task<IActionResult> ScanUserSpendingModelTimeExpried()
         {
-            return ValidateAndExecute(() => _userSpendingModelService.UpdateExpiredSpendingModelsAsync());
+            return ValidateAndExecute(() => _userSpendingModelService.ProcessExpiredAndUpcomingSpendingModelsAsync());
         }
 
         [HttpGet("current/webhook/sub-categories")]

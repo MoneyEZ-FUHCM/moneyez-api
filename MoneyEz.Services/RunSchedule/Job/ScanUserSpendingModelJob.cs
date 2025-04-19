@@ -22,7 +22,7 @@ namespace MoneyEz.Services.RunSchedule.Job
             {
                 _logger.LogInformation("{Now} - Start - Running scan user spending model job", CommonUtils.GetCurrentTime());
 
-                await _userSpendingModelService.UpdateExpiredSpendingModelsAsync();
+                await _userSpendingModelService.ProcessExpiredAndUpcomingSpendingModelsAsync();
 
                 _logger.LogInformation("{Now} - Done - Running scan user spending model job", CommonUtils.GetCurrentTime());
             }
