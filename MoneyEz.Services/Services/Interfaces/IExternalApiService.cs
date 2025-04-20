@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using MoneyEz.Repositories.Commons;
 using MoneyEz.Services.BusinessModels.ChatModels;
 using MoneyEz.Services.BusinessModels.ExternalServiceModels;
@@ -14,10 +15,14 @@ namespace MoneyEz.Services.Services.Interfaces
 
         Task<BaseResultModel> ExecuteSendExternalService(ExternalSendRequestModel model);
 
-        Task<BaseResultModel> ExecuteKnownledgeDocumentSerivce(ExternalKnowledgeRequestModel model, PaginationParameter paginationParameter);
-
         Task<RecomendModelResponse> SuggestionSpendingModelSerivce(List<QuestionAnswerPair> answerPairs);
 
         Task<BaseResultModel> SuggestionSpendingModelSerivceTest(List<QuestionAnswerPair> answerPairs);
+
+        Task<BaseResultModel> GetKnowledgeDocuments(PaginationParameter paginationParameter);
+
+        Task<BaseResultModel> ExecuteCreateKnownledgeDocument(IFormFile file);
+
+        Task<BaseResultModel> ExecuteDeleteKnownledgeDocument(Guid id);
     }
 }

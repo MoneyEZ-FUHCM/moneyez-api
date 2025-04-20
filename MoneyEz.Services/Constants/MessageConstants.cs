@@ -330,6 +330,14 @@ namespace MoneyEz.Services.Constants
         public const string MISSING_PARAMETER = "MissingParameter";
         public const string INVALID_PARAMETER_FORMAT = "InvalidParameterFormat";
 
+        // Knowledge document
+        public const string KNOWLEDGE_DOCUMENT_INVALID_MODEL = "KnowledgeDocumentInvalidModel";
+        public const string KNOWLEDGE_DOCUMENT_INVALID_FILE = "KnowledgeDocumentInvalidFile";
+        public const string KNOWLEDGE_DOCUMENT_INVALID_FILE_TYPE = "KnowledgeDocumentInvalidFileType";
+        public const string KNOWLEDGE_DOCUMENT_UPLOAD_FAILED = "KnowledgeDocumentUploadFailed";
+        public const string KNOWLEDGE_DOCUMENT_NOT_FOUND = "KnowledgeDocumentNotFound";
+        public const string KNOWLEDGE_DOCUMENT_DELETE_FAILED = "KnowledgeDocumentDeleteFailed";
+
         // Post
         public const string POST_NOT_FOUND = "PostNotFound";
         public const string POST_ALREADY_EXISTS = "PostAlreadyExists";
@@ -342,6 +350,5 @@ namespace MoneyEz.Services.Constants
 
         // quiz
         public const string QUIZ_RESULT_NOT_FOUND = "QuizResultNotFound";
-
     }
 }

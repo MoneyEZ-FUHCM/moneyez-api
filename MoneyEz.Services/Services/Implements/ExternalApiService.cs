@@ -33,8 +33,8 @@ namespace MoneyEz.Services.Services.Implements
         private readonly ISpendingModelService _spendingModelService;
         private readonly IMapper _mapper;
 
-        public ExternalApiService(HttpClient httpClient, 
-            IConfiguration configuration, 
+        public ExternalApiService(HttpClient httpClient,
+            IConfiguration configuration,
             IHttpContextAccessor httpContextAccessor,
             ITransactionService transactionService,
             IChatHistoryService chatHistoryService,
@@ -54,17 +54,6 @@ namespace MoneyEz.Services.Services.Implements
             // _httpClient.BaseAddress = new Uri(_configuration["ExternalApi:BaseUrl"]);
         }
 
-        public async Task<BaseResultModel> ExecuteKnownledgeDocumentSerivce(ExternalKnowledgeRequestModel model, PaginationParameter paginationParameter)
-        {
-            switch (model.Command)
-            {
-                case "get_all_documents":
-                    return await GetAllKnowledgeDocument(paginationParameter);
-                default:
-                    throw new DefaultException("Invalid command", MessageConstants.INVALID_COMMAND);
-            }
-        }
-
         public async Task<BaseResultModel> ExecuteReceiveExternalService(ExternalReciveRequestModel model)
         {
             // validate webhook
@@ -72,7 +61,7 @@ namespace MoneyEz.Services.Services.Implements
 
             if (string.IsNullOrEmpty(secretKey) || secretKey != "thisIsSerectKeyPythonService")
             {
-           
+
                 throw new DefaultException("Invalid external secret key", MessageConstants.INVALID_WEBHOOK_SECRET);
             }
 
@@ -110,7 +99,7 @@ namespace MoneyEz.Services.Services.Implements
                     if (string.IsNullOrEmpty(model.Query))
                     {
                         throw new DefaultException("Missing user_id parameter", MessageConstants.MISSING_PARAMETER);
-                    } 
+                    }
                     else
                     {
                         // Parse the query string to get the userId
@@ -133,7 +122,7 @@ namespace MoneyEz.Services.Services.Implements
                             Data = messages
                         };
                     }
-                        
+
                 case "get_subcategories":
                     // Extract userId from query parameter (e.g., user_id=abc)
                     if (string.IsNullOrEmpty(model.Query))
@@ -209,7 +198,7 @@ namespace MoneyEz.Services.Services.Implements
                         {
                             throw new DefaultException("Invalid user_id format", MessageConstants.INVALID_PARAMETER_FORMAT);
                         }
-                        
+
                         // Parse from_date if provided
                         if (queryParams.TryGetValue("from_date", out string fromDateStr) && !string.IsNullOrEmpty(fromDateStr))
                         {
@@ -222,7 +211,7 @@ namespace MoneyEz.Services.Services.Implements
                                 throw new DefaultException("Invalid from_date format", MessageConstants.INVALID_PARAMETER_FORMAT);
                             }
                         }
-                        
+
                         // Parse to_date if provided
                         if (queryParams.TryGetValue("to_date", out string toDateStr) && !string.IsNullOrEmpty(toDateStr))
                         {
@@ -235,7 +224,7 @@ namespace MoneyEz.Services.Services.Implements
                                 throw new DefaultException("Invalid to_date format", MessageConstants.INVALID_PARAMETER_FORMAT);
                             }
                         }
-                        
+
                         // Call service to get transaction histories for the user with date filters
                         return await _transactionService.GetTransactionHistorySendToPythons(userId, filter);
                     }
@@ -333,34 +322,7 @@ namespace MoneyEz.Services.Services.Implements
             }
         }
 
-        public async Task<BaseResultModel> GetAllKnowledgeDocument(PaginationParameter paginationParameter)
-        {
-            var response = await _httpClient.GetAsync("http://178.128.118.171:8888/api/knowledge/knowledge/documents");
-            if (response.IsSuccessStatusCode)
-            {
-                // document from qdrant db - python service
-                var jsonString = await response.Content.ReadAsStringAsync();
-                var jsonData = JsonConvert.DeserializeObject<BaseResultModel>(jsonString);
-                var rawDocuments = JsonConvert.DeserializeObject<List<ResponseKnowledgeModel>>(jsonData.Data.ToString());
-
-                var documents = _mapper.Map<List<KnowledgeModel>>(rawDocuments);
-                var itemCount = documents.Count;
-                var paginatedDocuments = documents
-                    .Skip((paginationParameter.PageIndex - 1) * paginationParameter.PageSize)
-                    .Take(paginationParameter.PageSize)
-                    .ToList();
-
-                var paging = new Pagination<KnowledgeModel>(paginatedDocuments, itemCount, paginationParameter.PageIndex, paginationParameter.PageSize);
-                var result = PaginationHelper.GetPaginationResult(paging, paginatedDocuments);
-
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status200OK,
-                    Data = result
-                };
-            }
-            throw new DefaultException("Failed to fetch documents", "ErrorFetchDocument");
-        }
+        #region suggest spending model
 
         public async Task<RecomendModelResponse> SuggestionSpendingModelSerivce(List<QuestionAnswerPair> answerPairs)
         {
@@ -475,5 +437,170 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
         }
+
+        #endregion
+
+        #region AI knowledge document
+
+        public async Task<BaseResultModel> GetKnowledgeDocuments(PaginationParameter paginationParameter)
+        {
+            var response = await _httpClient.GetAsync("http://178.128.118.171:8888/api/knowledge/documents");
+            //var response = await _httpClient.GetAsync("http://127.0.0.1:8000/api/knowledge/documents");
+            if (response.IsSuccessStatusCode)
+            {
+                // document from qdrant db - python service
+                var jsonString = await response.Content.ReadAsStringAsync();
+                var jsonData = JsonConvert.DeserializeObject<BaseResultModel>(jsonString);
+                var rawDocuments = JsonConvert.DeserializeObject<List<ResponseKnowledgeModel>>(jsonData.Data.ToString());
+
+                var documents = _mapper.Map<List<KnowledgeModel>>(rawDocuments);
+                var itemCount = documents.Count;
+                var paginatedDocuments = documents
+                    .Skip((paginationParameter.PageIndex - 1) * paginationParameter.PageSize)
+                    .Take(paginationParameter.PageSize)
+                    .ToList();
+
+                var paging = new Pagination<KnowledgeModel>(paginatedDocuments, itemCount, paginationParameter.PageIndex, paginationParameter.PageSize);
+                var result = PaginationHelper.GetPaginationResult(paging, paginatedDocuments);
+
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status200OK,
+                    Data = result
+                };
+            }
+            throw new DefaultException("Failed to fetch documents", "ErrorFetchDocument");
+        }
+
+        public async Task<BaseResultModel> ExecuteCreateKnownledgeDocument(IFormFile file)
+        {
+            try
+            {
+                // Validate input
+                if (file == null || file.Length == 0)
+                {
+                    throw new DefaultException("File is required and cannot be empty", MessageConstants.KNOWLEDGE_DOCUMENT_INVALID_FILE);
+                }
+
+                // Create multipart form data content
+                using var formContent = new MultipartFormDataContent();
+
+                // Read the file content
+                using var stream = file.OpenReadStream();
+                using var fileContent = new StreamContent(stream);
+
+                // Set content type header for the file
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+
+                // Add the file to the form with the field name 'file' as expected by the Python API
+                formContent.Add(fileContent, name: "file", fileName: file.FileName);
+
+                // Set appropriate headers
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("X-External-Secret", "thisIsSerectKeyPythonService");
+
+                // Make the POST request to the external API - use the production server URL
+                var response = await _httpClient.PostAsync("http://178.128.118.171:8888/api/knowledge/upload", formContent);
+                //var response = await _httpClient.PostAsync("http://127.0.0.1:8000/api/knowledge/upload", formContent);
+
+                // Process the response
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonString = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Success response: {jsonString}");
+                    var responseObject = JsonConvert.DeserializeObject<dynamic>(jsonString);
+
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status200OK,
+                        Message = "Document uploaded successfully"
+                    };
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new DefaultException(
+                        $"Failed to upload document: HTTP {(int)response.StatusCode} - {response.StatusCode}. {errorContent}",
+                        MessageConstants.KNOWLEDGE_DOCUMENT_UPLOAD_FAILED);
+                }
+            }
+            catch (DefaultException)
+            {
+                // Rethrow DefaultException as it already has the correct format
+                throw;
+            }
+            catch (HttpRequestException ex)
+            {
+                // Handle network-related exceptions
+                Console.WriteLine($"HTTP Request Error: {ex.Message}");
+                throw new DefaultException(
+                    $"Network error while uploading document: {ex.Message}",
+                    MessageConstants.KNOWLEDGE_DOCUMENT_UPLOAD_FAILED);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected Error: {ex.Message}");
+                throw new DefaultException(
+                    $"An error occurred while uploading the document: {ex.Message}",
+                    MessageConstants.KNOWLEDGE_DOCUMENT_UPLOAD_FAILED);
+            }
+        }
+
+        public async Task<BaseResultModel> ExecuteDeleteKnownledgeDocument(Guid id)
+        {
+            try
+            {
+                // Set appropriate headers
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("X-External-Secret", "thisIsSerectKeyPythonService");
+
+                // Make the DELETE request to the external API
+                var response = await _httpClient.DeleteAsync($"http://178.128.118.171:8888/api/knowledge/delete/{id}");
+                //var response = await _httpClient.DeleteAsync($"http://127.0.0.1:8000/api/knowledge/delete/{id}");
+
+                // Process the response
+                if (response.IsSuccessStatusCode)
+                {
+                    return new BaseResultModel
+                    {
+                        Status = StatusCodes.Status200OK,
+                        Message = "Document deleted successfully"
+                    };
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound) // 404 error
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    var errorResponse = JsonConvert.DeserializeObject<dynamic>(errorContent);
+
+                    throw new NotExistException($"Document {id} not found", MessageConstants.KNOWLEDGE_DOCUMENT_NOT_FOUND);
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new DefaultException(
+                        $"Failed to delete document: HTTP {(int)response.StatusCode} - {response.StatusCode}. {errorContent}",
+                        MessageConstants.KNOWLEDGE_DOCUMENT_DELETE_FAILED);
+                }
+            }
+            catch (DefaultException)
+            {
+                // Rethrow DefaultException as it already has the correct format
+                throw;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new DefaultException(
+                    $"Network error while deleting document: {ex.Message}",
+                    MessageConstants.KNOWLEDGE_DOCUMENT_DELETE_FAILED);
+            }
+            catch (Exception ex)
+            {
+                throw new DefaultException(
+                    $"An error occurred while deleting the document: {ex.Message}",
+                    MessageConstants.KNOWLEDGE_DOCUMENT_DELETE_FAILED);
+            }
+        }
+
+        #endregion
     }
 }

@@ -12,12 +12,12 @@ namespace MoneyEz.Services.BusinessModels.KnowledgeModels
 {
     public class CreateKnowledgeModel
     {
-        [Required(ErrorMessage = "Title is required")]
-        [StringLength(255)]
-        public string Title { get; set; } = null!;
+        //[Required(ErrorMessage = "Title is required")]
+        //[StringLength(255)]
+        //public string Title { get; set; } = null!;
 
-        [StringLength(1000)]
-        public string? Description { get; set; }
+        //[StringLength(1000)]
+        //public string? Description { get; set; }
 
         [Required(ErrorMessage = "File is required")]
         [Display(Name = "File")]
