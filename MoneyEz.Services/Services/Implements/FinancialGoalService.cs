@@ -866,7 +866,7 @@ namespace MoneyEz.Services.Services.Implements
                 NameUnsign = StringUtils.ConvertToUnSign(model.Name),
                 TargetAmount = model.TargetAmount,
                 CurrentAmount = model.CurrentAmount > 0 ? model.CurrentAmount : groupFund.CurrentBalance,
-                Deadline = model.Deadline,
+                Deadline = model.Deadline.Date,
                 StartDate = CommonUtils.GetCurrentTime(),
                 CreatedBy = user.Email,
             };
@@ -1032,7 +1032,7 @@ namespace MoneyEz.Services.Services.Implements
             goalToUpdate.Name = model.Name;
             goalToUpdate.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
             goalToUpdate.TargetAmount = model.TargetAmount;
-            goalToUpdate.Deadline = model.Deadline;
+            goalToUpdate.Deadline = model.Deadline.Date;
             goalToUpdate.UpdatedBy = user.Email;
 
             if (userRole == RoleGroup.LEADER)
