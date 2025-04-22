@@ -1,4 +1,5 @@
 ﻿using MoneyEz.Repositories.Commons;
+using MoneyEz.Repositories.Entities;
 using MoneyEz.Services.BusinessModels.GroupFund;
 using MoneyEz.Services.BusinessModels.ResultModels;
 using System;

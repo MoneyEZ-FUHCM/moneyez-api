@@ -170,7 +170,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
             else
             {
                 // Default sorting by transaction date descending if no sort specified
-                query = query.OrderByDescending(t => t.TransactionDate);
+                query = query.OrderByDescending(t => t.CreatedDate);
             }
 
             return query;
