@@ -848,7 +848,7 @@ namespace MoneyEz.Services.Services.Implements
             //    };
             //}
 
-            if (model.Deadline <= CommonUtils.GetCurrentTime())
+            if (model.Deadline.Date <= CommonUtils.GetCurrentTime().Date)
             {
                 return new BaseResultModel
                 {
@@ -1019,7 +1019,7 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            if (model.Deadline <= CommonUtils.GetCurrentTime())
+            if (model.Deadline.Date <= CommonUtils.GetCurrentTime().Date)
             {
                 return new BaseResultModel
                 {
