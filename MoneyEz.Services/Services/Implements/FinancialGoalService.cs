@@ -867,6 +867,7 @@ namespace MoneyEz.Services.Services.Implements
                 TargetAmount = model.TargetAmount,
                 CurrentAmount = model.CurrentAmount > 0 ? model.CurrentAmount : groupFund.CurrentBalance,
                 Deadline = model.Deadline,
+                StartDate = CommonUtils.GetCurrentTime(),
                 CreatedDate = CommonUtils.GetCurrentTime(),
             };
 
@@ -1114,7 +1115,7 @@ namespace MoneyEz.Services.Services.Implements
                 await NotifyGroupMembers(goalToDelete, user, "deleted");
 
                 // log group fund
-                await _groupFundsService.LogGroupFundChange(model.Id, $"đã xóa mục tiêu tài chính của nhóm", GroupAction.UPDATED, userEmail);
+                await _groupFundsService.LogGroupFundChange(goalToDelete.GroupId.Value, $"đã xóa mục tiêu tài chính của nhóm", GroupAction.UPDATED, userEmail);
 
                 return new BaseResultModel
                 {
