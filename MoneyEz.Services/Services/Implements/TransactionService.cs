@@ -36,7 +36,11 @@ namespace MoneyEz.Services.Services.Implements
         private readonly ITransactionNotificationService _transactionNotificationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public TransactionService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService, ITransactionNotificationService transactionNotificationService, IHttpContextAccessor httpContextAccessor)
+        public TransactionService(IUnitOfWork unitOfWork, 
+            IMapper mapper, 
+            IClaimsService claimsService, 
+            ITransactionNotificationService transactionNotificationService, 
+            IHttpContextAccessor httpContextAccessor)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -491,6 +495,26 @@ namespace MoneyEz.Services.Services.Implements
 
             var transactionModels = _mapper.Map<List<GroupTransactionModel>>(transactions);
 
+            var pendingRequestModels = transactionModels
+                .Where(t => t.ApprovalRequired && t.Status == TransactionStatus.PENDING.ToString())
+                .ToList();
+
+            if (pendingRequestModels.Any())
+            {
+                // For withdrawal transactions, calculate and add withdrawal limit to notes
+                foreach (var request in pendingRequestModels.Where(r => r.Type == TransactionType.EXPENSE.ToString()))
+                {
+                    // Calculate withdrawal limit and set note
+                    var (maxWithdrawalLimit, contributionPercentage) =
+                        await CalculateWithdrawalLimitAsync(groupFund, request.UserId);
+
+                    // Add withdrawal limit info to notes with contribution percentage
+                    request.Note = maxWithdrawalLimit > 0
+                        ? $"Hạn mức rút tối đa (khuyến nghị) của thành viên là: {maxWithdrawalLimit:N0} VND (dựa trên {contributionPercentage:F2}% đóng góp vào quỹ)"
+                        : $"Thành viên chưa góp quỹ hoặc đã rút hết số tiền góp";
+                }
+            }
+
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
@@ -518,7 +542,15 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
             }
 
-            var transactionModel = _mapper.Map<TransactionModel>(transaction);
+            var transactionModel = _mapper.Map<GroupTransactionModel>(transaction);
+            if (transactionModel.Type == TransactionType.EXPENSE.ToString() && transactionModel.Status == TransactionStatus.APPROVED.ToString())
+            {
+                var (maxWithdrawalLimit, contributionPercentage) =
+                    await CalculateWithdrawalLimitAsync(transaction.Group, transaction.UserId.Value);
+                transactionModel.Note = maxWithdrawalLimit > 0
+                    ? $"Hạn mức rút tối đa (khuyến nghị) của thành viên là: {maxWithdrawalLimit:N0} VND (dựa trên {contributionPercentage:F2}% đóng góp vào quỹ)"
+                    : $"Thành viên chưa góp quỹ hoặc đã rút hết số tiền góp";
+            }
 
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
@@ -1772,6 +1804,77 @@ namespace MoneyEz.Services.Services.Implements
                 "total" => ReportTransactionType.TOTAL,
                 _ => ReportTransactionType.TOTAL
             };
+        }
+
+        // Helper method to calculate member's current balance
+        private async Task<decimal> CalculateMemberBalanceAsync(Guid groupId, Guid userId)
+        {
+            // Get all approved transactions for this member
+            var memberTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == groupId &&
+                            t.UserId == userId &&
+                            t.Status == TransactionStatus.APPROVED
+            );
+
+            // Calculate balance (deposits - withdrawals)
+            decimal totalDeposits = memberTransactions
+                .Where(t => t.Type == TransactionType.INCOME)
+                .Sum(t => t.Amount);
+
+            decimal totalWithdrawals = memberTransactions
+                .Where(t => t.Type == TransactionType.EXPENSE)
+                .Sum(t => t.Amount);
+
+            return totalDeposits - totalWithdrawals;
+        }
+
+        /// <summary>
+        /// Calculates the recommended withdrawal limit for a member based on their contribution percentage
+        /// </summary>
+        /// <param name="groupFund">The group fund</param>
+        /// <param name="userId">The user ID of the member</param>
+        /// <returns>A tuple containing (maxWithdrawalLimit, contributionPercentage)</returns>
+        private async Task<(decimal maxWithdrawalLimit, decimal contributionPercentage)> CalculateWithdrawalLimitAsync(
+            GroupFund groupFund, Guid userId)
+        {
+            // Calculate total deposits by the group member
+            var memberTotalDeposits = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == groupFund.Id &&
+                            t.UserId == userId &&
+                            t.Type == TransactionType.INCOME &&
+                            t.Status == TransactionStatus.APPROVED
+            );
+
+            decimal totalDepositAmount = memberTotalDeposits.Sum(t => t.Amount);
+
+            // Calculate current balance
+            var memberBalance = await CalculateMemberBalanceAsync(groupFund.Id, userId);
+
+            // Get all approved deposits for the group to calculate total contributions
+            var allGroupDeposits = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == groupFund.Id &&
+                            t.Type == TransactionType.INCOME &&
+                            t.Status == TransactionStatus.APPROVED
+            );
+
+            decimal totalGroupDepositAmount = allGroupDeposits.Sum(t => t.Amount);
+
+            // Calculate contribution percentage
+            decimal contributionPercentage = totalGroupDepositAmount > 0
+                ? totalDepositAmount / totalGroupDepositAmount * 100
+                : 0;
+
+            // Calculate withdrawal limit based on contribution percentage
+            decimal recommendedWithdrawalLimit = Math.Round(groupFund.CurrentBalance * (contributionPercentage / 100), 0);
+
+            // Determine final maximum withdrawal limit
+            // It should not exceed member's current balance or their total deposits
+            decimal maxWithdrawalLimit = Math.Min(
+                Math.Min(totalDepositAmount, memberBalance),
+                recommendedWithdrawalLimit
+            );
+
+            return (maxWithdrawalLimit, contributionPercentage);
         }
 
         #endregion helper
