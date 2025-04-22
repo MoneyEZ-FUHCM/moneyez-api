@@ -323,7 +323,7 @@ namespace MoneyEz.Services.Services.Implements
             goalToUpdate.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
             goalToUpdate.TargetAmount = model.TargetAmount;
             goalToUpdate.Deadline = model.Deadline;
-            goalToUpdate.UpdatedDate = CommonUtils.GetCurrentTime();
+            goalToUpdate.UpdatedBy = user.Email;
             goalToUpdate.Status = FinancialGoalStatus.ACTIVE;
             goalToUpdate.ApprovalStatus = ApprovalStatus.APPROVED;
 
@@ -360,7 +360,7 @@ namespace MoneyEz.Services.Services.Implements
             financialGoal.IsDeleted = true;
             financialGoal.Status = FinancialGoalStatus.ARCHIVED;
             financialGoal.ApprovalStatus = ApprovalStatus.APPROVED;  // Đặt mặc định theo yêu cầu
-            financialGoal.UpdatedDate = CommonUtils.GetCurrentTime();
+            financialGoal.UpdatedBy = user.Email;
 
             _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
             await _unitOfWork.SaveAsync();
@@ -868,7 +868,7 @@ namespace MoneyEz.Services.Services.Implements
                 CurrentAmount = model.CurrentAmount > 0 ? model.CurrentAmount : groupFund.CurrentBalance,
                 Deadline = model.Deadline,
                 StartDate = CommonUtils.GetCurrentTime(),
-                CreatedDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = user.Email,
             };
 
             if (userRole == RoleGroup.LEADER)
@@ -1033,7 +1033,7 @@ namespace MoneyEz.Services.Services.Implements
             goalToUpdate.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
             goalToUpdate.TargetAmount = model.TargetAmount;
             goalToUpdate.Deadline = model.Deadline;
-            goalToUpdate.UpdatedDate = CommonUtils.GetCurrentTime();
+            goalToUpdate.UpdatedBy = user.Email;
 
             if (userRole == RoleGroup.LEADER)
             {
@@ -1107,7 +1107,7 @@ namespace MoneyEz.Services.Services.Implements
                 goalToDelete.IsDeleted = true;
                 goalToDelete.Status = FinancialGoalStatus.ARCHIVED;
                 goalToDelete.ApprovalStatus = ApprovalStatus.APPROVED;
-                goalToDelete.UpdatedDate = CommonUtils.GetCurrentTime();
+                goalToDelete.UpdatedBy = user.Email;
 
                 _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToDelete);
                 await _unitOfWork.SaveAsync();
