@@ -217,7 +217,6 @@ namespace MoneyEz.API
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<ITransactionNotificationService, TransactionNotificationService>();
-            services.AddScoped<IExternalTransactionService, ExternalTransactionService>();
 
             //recurring transaction
             services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
