@@ -27,7 +27,7 @@ namespace MoneyEz.Services.Services.Implements
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IExternalTransactionService _externalTransactionService;
+        private readonly ITransactionService _transactionService;
         private readonly IChatHistoryService _chatHistoryService;
         private readonly IUserSpendingModelService _userSpendingModelService;
         private readonly ISpendingModelService _spendingModelService;
@@ -36,7 +36,7 @@ namespace MoneyEz.Services.Services.Implements
         public ExternalApiService(HttpClient httpClient,
             IConfiguration configuration,
             IHttpContextAccessor httpContextAccessor,
-            IExternalTransactionService externalTransactionService,
+            ITransactionService transactionService,
             IChatHistoryService chatHistoryService,
             IUserSpendingModelService userSpendingModelService,
             IMapper mapper,
@@ -45,7 +45,7 @@ namespace MoneyEz.Services.Services.Implements
             _httpClient = httpClient;
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
-            _externalTransactionService = externalTransactionService;
+            _transactionService = transactionService;
             _chatHistoryService = chatHistoryService;
             _userSpendingModelService = userSpendingModelService;
             _spendingModelService = spendingModelService;
@@ -79,7 +79,7 @@ namespace MoneyEz.Services.Services.Implements
                         UserId = jsonData?.UserId ?? Guid.Empty
                     };
                     // Call service to create transaction
-                    return await _externalTransactionService.CreateTransactionPythonService(createTransactionModel);
+                    return await _transactionService.CreateTransactionPythonService(createTransactionModel);
                 case "create_transaction_v2":
                     var dataV2 = model.Data as dynamic;
                     var parsedDataJsonV2 = dataV2?.ToString();
@@ -93,7 +93,7 @@ namespace MoneyEz.Services.Services.Implements
                         TransactionDate = jsonDataV2?.TransactionDate ?? CommonUtils.GetCurrentTime()
                     };
                     // Call service to create transaction
-                    return await _externalTransactionService.CreateTransactionPythonServiceV2(createTransactionModelV2);
+                    return await _transactionService.CreateTransactionPythonServiceV2(createTransactionModelV2);
                 case "get_chat_messages":
                     // Extract userId from query parameter (e.g., user_id=abc)
                     if (string.IsNullOrEmpty(model.Query))
@@ -226,7 +226,7 @@ namespace MoneyEz.Services.Services.Implements
                         }
 
                         // Call service to get transaction histories for the user with date filters
-                        return await _externalTransactionService.GetTransactionHistorySendToPythons(userId, filter);
+                        return await _transactionService.GetTransactionHistorySendToPythons(userId, filter);
                     }
                 case "get_user_spending_model":
                     // Extract userId from query parameter (e.g., user_id=abc)
