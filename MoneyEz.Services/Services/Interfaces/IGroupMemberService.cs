@@ -12,14 +12,6 @@ namespace MoneyEz.Services.Services.Interfaces
 {
     public interface IGroupMemberService
     {
-        Task<BaseResultModel> RemoveMemberByLeaderAsync(Guid groupId, Guid memberId);
-        Task<BaseResultModel> LeaveGroupAsync(Guid groupId);
-        Task<BaseResultModel> SetMemberRoleAsync(SetRoleGroupModel setRoleGroupModel);
-        Task<BaseResultModel> InviteMemberEmailAsync(InviteMemberModel inviteMemberModel);
-        Task<BaseResultModel> InviteMemberQRCodeAsync(InviteMemberModel inviteMemberModel);
-        Task<BaseResultModel> AcceptInvitationEmailAsync(string token);
-        Task<BaseResultModel> AcceptInvitationQRCodeAsync(string token);
-        Task<BaseResultModel> SetGroupContribution(SetGroupContributionModel setGroupContributionModel);
 
     }
 }
