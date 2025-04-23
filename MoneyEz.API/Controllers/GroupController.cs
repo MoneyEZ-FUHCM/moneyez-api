@@ -18,18 +18,12 @@ namespace MoneyEz.API.Controllers
     public class GroupController : BaseController
     {
         private readonly IGroupFundsService _groupFundsService;
-        private readonly IGroupTransactionService _groupTransactionService;
-        private readonly IGroupMemberService _groupMemberService;
         private readonly IClaimsService _claimsService;
 
         public GroupController(IGroupFundsService groupFundsService,
-            IGroupTransactionService groupTransactionService,
-            IGroupMemberService groupMemberService,
             IClaimsService claimsService)
         {
             _groupFundsService = groupFundsService;
-            _groupTransactionService = groupTransactionService;
-            _groupMemberService = groupMemberService;
             _claimsService = claimsService;
         }
 
@@ -39,56 +33,56 @@ namespace MoneyEz.API.Controllers
         [Authorize]
         public async Task<IActionResult> RemoveMemberAsync(Guid groupId, Guid memberId)
         {
-            return await ValidateAndExecute(() => _groupMemberService.RemoveMemberByLeaderAsync(groupId, memberId));
+            return await ValidateAndExecute(() => _groupFundsService.RemoveMemberByLeaderAsync(groupId, memberId));
         }
 
         [HttpGet("members/leave")]
         [Authorize]
         public async Task<IActionResult> LeaveGroupAsync([FromQuery] Guid groupId)
         {
-            return await ValidateAndExecute(() => _groupMemberService.LeaveGroupAsync(groupId));
+            return await ValidateAndExecute(() => _groupFundsService.LeaveGroupAsync(groupId));
         }
 
         [HttpPut("members/role")]
         [Authorize]
         public async Task<IActionResult> SetMemberRoleAsync(SetRoleGroupModel setRoleGroupModel)
         {
-            return await ValidateAndExecute(() => _groupMemberService.SetMemberRoleAsync(setRoleGroupModel));
+            return await ValidateAndExecute(() => _groupFundsService.SetMemberRoleAsync(setRoleGroupModel));
         }
 
         [HttpPost("invite-member/email")]
         [Authorize]
         public async Task<IActionResult> InviteMemberEmailAsync([FromBody] InviteMemberModel inviteMemberModel)
         {
-            return await ValidateAndExecute(() => _groupMemberService.InviteMemberEmailAsync(inviteMemberModel));
+            return await ValidateAndExecute(() => _groupFundsService.InviteMemberEmailAsync(inviteMemberModel));
         }
 
         [HttpPost("invite-member/qrcode")]
         [Authorize]
         public async Task<IActionResult> InviteMemberQRCodeAsync([FromBody] InviteMemberModel inviteMemberModel)
         {
-            return await ValidateAndExecute(() => _groupMemberService.InviteMemberQRCodeAsync(inviteMemberModel));
+            return await ValidateAndExecute(() => _groupFundsService.InviteMemberQRCodeAsync(inviteMemberModel));
         }
 
 
         [HttpGet("invite-member/email/accept")]
         public async Task<IActionResult> AcceptInvitationEmailAsync([FromQuery] string token)
         {
-            return await ValidateAndExecute(() => _groupMemberService.AcceptInvitationEmailAsync(token));
+            return await ValidateAndExecute(() => _groupFundsService.AcceptInvitationEmailAsync(token));
         }
 
         [HttpGet("invite-member/qrcode/accept")]
         [Authorize]
         public async Task<IActionResult> AcceptInvitationQRCodeAsync([FromQuery] string token)
         {
-            return await ValidateAndExecute(() => _groupMemberService.AcceptInvitationQRCodeAsync(token));
+            return await ValidateAndExecute(() => _groupFundsService.AcceptInvitationQRCodeAsync(token));
         }
 
         [HttpPut("contribution")]
         [Authorize]
         public async Task<IActionResult> SetGroupContribution([FromBody] SetGroupContributionModel setGroupContributionModel)
         {
-            return await ValidateAndExecute(() => _groupMemberService.SetGroupContribution(setGroupContributionModel));
+            return await ValidateAndExecute(() => _groupFundsService.SetGroupContribution(setGroupContributionModel));
         }
 
         #endregion
@@ -145,35 +139,35 @@ namespace MoneyEz.API.Controllers
         [Authorize]
         public async Task<IActionResult> CreateFundraisingRequest([FromBody] CreateFundraisingModel model)
         {
-            return await ValidateAndExecute(() => _groupTransactionService.CreateFundraisingRequest(model));
+            return await ValidateAndExecute(() => _groupFundsService.CreateFundraisingRequest(model));
         }
 
         [HttpPost("fund-withdraw/request")]
         [Authorize]
         public async Task<IActionResult> CreateFundWithdrawalRequest([FromBody] CreateFundWithdrawalModel model)
         {
-            return await ValidateAndExecute(() => _groupTransactionService.CreateFundWithdrawalRequest(model));
+            return await ValidateAndExecute(() => _groupFundsService.CreateFundWithdrawalRequest(model));
         }
 
         [HttpPost("fund-raising/remind")]
         [Authorize]
         public async Task<IActionResult> CreateFundraisingRemind([FromBody] RemindFundraisingModel model)
         {
-            return await ValidateAndExecute(() => _groupTransactionService.RemindFundraisingAsync(model));
+            return await ValidateAndExecute(() => _groupFundsService.RemindFundraisingAsync(model));
         }
 
         [HttpGet("pending-requests")]
         [Authorize]
         public async Task<IActionResult> GetPendingRequests([FromQuery] Guid groupId, [FromQuery] PaginationParameter paginationParameters)
         {
-            return await ValidateAndExecute(() => _groupTransactionService.GetPendingRequestsAsync(groupId, paginationParameters));
+            return await ValidateAndExecute(() => _groupFundsService.GetPendingRequestsAsync(groupId, paginationParameters));
         }
 
         [HttpGet("pending-requests/{requestId}")]
         [Authorize]
         public async Task<IActionResult> GetPendingRequestDetail([FromRoute] Guid requestId)
         {
-            return await ValidateAndExecute(() => _groupTransactionService.GetPendingRequestDetailAsync(requestId));
+            return await ValidateAndExecute(() => _groupFundsService.GetPendingRequestDetailAsync(requestId));
         }
 
         #endregion
