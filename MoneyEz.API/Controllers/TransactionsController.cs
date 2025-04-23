@@ -22,11 +22,18 @@ namespace MoneyEz.API.Controllers
     public class TransactionsController : BaseController
     {
         private readonly ITransactionService _transactionService;
+        private readonly IGroupTransactionService _groupTransactionService;
+        private readonly IExternalTransactionService _externalTransactionService;
         private readonly IClaimsService _claimsService;
 
-        public TransactionsController(ITransactionService transactionService, IClaimsService claimsService)
+        public TransactionsController(ITransactionService transactionService, 
+            IGroupTransactionService groupTransactionService,
+            IExternalTransactionService externalTransactionService,
+            IClaimsService claimsService)
         {
             _transactionService = transactionService;
+            _groupTransactionService = groupTransactionService;
+            _externalTransactionService = externalTransactionService;
             _claimsService = claimsService;
         }
 
@@ -66,6 +73,12 @@ namespace MoneyEz.API.Controllers
         {
             return ValidateAndExecute(() => _transactionService.DeleteTransactionAsync(transactionId));
         }
+
+        [HttpPut("categorize")]
+        public Task<IActionResult> CategorizeTransaction(CategorizeTransactionModel model)
+        {
+            return ValidateAndExecute(() => _transactionService.CategorizeTransactionAsync(model));
+        }
         #endregion single user
 
         #region admin   
@@ -84,38 +97,38 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> GetAllTransactionsForGroupByGroupID([FromQuery] Guid groupId, 
             [FromQuery] PaginationParameter paginationParameter, [FromQuery] TransactionFilter filter)
         {
-            return ValidateAndExecute(() => _transactionService.GetTransactionByGroupIdAsync(groupId, paginationParameter, filter));
+            return ValidateAndExecute(() => _groupTransactionService.GetTransactionByGroupIdAsync(groupId, paginationParameter, filter));
         }
 
         [HttpPost("group/create")]
         public Task<IActionResult> CreateGroupTransaction([FromBody] CreateGroupTransactionModel model)
         {
             var currentEmail = _claimsService.GetCurrentUserEmail;
-            return ValidateAndExecute(() => _transactionService.CreateGroupTransactionAsync(model, currentEmail));
+            return ValidateAndExecute(() => _groupTransactionService.CreateGroupTransactionAsync(model, currentEmail));
         }
 
         [HttpGet("group/transaction/{transactionId}")]
         public Task<IActionResult> GetGroupTransactionDetails(Guid transactionId)
         {
-            return ValidateAndExecute(() => _transactionService.GetGroupTransactionDetailsAsync(transactionId));
+            return ValidateAndExecute(() => _groupTransactionService.GetGroupTransactionDetailsAsync(transactionId));
         }
 
         [HttpPut("group/update")]
         public Task<IActionResult> UpdateGroupTransaction([FromBody] UpdateGroupTransactionModel model)
         {
-            return ValidateAndExecute(() => _transactionService.UpdateGroupTransactionAsync(model));
+            return ValidateAndExecute(() => _groupTransactionService.UpdateGroupTransactionAsync(model));
         }
 
         [HttpDelete("group/delete/{transactionId}")]
         public Task<IActionResult> DeleteGroupTransaction(Guid transactionId)
         {
-            return ValidateAndExecute(() => _transactionService.DeleteGroupTransactionAsync(transactionId));
+            return ValidateAndExecute(() => _groupTransactionService.DeleteGroupTransactionAsync(transactionId));
         }
 
         [HttpPost("group/response")]
         public Task<IActionResult> ResponseGroupTransaction(ResponseGroupTransactionModel model)
         {
-            return ValidateAndExecute(() => _transactionService.ResponseGroupTransactionAsync(model));
+            return ValidateAndExecute(() => _groupTransactionService.ResponseGroupTransactionAsync(model));
         }
 
         #region vote
@@ -123,44 +136,38 @@ namespace MoneyEz.API.Controllers
         [HttpPost("group/vote/create")]
         public Task<IActionResult> CreateGroupTransactionVote([FromBody] CreateGroupTransactionVoteModel model)
         {
-            return ValidateAndExecute(() => _transactionService.CreateGroupTransactionVoteAsync(model));
+            return ValidateAndExecute(() => _groupTransactionService.CreateGroupTransactionVoteAsync(model));
         }
 
         [HttpPut("group/vote/update")]
         public Task<IActionResult> UpdateGroupTransactionVote([FromBody] UpdateGroupTransactionVoteModel model)
         {
-            return ValidateAndExecute(() => _transactionService.UpdateGroupTransactionVoteAsync(model));
+            return ValidateAndExecute(() => _groupTransactionService.UpdateGroupTransactionVoteAsync(model));
         }
 
         [HttpDelete("group/vote/delete/{voteId}")]
         public Task<IActionResult> DeleteGroupTransactionVote(Guid voteId)
         {
-            return ValidateAndExecute(() => _transactionService.DeleteGroupTransactionVoteAsync(voteId));
+            return ValidateAndExecute(() => _groupTransactionService.DeleteGroupTransactionVoteAsync(voteId));
         }
 
         #endregion vote
 
         #endregion group
 
-        #region duc
+        #region external transaction
         [HttpPost("webhook")]
         public Task<IActionResult> UpdateTransactionWebhook(WebhookPayload webhookPayload)
         {
-            return ValidateAndExecute(() => _transactionService.UpdateTransactionWebhook(webhookPayload));
+            return ValidateAndExecute(() => _externalTransactionService.UpdateTransactionWebhook(webhookPayload));
         }
 
         [HttpPost("python-service")]
         public Task<IActionResult> CreateTransactionPythonService(CreateTransactionPythonModel model)
         {
-            return ValidateAndExecute(() => _transactionService.CreateTransactionPythonService(model));
+            return ValidateAndExecute(() => _externalTransactionService.CreateTransactionPythonService(model));
         }
-
-        [HttpPut("categorize")]
-        public Task<IActionResult> CategorizeTransaction(CategorizeTransactionModel model)
-        {
-            return ValidateAndExecute(() => _transactionService.CategorizeTransactionAsync(model));
-        }
-        #endregion duc
+        #endregion
 
         #region report
 
