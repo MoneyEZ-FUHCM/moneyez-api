@@ -236,7 +236,6 @@ namespace MoneyEz.API
             // config group service
             services.AddScoped<IGroupFundRepository, GroupRepository>();
             services.AddScoped<IGroupFundsService, GroupFundsService>();
-            services.AddScoped<IGroupTransactionService, GroupTransactionService>();
 
             // config group log service
             services.AddScoped<IGroupFundLogRepository, GroupFundLogRepository>();
