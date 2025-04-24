@@ -12,7 +12,7 @@ namespace MoneyEz.Services.BusinessModels.FinancialGoalModels
         public decimal TargetAmount { get; set; }
         public decimal CurrentAmount { get; set; }
         public DateTime Deadline { get; set; }
-        public FinancialGoalStatus Status { get; set; }
+        public string? Status { get; set; }
         public ApprovalStatus ApprovalStatus { get; set; }
     }
 }
