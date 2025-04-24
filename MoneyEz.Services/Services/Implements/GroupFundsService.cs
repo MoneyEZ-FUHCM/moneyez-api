@@ -849,6 +849,22 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     throw new DefaultException("", MessageConstants.GROUP_MEMBER_EXIST);
                 }
+                else if (memberExist != null && memberExist.Status != GroupMemberStatus.ACTIVE)
+                {
+                    memberExist.IsDeleted = false;
+                    memberExist.Status = GroupMemberStatus.PENDING;
+                    _unitOfWork.GroupMemberRepository.UpdateAsync(memberExist);
+
+                    // Add a log entry for the invite member action
+                    groupFund.GroupFundLogs.Add(new GroupFundLog
+                    {
+                        ChangedBy = currentUser.FullName,
+                        ChangeDescription = $"đã mời {invitedUser.FullName} vào nhóm qua email",
+                        Action = GroupAction.INVITED.ToString(),
+                        CreatedDate = CommonUtils.GetCurrentTime(),
+                        CreatedBy = currentUser.Email
+                    });
+                }
                 else if (memberExist == null)
                 {
                     // Add the member to the group with a pending status
@@ -1058,18 +1074,14 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.GROUP_MEMBER_NOT_FOUND);
             }
 
-            // kiểm tra % contribution đối với group có goal
-            var groupGoal = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: g => g.GroupId == groupId && g.Status == FinancialGoalStatus.ACTIVE
-            );
+            //  kiểm tra xem thành viên có giao dịch chưa
+            var memberTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == groupId && t.UserId == memberToRemove.UserId && t.Status == TransactionStatus.APPROVED);
 
-            if (groupGoal.Any())
+            if (memberTransactions.Any())
             {
-                if (memberToRemove.ContributionPercentage > 0)
-                {
-                    throw new DefaultException(MessageConstants.GROUP_MEMBER_HAVE_CONTRIBUTION_MESSAGE,
+                throw new DefaultException(MessageConstants.GROUP_MEMBER_HAVE_CONTRIBUTION_MESSAGE,
                         MessageConstants.GROUP_MEMBER_HAVE_CONTRIBUTION);
-                }
             }
 
             // add log
