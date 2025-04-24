@@ -257,6 +257,12 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_REMIND_AMOUNT_INVALID = "GroupRemindAmountInvalid";
         public const string GROUP_REMIND_AMOUNT_INVALID_MESSAGE = "The remind amount must be greater than zero.";
 
+        public const string GROUP_CREATE_TRANSACTION_INVALID_AMOUNT = "GroupCreateTransactionInvalidAmount";
+
+        public const string GROUP_CREATE_TRANSACTION_INVALID_TYPE = "GroupCreateTransactionInvalidType";
+
+        public const string GROUP_CREATE_TRANSACTION_INVALID_DESCRIPTION = "GroupCreateTransactionInvalidDescription";
+
         // fundraising request
         public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
         public const string FUNDRAISING_REQUEST_ACCESS_DENIED = "FundraisingRequestAccessDenied";

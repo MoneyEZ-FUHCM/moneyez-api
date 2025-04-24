@@ -581,10 +581,10 @@ namespace MoneyEz.Services.Services.Implements
                 ?? throw new DefaultException(MessageConstants.USER_NOT_IN_GROUP);
 
             if (model.Amount <= 0)
-                throw new DefaultException("Số tiền giao dịch phải lớn hơn 0.");
+                throw new DefaultException("Số tiền giao dịch phải lớn hơn 0.", MessageConstants.GROUP_CREATE_TRANSACTION_INVALID_AMOUNT);
 
             if (!Enum.IsDefined(typeof(TransactionType), model.Type))
-                throw new DefaultException("Loại giao dịch không hợp lệ.");
+                throw new DefaultException("Loại giao dịch không hợp lệ.", MessageConstants.GROUP_CREATE_TRANSACTION_INVALID_TYPE);
 
             //var now = CommonUtils.GetCurrentTime().Date;
             //if (model.TransactionDate.Date > now)
@@ -594,7 +594,10 @@ namespace MoneyEz.Services.Services.Implements
             //    throw new DefaultException("Ngày giao dịch không hợp lệ.");
 
             if (model.Description?.Length > 1000)
-                throw new DefaultException("Mô tả giao dịch quá dài (tối đa 1000 ký tự).");
+                throw new DefaultException("Mô tả giao dịch quá dài (tối đa 1000 ký tự).", MessageConstants.GROUP_CREATE_TRANSACTION_INVALID_DESCRIPTION);
+
+            if (model.Type == TransactionType.EXPENSE && model.Amount > group.CurrentBalance)
+                throw new DefaultException("Số tiền rút lớn hơn số dư hiện tại.", MessageConstants.GROUP_CREATE_TRANSACTION_INVALID_AMOUNT);
 
             bool requiresApproval = groupMember.Role != RoleGroup.LEADER;
             TransactionStatus transactionStatus = requiresApproval ? TransactionStatus.PENDING : TransactionStatus.APPROVED;
@@ -660,9 +663,10 @@ namespace MoneyEz.Services.Services.Implements
 
                 var response = new FundraisingTransactionResponse
                 {
-                    RequestCode = transaction.RequestCode,
-                    Amount = transaction.Amount,
-                    Status = transaction.Status.ToString(),
+                    //RequestCode = transaction.RequestCode,
+                    //Amount = transaction.Amount,
+                    //Status = transaction.Status.ToString(),
+                    Transaction = _mapper.Map<GroupTransactionModel>(transaction),
                     BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
                 };
                 return new BaseResultModel
@@ -678,7 +682,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status200OK,
                     Message = "Withdraw request created successfully",
-                    Data = _mapper.Map<TransactionModel>(transaction)
+                    Data = _mapper.Map<GroupTransactionModel>(transaction)
                 };
             }
         }
