@@ -21,6 +21,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> GetUserFinancialGoalBySpendingModelAsync(Guid userSpendingModelId, PaginationParameter paginationParameter, FinancialGoalFilter filter);
         Task<BaseResultModel> GetAvailableCategoriesCreateGoalPersonalAsync();
 
+        // group goal
         Task<BaseResultModel> AddGroupFinancialGoalAsync(AddGroupFinancialGoalModel model);
         Task<BaseResultModel> GetGroupFinancialGoalsAsync(GetGroupFinancialGoalsModel model);
         Task<BaseResultModel> GetGroupFinancialGoalByIdAsync(GetGroupFinancialGoalDetailModel model);
