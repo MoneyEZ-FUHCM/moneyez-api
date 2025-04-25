@@ -29,5 +29,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> DeleteGroupFinancialGoalAsync(DeleteFinancialGoalModel model);
         Task<BaseResultModel> ApproveGroupFinancialGoalAsync(ApproveGroupFinancialGoalRequestModel model);
 
+        // cron job
+        Task<BaseResultModel> ScanAndChangeStatusWithDueGoalAsync();
     }
 }
