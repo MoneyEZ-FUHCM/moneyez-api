@@ -308,8 +308,8 @@ namespace MoneyEz.Services.Services.Implements
 
             var recurrings = await _unitOfWork.RecurringTransactionRepository.GetByConditionAsync(
                 filter: rt => rt.Status == CommonsStatus.ACTIVE
-                    && rt.StartDate <= today
-                    && (!rt.EndDate.HasValue || rt.EndDate.Value >= today),
+                    && rt.StartDate.Date <= today
+                    && (!rt.EndDate.HasValue || rt.EndDate.Value.Date >= today),
                 include: q => q.Include(r => r.Subcategory)
             );
 
