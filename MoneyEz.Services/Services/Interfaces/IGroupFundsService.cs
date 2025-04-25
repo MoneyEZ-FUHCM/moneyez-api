@@ -20,19 +20,23 @@ namespace MoneyEz.Services.Services.Interfaces
         Task<BaseResultModel> UpdateGroupFundsAsync(UpdateGroupModel model);
         Task<BaseResultModel> GetAllGroupFunds(PaginationParameter paginationParameters, GroupFilter groupFilter);
         Task<BaseResultModel> CloseGroupFundAsync(Guid groupId);
-        Task<BaseResultModel> RemoveMemberByLeaderAsync(Guid groupId, Guid memberId);
-        Task<BaseResultModel> SetMemberRoleAsync(SetRoleGroupModel setRoleGroupModel);
         Task<BaseResultModel> GenerateFinancialHealthReportAsync(Guid groupId);
+        Task<BaseResultModel> GetGroupFundById(Guid groupId);
+        Task<BaseResultModel> GetGroupFundLogs(Guid groupId, PaginationParameter paginationParameters, GroupLogFilter filter);
+
+        // group member
+        Task<BaseResultModel> RemoveMemberByLeaderAsync(Guid groupId, Guid memberId);
+        Task<BaseResultModel> LeaveGroupAsync(Guid groupId);
+        Task<BaseResultModel> SetMemberRoleAsync(SetRoleGroupModel setRoleGroupModel);
         Task<BaseResultModel> InviteMemberEmailAsync(InviteMemberModel inviteMemberModel);
         Task<BaseResultModel> InviteMemberQRCodeAsync(InviteMemberModel inviteMemberModel);
         Task<BaseResultModel> AcceptInvitationEmailAsync(string token);
         Task<BaseResultModel> AcceptInvitationQRCodeAsync(string token);
-        Task<BaseResultModel> GetGroupFundById(Guid groupId);
-        Task<BaseResultModel> LeaveGroupAsync(Guid groupId);
         Task<BaseResultModel> SetGroupContribution(SetGroupContributionModel setGroupContributionModel);
+
+        // group transaction
         Task<BaseResultModel> CreateFundraisingRequest(CreateFundraisingModel createFundraisingModel);
         Task<BaseResultModel> CreateFundWithdrawalRequest(CreateFundWithdrawalModel createFundWithdrawalModel);
-        Task<BaseResultModel> GetGroupFundLogs(Guid groupId, PaginationParameter paginationParameters, GroupLogFilter filter);
         Task<BaseResultModel> RemindFundraisingAsync(RemindFundraisingModel remindFundraisingModel);
         Task<BaseResultModel> GetPendingRequestsAsync(Guid groupId, PaginationParameter paginationParameters);
         Task<BaseResultModel> GetPendingRequestDetailAsync(Guid requestId);

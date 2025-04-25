@@ -254,6 +254,15 @@ namespace MoneyEz.Services.Constants
         public const string GROUP_BALANCE_MUST_EQUAL_ZERO = "GroupBalanceMustEqualZero";
         public const string GROUP_BALANCE_MUST_EQUAL_ZERO_MESSAGE = "The group balance must be zero before closing the group.";
 
+        public const string GROUP_REMIND_AMOUNT_INVALID = "GroupRemindAmountInvalid";
+        public const string GROUP_REMIND_AMOUNT_INVALID_MESSAGE = "The remind amount must be greater than zero.";
+
+        public const string GROUP_CREATE_TRANSACTION_INVALID_AMOUNT = "GroupCreateTransactionInvalidAmount";
+
+        public const string GROUP_CREATE_TRANSACTION_INVALID_TYPE = "GroupCreateTransactionInvalidType";
+
+        public const string GROUP_CREATE_TRANSACTION_INVALID_DESCRIPTION = "GroupCreateTransactionInvalidDescription";
+
         // fundraising request
         public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
         public const string FUNDRAISING_REQUEST_ACCESS_DENIED = "FundraisingRequestAccessDenied";
@@ -327,6 +336,14 @@ namespace MoneyEz.Services.Constants
         public const string MISSING_PARAMETER = "MissingParameter";
         public const string INVALID_PARAMETER_FORMAT = "InvalidParameterFormat";
 
+        // Knowledge document
+        public const string KNOWLEDGE_DOCUMENT_INVALID_MODEL = "KnowledgeDocumentInvalidModel";
+        public const string KNOWLEDGE_DOCUMENT_INVALID_FILE = "KnowledgeDocumentInvalidFile";
+        public const string KNOWLEDGE_DOCUMENT_INVALID_FILE_TYPE = "KnowledgeDocumentInvalidFileType";
+        public const string KNOWLEDGE_DOCUMENT_UPLOAD_FAILED = "KnowledgeDocumentUploadFailed";
+        public const string KNOWLEDGE_DOCUMENT_NOT_FOUND = "KnowledgeDocumentNotFound";
+        public const string KNOWLEDGE_DOCUMENT_DELETE_FAILED = "KnowledgeDocumentDeleteFailed";
+
         // Post
         public const string POST_NOT_FOUND = "PostNotFound";
         public const string POST_ALREADY_EXISTS = "PostAlreadyExists";
@@ -339,6 +356,5 @@ namespace MoneyEz.Services.Constants
 
         // quiz
         public const string QUIZ_RESULT_NOT_FOUND = "QuizResultNotFound";
-
     }
 }

@@ -20,11 +20,14 @@ namespace MoneyEz.API.Controllers
         private readonly IGroupFundsService _groupFundsService;
         private readonly IClaimsService _claimsService;
 
-        public GroupController(IGroupFundsService groupFundsService, IClaimsService claimsService)
+        public GroupController(IGroupFundsService groupFundsService,
+            IClaimsService claimsService)
         {
             _groupFundsService = groupFundsService;
             _claimsService = claimsService;
         }
+
+        #region group members
 
         [HttpDelete("{groupId}/members/{memberId}")]
         [Authorize]
@@ -75,6 +78,17 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundsService.AcceptInvitationQRCodeAsync(token));
         }
 
+        [HttpPut("contribution")]
+        [Authorize]
+        public async Task<IActionResult> SetGroupContribution([FromBody] SetGroupContributionModel setGroupContributionModel)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.SetGroupContribution(setGroupContributionModel));
+        }
+
+        #endregion
+
+        #region group management
+
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreateGroupFund([FromBody] CreateGroupModel model)
@@ -103,12 +117,23 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundsService.CloseGroupFundAsync(groupId));
         }
 
-        [HttpPut("contribution")]
+        [HttpGet("logs/{id}")]
         [Authorize]
-        public async Task<IActionResult> SetGroupContribution([FromBody] SetGroupContributionModel setGroupContributionModel)
+        public async Task<IActionResult> GetGroupFundLogs(Guid id, [FromQuery]PaginationParameter paginationParameters, [FromQuery]GroupLogFilter filter)
         {
-            return await ValidateAndExecute(() => _groupFundsService.SetGroupContribution(setGroupContributionModel));
+            return await ValidateAndExecute(() => _groupFundsService.GetGroupFundLogs(id, paginationParameters, filter));
         }
+
+        [HttpPut]
+        [Authorize]
+        public async Task<IActionResult> UpdateGroupFund([FromBody] UpdateGroupModel model)
+        {
+            return await ValidateAndExecute(() => _groupFundsService.UpdateGroupFundsAsync(model));
+        }
+
+        #endregion
+
+        #region group transactions
 
         [HttpPost("fund-raising/request")]
         [Authorize]
@@ -131,28 +156,6 @@ namespace MoneyEz.API.Controllers
             return await ValidateAndExecute(() => _groupFundsService.RemindFundraisingAsync(model));
         }
 
-
-        //[HttpPost("funds/response")]
-        //[Authorize]
-        //public async Task<IActionResult> ResponseTransactionRequest([FromBody] UpdateGroupTransactionModel model)
-        //{
-        //    return await ValidateAndExecute(() => _groupFundsService.ResponsePendingTransaction(model));
-        //}
-
-        [HttpGet("logs/{id}")]
-        [Authorize]
-        public async Task<IActionResult> GetGroupFundLogs(Guid id, [FromQuery]PaginationParameter paginationParameters, [FromQuery]GroupLogFilter filter)
-        {
-            return await ValidateAndExecute(() => _groupFundsService.GetGroupFundLogs(id, paginationParameters, filter));
-        }
-
-        [HttpPut]
-        [Authorize]
-        public async Task<IActionResult> UpdateGroupFund([FromBody] UpdateGroupModel model)
-        {
-            return await ValidateAndExecute(() => _groupFundsService.UpdateGroupFundsAsync(model));
-        }
-
         [HttpGet("pending-requests")]
         [Authorize]
         public async Task<IActionResult> GetPendingRequests([FromQuery] Guid groupId, [FromQuery] PaginationParameter paginationParameters)
@@ -166,5 +169,7 @@ namespace MoneyEz.API.Controllers
         {
             return await ValidateAndExecute(() => _groupFundsService.GetPendingRequestDetailAsync(requestId));
         }
+
+        #endregion
     }
 }

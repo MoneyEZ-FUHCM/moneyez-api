@@ -30,20 +30,20 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IMapper _mapper;
         private readonly IClaimsService _claimsService;
         private readonly ISpendingModelService _spendingModelService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly INotificationService _notificationService;
 
         public UserSpendingModelService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             IClaimsService claimsService,
             ISpendingModelService spendingModelService,
-            IHttpContextAccessor httpContextAccessor)
+            INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
             _spendingModelService = spendingModelService;
-            _httpContextAccessor = httpContextAccessor;
+            _notificationService = notificationService;
         }
 
         public async Task<BaseResultModel> ChooseSpendingModelAsync(ChooseSpendingModelModel model)
@@ -770,113 +770,6 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> UpdateExpiredSpendingModelsAsync()
-        {
-            var currentTime = CommonUtils.GetCurrentTime();
-
-            // Get all active spending models that have passed their end date
-            var expiredModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
-                filter: usm => usm.Status == UserSpendingModelStatus.ACTIVE
-                    && usm.EndDate < currentTime
-                    && !usm.IsDeleted
-            );
-
-            if (!expiredModels.Any())
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status200OK,
-                    Message = "No expired models found to update."
-                };
-            }
-
-            var expiredModelUpdate = new List<UserSpendingModel>();
-
-            // Update status to EXPIRED for all expired models
-            foreach (var model in expiredModels)
-            {
-                model.Status = UserSpendingModelStatus.EXPIRED;
-                model.UpdatedDate = currentTime;
-                expiredModelUpdate.Add(model);
-            }
-
-            _unitOfWork.UserSpendingModelRepository.UpdateRangeAsync(expiredModelUpdate);
-            await _unitOfWork.SaveAsync();
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = $"Successfully updated {expiredModels.Count()} expired spending models.",
-                Data = expiredModels.Count()
-            };
-        }
-
-        public async Task<BaseResultModel> NotifyUpcomingExpiredSpendingModel()
-        {
-            var currentTime = CommonUtils.GetCurrentTime();
-            var threeDaysBeforeExpiry = currentTime.AddDays(3);
-            var oneDayBeforeExpiry = currentTime.AddDays(1);
-
-            var upcomingExpiredModels = await _unitOfWork.UserSpendingModelRepository.ToPaginationIncludeAsync(
-                new PaginationParameter { PageSize = int.MaxValue, PageIndex = 1 },
-                filter: usm => usm.EndDate <= threeDaysBeforeExpiry
-                    && usm.EndDate > currentTime
-                    && !usm.IsDeleted
-            );
-
-            if (!upcomingExpiredModels.Any())
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status200OK,
-                    Message = "No upcoming expired models found to notify."
-                };
-            }
-
-            foreach (var model in upcomingExpiredModels)
-            {
-                var user = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId.Value);
-                if (user != null)
-                {
-                    var daysUntilExpiry = (model.EndDate - currentTime)?.Days ?? 0;
-                    string title, message;
-
-                    if (daysUntilExpiry == 3)
-                    {
-                        title = "Thời gian sử dụng mô hình chi tiêu sắp hết hạn";
-                        message = $"Mô hình chi tiêu '{model.SpendingModel.Name}' mà bạn đang sử dụng sẽ kết thúc vào ngày {model.EndDate:yyyy-MM-dd}. Hãy gia hạn hoặc chọn một mô hình chi tiêu phù hợp.";
-                    }
-                    else if (daysUntilExpiry == 1)
-                    {
-                        title = "Mô hình chi tiêu sắp hết hạn";
-                        message = $"Mô hình chi tiêu '{model.SpendingModel.Name}' mà bạn đang sử dụng sẽ kết thúc vào ngày mai. Hãy chọn một mô hình chi tiêu mới trước khi hết hạn.";
-                    }
-                    else
-                    {
-                        continue;
-                    }
-
-                    var notification = new Notification
-                    {
-                        UserId = user.Id,
-                        Title = title,
-                        Message = message,
-                        CreatedDate = currentTime
-                    };
-
-                    await _unitOfWork.NotificationRepository.AddAsync(notification);
-                }
-            }
-
-            await _unitOfWork.SaveAsync();
-
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Message = $"Thông báo thành công tới {upcomingExpiredModels.Count()} người dùng về mô hình đang sử dụng sắp hết hạn."
-            };
-        }
-
         public async Task<BaseResultModel> RenewUserSpendingModelAsync(Guid userId)
         {
             var user = await _unitOfWork.UsersRepository.GetByIdAsync(userId)
@@ -1151,6 +1044,99 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "Current spending model retrieved successfully",
                 Data = modelForPython
             };
+        }
+
+        public async Task<BaseResultModel> ProcessExpiredAndUpcomingSpendingModelsAsync()
+        {
+            var currentTime = CommonUtils.GetCurrentTime();
+            var threeDaysBeforeExpiry = currentTime.AddDays(3);
+            var oneDayBeforeExpiry = currentTime.AddDays(1);
+
+            // Step 1: Update expired spending models
+            var expiredModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.Status == UserSpendingModelStatus.ACTIVE
+                    && usm.EndDate < currentTime
+                    && !usm.IsDeleted
+            );
+
+            if (expiredModels.Any())
+            {
+                var expiredModelUpdate = new List<UserSpendingModel>();
+
+                foreach (var model in expiredModels)
+                {
+                    model.Status = UserSpendingModelStatus.EXPIRED;
+                    model.UpdatedDate = currentTime;
+                    expiredModelUpdate.Add(model);
+                }
+
+                _unitOfWork.UserSpendingModelRepository.UpdateRangeAsync(expiredModelUpdate);
+                await _unitOfWork.SaveAsync();
+            }
+
+            // Step 2: Notify users about upcoming expired spending models
+            var upcomingExpiredModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+                filter: usm => usm.EndDate <= threeDaysBeforeExpiry
+                    && usm.EndDate > currentTime
+                    && usm.Status == UserSpendingModelStatus.ACTIVE
+                    && !usm.IsDeleted
+            );
+
+            if (upcomingExpiredModels.Any())
+            {
+                foreach (var model in upcomingExpiredModels)
+                {
+                    var user = await _unitOfWork.UsersRepository.GetByIdAsync(model.UserId.Value);
+                    if (user != null)
+                    {
+                        var daysUntilExpiry = (model.EndDate - currentTime)?.Days ?? 0;
+                        string title, message;
+
+                        if (daysUntilExpiry == 3)
+                        {
+                            title = "Mô hình chi tiêu sắp hết hạn";
+                            message = $"Mô hình chi tiêu '{model.SpendingModel.Name}' mà bạn đang sử dụng sẽ kết thúc vào ngày {model.EndDate:yyyy-MM-dd}. " +
+                                $"Hãy gia hạn hoặc chọn một mô hình chi tiêu phù hợp.";
+                        }
+                        else if (daysUntilExpiry == 1)
+                        {
+                            title = "Mô hình chi tiêu sắp hết hạn";
+                            message = $"Mô hình chi tiêu '{model.SpendingModel.Name}' mà bạn đang sử dụng sẽ kết thúc vào ngày mai. " +
+                                $"Hãy chọn một mô hình chi tiêu mới trước khi hết hạn.";
+                        }
+                        else
+                        {
+                            continue;
+                        }
+
+                        var notification = new Notification
+                        {
+                            UserId = user.Id,
+                            Title = title,
+                            Message = message,
+                            CreatedDate = currentTime,
+                            Type = NotificationType.USER_SPENDING_MODEL,
+                            EntityId = model.Id,
+                        };
+
+                        await _notificationService.AddNotificationByUserId(user.Id, notification);
+                    }
+                }
+            }
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = $"Đã xử lý thành công: Cập nhật {expiredModels.Count()} mô hình đã hết hạn " +
+                $"và gửi thông báo đến {upcomingExpiredModels.Count(model => (model.EndDate - currentTime)?.Days == 3 || (model.EndDate - currentTime)?.Days == 1)} " +
+                $"người dùng về mô hình sắp hết hạn.",
+                Data = new
+                {
+                    ExpiredModelsCount = expiredModels.Count(),
+                    NotifiedUsersCount = upcomingExpiredModels.Count(model => (model.EndDate - currentTime)?.Days == 3 || (model.EndDate - currentTime)?.Days == 1)
+                }
+            };
+
         }
     }
 }

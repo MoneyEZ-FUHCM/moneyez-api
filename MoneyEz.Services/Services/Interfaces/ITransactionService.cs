@@ -50,11 +50,11 @@ namespace MoneyEz.Services.Services.Interfaces
         #endregion python webhook
 
         #region report
-        Task<BaseResultModel> GetYearReportAsync(int year, ReportTransactionType type);
-        Task<BaseResultModel> GetCategoryYearReportAsync(int year, ReportTransactionType type);
+        Task<BaseResultModel> GetYearReportAsync(int year, string type);
+        Task<BaseResultModel> GetCategoryYearReportAsync(int year, string type);
         Task<BaseResultModel> GetAllTimeReportAsync();
         Task<BaseResultModel> GetBalanceYearReportAsync(int year);
-        Task<BaseResultModel> GetAllTimeCategoryReportAsync(ReportTransactionType type);
+        Task<BaseResultModel> GetAllTimeCategoryReportAsync(string type);
 
         /*        Task<BaseResultModel> GetCategoryYearReportAsyncV2(int year, string type);*/
         /*        Task<BaseResultModel> GetAllTimeCategoryReportAsyncV2(string type);*/

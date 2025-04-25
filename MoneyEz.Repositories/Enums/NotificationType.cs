@@ -14,5 +14,6 @@ namespace MoneyEz.Repositories.Enums
         GROUP_INVITE,
         FINANCIAL_GOAL_PERSONAL,
         FINANCIAL_GOAL_GROUP,
+        USER_SPENDING_MODEL,
     }
 }

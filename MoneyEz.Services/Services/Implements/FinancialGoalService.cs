@@ -323,7 +323,7 @@ namespace MoneyEz.Services.Services.Implements
             goalToUpdate.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
             goalToUpdate.TargetAmount = model.TargetAmount;
             goalToUpdate.Deadline = model.Deadline;
-            goalToUpdate.UpdatedDate = CommonUtils.GetCurrentTime();
+            goalToUpdate.UpdatedBy = user.Email;
             goalToUpdate.Status = FinancialGoalStatus.ACTIVE;
             goalToUpdate.ApprovalStatus = ApprovalStatus.APPROVED;
 
@@ -360,7 +360,7 @@ namespace MoneyEz.Services.Services.Implements
             financialGoal.IsDeleted = true;
             financialGoal.Status = FinancialGoalStatus.ARCHIVED;
             financialGoal.ApprovalStatus = ApprovalStatus.APPROVED;  // Đặt mặc định theo yêu cầu
-            financialGoal.UpdatedDate = CommonUtils.GetCurrentTime();
+            financialGoal.UpdatedBy = user.Email;
 
             _unitOfWork.FinancialGoalRepository.UpdateAsync(financialGoal);
             await _unitOfWork.SaveAsync();
@@ -439,7 +439,10 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     SubcategoryId = goal.SubcategoryId,
                 },
-                condition: t => t.UserId == user.Id,
+                condition: t => t.UserId == user.Id && t.GroupId == null
+                    && t.UserSpendingModelId == userSpendingModel.Id
+                    && t.Status == TransactionStatus.APPROVED
+                    && !t.IsDeleted,
                 include: query => query
                     .Include(t => t.Subcategory)
             );
@@ -484,7 +487,7 @@ namespace MoneyEz.Services.Services.Implements
                 user.Id,
                 paginationParameter,
                 filter,
-                condition: fg =>  fg.StartDate == userSpendingModel.StartDate
+                condition: fg => fg.StartDate == userSpendingModel.StartDate
                             && fg.Deadline == userSpendingModel.EndDate,
                 include: fg => fg.Include(fg => fg.Subcategory)
             );
@@ -564,7 +567,7 @@ namespace MoneyEz.Services.Services.Implements
                     if (subcategory == null) continue;
 
                     var hasGoal = subcategoriesWithGoals.Contains(subcategory.Id);
-                    
+
                     categoryModel.Subcategories.Add(new AvailableSubcategoriesModel
                     {
                         SubcategoryId = subcategory.Id,
@@ -640,7 +643,7 @@ namespace MoneyEz.Services.Services.Implements
 
             // Get transactions for this subcategory within the time range
             var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.UserId == user.Id
+                filter: t => t.UserId == user.Id && t.GroupId == null
                           && t.SubcategoryId == financialGoal.SubcategoryId
                           && t.TransactionDate >= startDate
                           && t.TransactionDate <= endDate
@@ -690,7 +693,7 @@ namespace MoneyEz.Services.Services.Implements
                     groupedData.Add(new GoalChartDataPoint
                     {
                         Label = month.Date.ToString("MM/yy"),
-                        Amount = runningTotal,
+                        Amount = monthAmount,
                         Date = month.Date
                     });
                 }
@@ -740,7 +743,7 @@ namespace MoneyEz.Services.Services.Implements
                     groupedData.Add(new GoalChartDataPoint
                     {
                         Label = $"{weekStart:dd/MM}-{weekEnd:dd/MM}",
-                        Amount = runningTotal,
+                        Amount = weekAmount,
                         Date = weekStart
                     });
                 }
@@ -800,7 +803,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var existingGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.GroupId == model.GroupId && fg.Status == FinancialGoalStatus.ACTIVE);
+                filter: fg => fg.GroupId == model.GroupId && fg.Status == FinancialGoalStatus.ACTIVE && !fg.IsDeleted);
 
             if (existingGoals.Any())
             {
@@ -835,6 +838,17 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            // check current balance group
+            if (model.TargetAmount <= groupFund.CurrentBalance)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.INVALID_TARGET_AMOUNT,
+                    Message = "Số tiền mục tiêu phải lớn hơn số tiền hiện tại."
+                };
+            }
+
             //if (model.CurrentAmount > groupFund.CurrentBalance)
             //{
             //    return new BaseResultModel
@@ -845,7 +859,7 @@ namespace MoneyEz.Services.Services.Implements
             //    };
             //}
 
-            if (model.Deadline <= CommonUtils.GetCurrentTime())
+            if (model.Deadline.Date <= CommonUtils.GetCurrentTime().Date)
             {
                 return new BaseResultModel
                 {
@@ -863,8 +877,9 @@ namespace MoneyEz.Services.Services.Implements
                 NameUnsign = StringUtils.ConvertToUnSign(model.Name),
                 TargetAmount = model.TargetAmount,
                 CurrentAmount = model.CurrentAmount > 0 ? model.CurrentAmount : groupFund.CurrentBalance,
-                Deadline = model.Deadline,
-                CreatedDate = CommonUtils.GetCurrentTime(),
+                Deadline = model.Deadline.Date,
+                StartDate = CommonUtils.GetCurrentTime(),
+                CreatedBy = user.Email,
             };
 
             if (userRole == RoleGroup.LEADER)
@@ -916,32 +931,33 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var userRole = groupMember.First().Role;
+            //var userRole = groupMember.First().Role;
 
-            var allowedStatuses = new List<FinancialGoalStatus>();
+            //var allowedStatuses = new List<FinancialGoalStatus>();
 
-            if (userRole == RoleGroup.LEADER || userRole == RoleGroup.MOD)
-            {
-                // Leader và MOD thấy tất cả
-                allowedStatuses.AddRange(new[]
-                {
-                    FinancialGoalStatus.PENDING,
-                    FinancialGoalStatus.ACTIVE,
-                    FinancialGoalStatus.ARCHIVED
-                });
-            }
-            else
-            {
-                // Member chỉ thấy mục tiêu đã duyệt hoặc đã lưu trữ
-                allowedStatuses.AddRange(new[]
-                {
-                    FinancialGoalStatus.ACTIVE,
-                    FinancialGoalStatus.ARCHIVED
-                });
-            }
+            //if (userRole == RoleGroup.LEADER || userRole == RoleGroup.MOD)
+            //{
+            //    // Leader và MOD thấy tất cả
+            //    allowedStatuses.AddRange(new[]
+            //    {
+            //        FinancialGoalStatus.PENDING,
+            //        FinancialGoalStatus.ACTIVE,
+            //        FinancialGoalStatus.ARCHIVED
+            //    });
+            //}
+            //else
+            //{
+            //    // Member chỉ thấy mục tiêu đã duyệt hoặc đã lưu trữ
+            //    allowedStatuses.AddRange(new[]
+            //    {
+            //        FinancialGoalStatus.ACTIVE,
+            //        FinancialGoalStatus.ARCHIVED
+            //    });
+            //}
 
             var financialGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.GroupId == model.GroupId && allowedStatuses.Contains(fg.Status)
+                filter: fg => fg.GroupId == model.GroupId && !fg.IsDeleted,
+                orderBy: fg => fg.OrderByDescending(fg => fg.CreatedDate)
             );
 
             var mappedGoals = _mapper.Map<List<GroupFinancialGoalModel>>(financialGoals);
@@ -969,6 +985,16 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var goalToUpdate = financialGoal.First();
+
+            if (goalToUpdate.Status == FinancialGoalStatus.COMPLETED || goalToUpdate.Status == FinancialGoalStatus.ARCHIVED)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.FINANCIAL_GOAL_ALREADY_COMPLETED,
+                    Message = "Mục tiêu tài chính này đã hoàn thành hoặc đã bị xóa."
+                };
+            }
 
             var groupMember = await _unitOfWork.GroupMemberRepository.GetByConditionAsync(
                 filter: gm => gm.GroupId == model.GroupId && gm.UserId == user.Id);
@@ -1015,7 +1041,21 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            if (model.Deadline <= CommonUtils.GetCurrentTime())
+            // check group current balance
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdAsync(model.GroupId)
+                ?? throw new NotExistException(MessageConstants.GROUP_NOT_FOUND);
+
+            if (model.TargetAmount < groupFund.CurrentBalance)
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.INVALID_TARGET_AMOUNT,
+                    Message = "Số tiền mục tiêu không được nhỏ hơn số dư hiện tại của nhóm."
+                };
+            }
+
+            if (model.Deadline.Date <= CommonUtils.GetCurrentTime().Date)
             {
                 return new BaseResultModel
                 {
@@ -1028,23 +1068,13 @@ namespace MoneyEz.Services.Services.Implements
             goalToUpdate.Name = model.Name;
             goalToUpdate.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
             goalToUpdate.TargetAmount = model.TargetAmount;
-            goalToUpdate.Deadline = model.Deadline;
-            goalToUpdate.UpdatedDate = CommonUtils.GetCurrentTime();
+            goalToUpdate.Deadline = model.Deadline.Date;
+            goalToUpdate.UpdatedBy = user.Email;
+            goalToUpdate.ApprovalStatus = ApprovalStatus.APPROVED;
 
-            if (userRole == RoleGroup.LEADER)
-            {
-                // Leader update -> duyệt ngay
-                goalToUpdate.Status = FinancialGoalStatus.ACTIVE;
-                goalToUpdate.ApprovalStatus = ApprovalStatus.APPROVED;
-
-                await NotifyGroupMembers(goalToUpdate, user, "updated");
-                await _groupFundsService.LogGroupFundChange(model.GroupId, $"đã cập nhật mục tiêu của nhóm",
-                        GroupAction.UPDATED, userEmail);
-            }
-            else
-            {
-                throw new DefaultException("Just leader can update this goal.", MessageConstants.FINACIAL_GOAL_UPDATE_FORBIDDEN);
-            }
+            await NotifyGroupMembers(goalToUpdate, user, "updated");
+            await _groupFundsService.LogGroupFundChange(model.GroupId, $"đã cập nhật mục tiêu của nhóm",
+                    GroupAction.UPDATED, userEmail);
 
             _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToUpdate);
             await _unitOfWork.SaveAsync();
@@ -1103,7 +1133,7 @@ namespace MoneyEz.Services.Services.Implements
                 goalToDelete.IsDeleted = true;
                 goalToDelete.Status = FinancialGoalStatus.ARCHIVED;
                 goalToDelete.ApprovalStatus = ApprovalStatus.APPROVED;
-                goalToDelete.UpdatedDate = CommonUtils.GetCurrentTime();
+                goalToDelete.UpdatedBy = user.Email;
 
                 _unitOfWork.FinancialGoalRepository.UpdateAsync(goalToDelete);
                 await _unitOfWork.SaveAsync();
@@ -1111,7 +1141,7 @@ namespace MoneyEz.Services.Services.Implements
                 await NotifyGroupMembers(goalToDelete, user, "deleted");
 
                 // log group fund
-                await _groupFundsService.LogGroupFundChange(model.Id, $"đã xóa mục tiêu tài chính của nhóm", GroupAction.UPDATED, userEmail);
+                await _groupFundsService.LogGroupFundChange(goalToDelete.GroupId.Value, $"đã xóa mục tiêu tài chính của nhóm", GroupAction.UPDATED, userEmail);
 
                 return new BaseResultModel
                 {
@@ -1517,14 +1547,22 @@ namespace MoneyEz.Services.Services.Implements
 
             return availableBudget;
         }
-        public async Task ScanAndChangeStatusWithDueGoalAsync()
+
+        #region job
+
+        public async Task<BaseResultModel> ScanAndChangeStatusWithDueGoalAsync()
         {
             var currentDate = CommonUtils.GetCurrentTime();
+            var updatedGoals = new List<(string GoalName, string GoalType, string GoalStatus)>();
+            int personalGoalsUpdated = 0;
+            int groupGoalsUpdated = 0;
 
+            // Get all active goals that are due
             var dueGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
                 filter: fg => fg.Status == FinancialGoalStatus.ACTIVE
-                            && fg.Deadline <= currentDate
-                            && !fg.IsDeleted
+                            && fg.Deadline < currentDate
+                            && !fg.IsDeleted,
+                include: query => query.Include(fg => fg.Group)
             );
 
             foreach (var goal in dueGoals)
@@ -1535,17 +1573,53 @@ namespace MoneyEz.Services.Services.Implements
 
                 _unitOfWork.FinancialGoalRepository.UpdateAsync(goal);
 
-                var user = await _unitOfWork.UsersRepository.GetByIdAsync(goal.UserId);
-                if (user != null)
+                // Handle personal goals
+                if (goal.GroupId == null)
                 {
-                    await _transactionNotificationService.NotifyGoalDueAsync(goal);
+                    var user = await _unitOfWork.UsersRepository.GetByIdAsync(goal.UserId);
+                    if (user != null)
+                    {
+                        await _transactionNotificationService.NotifyGoalPersonalDueAsync(goal);
+                        personalGoalsUpdated++;
+                        updatedGoals.Add((goal.Name, "Personal", "Archived"));
+                    }
+                }
+                // Handle group goals
+                else
+                {
+                    var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                        goal.GroupId.Value,
+                        include: query => query.Include(g => g.GroupMembers)
+                    );
+
+                    if (groupFund != null)
+                    {
+                        await _transactionNotificationService.NotifyGoalGroupDueAsync(goal, groupFund);
+                        groupGoalsUpdated++;
+                        updatedGoals.Add((goal.Name, $"Group: {groupFund.Name}", "Archived"));
+                    }
                 }
             }
 
             await _unitOfWork.SaveAsync();
-        }
 
-        #region job
+            // Prepare response data
+            var responseData = new
+            {
+                TotalGoalsUpdated = dueGoals.Count(),
+                PersonalGoalsUpdated = personalGoalsUpdated,
+                GroupGoalsUpdated = groupGoalsUpdated,
+                UpdatedGoals = updatedGoals
+            };
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = $"Successfully updated {dueGoals.Count()} due goals to ARCHIVED status.",
+                Data = responseData
+            };
+
+        }
 
         #endregion job
     }

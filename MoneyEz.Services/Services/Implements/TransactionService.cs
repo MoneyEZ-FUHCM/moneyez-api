@@ -36,7 +36,11 @@ namespace MoneyEz.Services.Services.Implements
         private readonly ITransactionNotificationService _transactionNotificationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public TransactionService(IUnitOfWork unitOfWork, IMapper mapper, IClaimsService claimsService, ITransactionNotificationService transactionNotificationService, IHttpContextAccessor httpContextAccessor)
+        public TransactionService(IUnitOfWork unitOfWork, 
+            IMapper mapper, 
+            IClaimsService claimsService, 
+            ITransactionNotificationService transactionNotificationService, 
+            IHttpContextAccessor httpContextAccessor)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -63,7 +67,7 @@ namespace MoneyEz.Services.Services.Implements
             var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
                 transactionFilter,
-                condition: t => t.UserId == user.Id,
+                condition: t => t.UserId == user.Id && t.GroupId == null,
                 include: query => query.Include(t => t.Subcategory)
             );
 
@@ -491,6 +495,26 @@ namespace MoneyEz.Services.Services.Implements
 
             var transactionModels = _mapper.Map<List<GroupTransactionModel>>(transactions);
 
+            var pendingRequestModels = transactionModels
+                .Where(t => t.ApprovalRequired && t.Status == TransactionStatus.PENDING.ToString())
+                .ToList();
+
+            if (pendingRequestModels.Any())
+            {
+                // For withdrawal transactions, calculate and add withdrawal limit to notes
+                foreach (var request in pendingRequestModels.Where(r => r.Type == TransactionType.EXPENSE.ToString()))
+                {
+                    // Calculate withdrawal limit and set note
+                    var (maxWithdrawalLimit, contributionPercentage) =
+                        await CalculateWithdrawalLimitAsync(groupFund, request.UserId);
+
+                    // Add withdrawal limit info to notes with contribution percentage
+                    request.Note = maxWithdrawalLimit > 0
+                        ? $"Hạn mức rút tối đa (khuyến nghị) của thành viên là: {maxWithdrawalLimit:N0} VND (dựa trên {contributionPercentage:F2}% đóng góp vào quỹ)"
+                        : $"Thành viên chưa góp quỹ hoặc đã rút hết số tiền góp";
+                }
+            }
+
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityNameAsync(EntityName.TRANSACTION.ToString());
             foreach (var transactionModel in transactionModels)
             {
@@ -518,7 +542,15 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
             }
 
-            var transactionModel = _mapper.Map<TransactionModel>(transaction);
+            var transactionModel = _mapper.Map<GroupTransactionModel>(transaction);
+            if (transactionModel.Type == TransactionType.EXPENSE.ToString() && transactionModel.Status == TransactionStatus.APPROVED.ToString())
+            {
+                var (maxWithdrawalLimit, contributionPercentage) =
+                    await CalculateWithdrawalLimitAsync(transaction.Group, transaction.UserId.Value);
+                transactionModel.Note = maxWithdrawalLimit > 0
+                    ? $"Hạn mức rút tối đa (khuyến nghị) của thành viên là: {maxWithdrawalLimit:N0} VND (dựa trên {contributionPercentage:F2}% đóng góp vào quỹ)"
+                    : $"Thành viên chưa góp quỹ hoặc đã rút hết số tiền góp";
+            }
 
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             transactionModel.Images = images.Select(i => i.ImageUrl).ToList();
@@ -549,10 +581,10 @@ namespace MoneyEz.Services.Services.Implements
                 ?? throw new DefaultException(MessageConstants.USER_NOT_IN_GROUP);
 
             if (model.Amount <= 0)
-                throw new DefaultException("Số tiền giao dịch phải lớn hơn 0.");
+                throw new DefaultException("Số tiền giao dịch phải lớn hơn 0.", MessageConstants.GROUP_CREATE_TRANSACTION_INVALID_AMOUNT);
 
             if (!Enum.IsDefined(typeof(TransactionType), model.Type))
-                throw new DefaultException("Loại giao dịch không hợp lệ.");
+                throw new DefaultException("Loại giao dịch không hợp lệ.", MessageConstants.GROUP_CREATE_TRANSACTION_INVALID_TYPE);
 
             //var now = CommonUtils.GetCurrentTime().Date;
             //if (model.TransactionDate.Date > now)
@@ -562,7 +594,10 @@ namespace MoneyEz.Services.Services.Implements
             //    throw new DefaultException("Ngày giao dịch không hợp lệ.");
 
             if (model.Description?.Length > 1000)
-                throw new DefaultException("Mô tả giao dịch quá dài (tối đa 1000 ký tự).");
+                throw new DefaultException("Mô tả giao dịch quá dài (tối đa 1000 ký tự).", MessageConstants.GROUP_CREATE_TRANSACTION_INVALID_DESCRIPTION);
+
+            if (model.Type == TransactionType.EXPENSE && model.Amount > group.CurrentBalance)
+                throw new DefaultException("Số tiền rút lớn hơn số dư hiện tại.", MessageConstants.GROUP_CREATE_TRANSACTION_INVALID_AMOUNT);
 
             bool requiresApproval = groupMember.Role != RoleGroup.LEADER;
             TransactionStatus transactionStatus = requiresApproval ? TransactionStatus.PENDING : TransactionStatus.APPROVED;
@@ -628,9 +663,10 @@ namespace MoneyEz.Services.Services.Implements
 
                 var response = new FundraisingTransactionResponse
                 {
-                    RequestCode = transaction.RequestCode,
-                    Amount = transaction.Amount,
-                    Status = transaction.Status.ToString(),
+                    //RequestCode = transaction.RequestCode,
+                    //Amount = transaction.Amount,
+                    //Status = transaction.Status.ToString(),
+                    Transaction = _mapper.Map<GroupTransactionModel>(transaction),
                     BankAccount = _mapper.Map<BankAccountModel>(groupBankAccount)
                 };
                 return new BaseResultModel
@@ -646,7 +682,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status200OK,
                     Message = "Withdraw request created successfully",
-                    Data = _mapper.Map<TransactionModel>(transaction)
+                    Data = _mapper.Map<GroupTransactionModel>(transaction)
                 };
             }
         }
@@ -684,7 +720,6 @@ namespace MoneyEz.Services.Services.Implements
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(model.Id)
                 ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
 
-            await UpdateFinancialGoalAndBalance(transaction, -transaction.Amount);
             _mapper.Map(model, transaction);
             await UpdateFinancialGoalAndBalance(transaction, model.Amount ?? transaction.Amount);
 
@@ -721,7 +756,7 @@ namespace MoneyEz.Services.Services.Implements
             var transaction = await _unitOfWork.TransactionsRepository.GetByIdAsync(transactionId)
                 ?? throw new NotExistException(MessageConstants.TRANSACTION_NOT_FOUND);
 
-            await UpdateFinancialGoalAndBalance(transaction, -transaction.Amount);
+            await UpdateFinancialGoalAndBalance(transaction, transaction.Amount);
 
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             if (images.Any())
@@ -933,13 +968,21 @@ namespace MoneyEz.Services.Services.Implements
                     .GetActiveGoalByUserAndSubcategory(transaction.UserId.Value, transaction.SubcategoryId.Value);
             }
 
-            if (activeGoal != null && activeGoal.Status == FinancialGoalStatus.ACTIVE && activeGoal.Deadline > DateTime.UtcNow)
+            if (activeGoal != null && activeGoal.Status == FinancialGoalStatus.ACTIVE && activeGoal.Deadline > CommonUtils.GetCurrentTime())
             {
-                activeGoal.CurrentAmount += amount;
+                // Adjust the amount based on transaction type
+                decimal adjustedAmount = transaction.Type == TransactionType.INCOME ? amount : -amount;
+                
+                activeGoal.CurrentAmount += adjustedAmount;
+
+                // Ensure CurrentAmount doesn't go below zero
+                if (activeGoal.CurrentAmount < 0)
+                {
+                    activeGoal.CurrentAmount = 0;
+                }
 
                 if (activeGoal.CurrentAmount >= activeGoal.TargetAmount)
                 {
-                    activeGoal.CurrentAmount = activeGoal.TargetAmount;
                     activeGoal.Status = FinancialGoalStatus.COMPLETED;
 
                     // get user
@@ -1300,7 +1343,7 @@ namespace MoneyEz.Services.Services.Implements
 
         #region report
 
-        public async Task<BaseResultModel> GetYearReportAsync(int year, ReportTransactionType type)
+        public async Task<BaseResultModel> GetYearReportAsync(int year, string type)
         {
             var userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
@@ -1321,6 +1364,8 @@ namespace MoneyEz.Services.Services.Implements
                 include: IncludeFullCategoryNavigation()
             );
 
+            var reportType = ConvertReportTransactionType(type);
+
             var monthly = new List<MonthAmountModel>();
 
             for (int month = 1; month <= 12; month++)
@@ -1329,9 +1374,9 @@ namespace MoneyEz.Services.Services.Implements
                     .Where(t => t.TransactionDate!.Value.Month == month)
                     .AsQueryable();
 
-                var value = type == ReportTransactionType.TOTAL
+                var value = reportType == ReportTransactionType.TOTAL
                     ? GetIncomeExpenseTotal(monthTransactions).total
-                    : GetTotalByType(monthTransactions, type);
+                    : GetTotalByType(monthTransactions, reportType);
 
                 monthly.Add(new MonthAmountModel
                 {
@@ -1340,9 +1385,9 @@ namespace MoneyEz.Services.Services.Implements
                 });
             }
 
-            decimal total = type == ReportTransactionType.TOTAL
+            decimal total = reportType == ReportTransactionType.TOTAL
                 ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
-                : GetTotalByType(transactions.AsQueryable(), type);
+                : GetTotalByType(transactions.AsQueryable(), reportType);
 
             var currentMonth = DateTime.Now.Month;
             var monthsElapsed = (year == DateTime.Now.Year) ? currentMonth : 12;
@@ -1354,7 +1399,7 @@ namespace MoneyEz.Services.Services.Implements
                 Data = new YearTransactionReportModel
                 {
                     Year = year,
-                    Type = type,
+                    Type = reportType.ToString(),
                     Total = total,
                     Average = avg,
                     MonthlyData = monthly
@@ -1362,7 +1407,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetCategoryYearReportAsync(int year, ReportTransactionType type)
+        public async Task<BaseResultModel> GetCategoryYearReportAsync(int year, string type)
         {
             var userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
@@ -1383,10 +1428,12 @@ namespace MoneyEz.Services.Services.Implements
                 include: IncludeFullCategoryNavigation()
             );
 
-            var filtered = _unitOfWork.TransactionsRepository
-                .FilterByType(transactions.AsQueryable(), type);
+            var reportType = ConvertReportTransactionType(type);
 
-            decimal total = type == ReportTransactionType.TOTAL
+            var filtered = _unitOfWork.TransactionsRepository
+                .FilterByType(transactions.AsQueryable(), reportType);
+
+            decimal total = reportType == ReportTransactionType.TOTAL
                 ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
                 : filtered.Sum(t => t.Amount);
 
@@ -1408,7 +1455,7 @@ namespace MoneyEz.Services.Services.Implements
                 Data = new CategoryYearTransactionReportModel
                 {
                     Year = year,
-                    Type = type,
+                    Type = reportType.ToString(),
                     Total = total,
                     Categories = categories
                 }
@@ -1448,7 +1495,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> GetAllTimeCategoryReportAsync(ReportTransactionType type)
+        public async Task<BaseResultModel> GetAllTimeCategoryReportAsync(string type)
         {
             var userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
@@ -1467,10 +1514,12 @@ namespace MoneyEz.Services.Services.Implements
                 include: IncludeFullCategoryNavigation()
             );
 
-            var filtered = _unitOfWork.TransactionsRepository
-                .FilterByType(transactions.AsQueryable(), type);
+            var reportType = ConvertReportTransactionType(type);
 
-            decimal total = type == ReportTransactionType.TOTAL
+            var filtered = _unitOfWork.TransactionsRepository
+                .FilterByType(transactions.AsQueryable(), reportType);
+
+            decimal total = reportType == ReportTransactionType.TOTAL
                 ? GetIncomeExpenseTotal(transactions.AsQueryable()).total
                 : filtered.Sum(t => t.Amount);
 
@@ -1491,7 +1540,7 @@ namespace MoneyEz.Services.Services.Implements
                 Status = StatusCodes.Status200OK,
                 Data = new AllTimeCategoryTransactionReportModel
                 {
-                    Type = type,
+                    Type = reportType.ToString(),
                     Total = total,
                     Categories = categories
                 }
@@ -1748,6 +1797,88 @@ namespace MoneyEz.Services.Services.Implements
                 .Include(t => t.Subcategory!)
                 .ThenInclude(sc => sc.CategorySubcategories)
                 .ThenInclude(cs => cs.Category);
+        }
+
+        private ReportTransactionType ConvertReportTransactionType(string type)
+        {
+            return type.ToLower() switch
+            {
+                "income" => ReportTransactionType.INCOME,
+                "expense" => ReportTransactionType.EXPENSE,
+                "total" => ReportTransactionType.TOTAL,
+                _ => ReportTransactionType.TOTAL
+            };
+        }
+
+        // Helper method to calculate member's current balance
+        private async Task<decimal> CalculateMemberBalanceAsync(Guid groupId, Guid userId)
+        {
+            // Get all approved transactions for this member
+            var memberTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == groupId &&
+                            t.UserId == userId &&
+                            t.Status == TransactionStatus.APPROVED
+            );
+
+            // Calculate balance (deposits - withdrawals)
+            decimal totalDeposits = memberTransactions
+                .Where(t => t.Type == TransactionType.INCOME)
+                .Sum(t => t.Amount);
+
+            decimal totalWithdrawals = memberTransactions
+                .Where(t => t.Type == TransactionType.EXPENSE)
+                .Sum(t => t.Amount);
+
+            return totalDeposits - totalWithdrawals;
+        }
+
+        /// <summary>
+        /// Calculates the recommended withdrawal limit for a member based on their contribution percentage
+        /// </summary>
+        /// <param name="groupFund">The group fund</param>
+        /// <param name="userId">The user ID of the member</param>
+        /// <returns>A tuple containing (maxWithdrawalLimit, contributionPercentage)</returns>
+        private async Task<(decimal maxWithdrawalLimit, decimal contributionPercentage)> CalculateWithdrawalLimitAsync(
+            GroupFund groupFund, Guid userId)
+        {
+            // Calculate total deposits by the group member
+            var memberTotalDeposits = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == groupFund.Id &&
+                            t.UserId == userId &&
+                            t.Type == TransactionType.INCOME &&
+                            t.Status == TransactionStatus.APPROVED
+            );
+
+            decimal totalDepositAmount = memberTotalDeposits.Sum(t => t.Amount);
+
+            // Calculate current balance
+            var memberBalance = await CalculateMemberBalanceAsync(groupFund.Id, userId);
+
+            // Get all approved deposits for the group to calculate total contributions
+            var allGroupDeposits = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                filter: t => t.GroupId == groupFund.Id &&
+                            t.Type == TransactionType.INCOME &&
+                            t.Status == TransactionStatus.APPROVED
+            );
+
+            decimal totalGroupDepositAmount = allGroupDeposits.Sum(t => t.Amount);
+
+            // Calculate contribution percentage
+            decimal contributionPercentage = totalGroupDepositAmount > 0
+                ? totalDepositAmount / totalGroupDepositAmount * 100
+                : 0;
+
+            // Calculate withdrawal limit based on contribution percentage
+            decimal recommendedWithdrawalLimit = Math.Round(groupFund.CurrentBalance * (contributionPercentage / 100), 0);
+
+            // Determine final maximum withdrawal limit
+            // It should not exceed member's current balance or their total deposits
+            decimal maxWithdrawalLimit = Math.Min(
+                Math.Min(totalDepositAmount, memberBalance),
+                recommendedWithdrawalLimit
+            );
+
+            return (maxWithdrawalLimit, contributionPercentage);
         }
 
         #endregion helper

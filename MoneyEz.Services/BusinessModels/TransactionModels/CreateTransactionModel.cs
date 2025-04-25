@@ -19,5 +19,7 @@ namespace MoneyEz.Services.BusinessModels.TransactionModels
         public string? Description { get; set; }
 
         public List<string>? Images { get; set; }
+
+        public InsertType? InsertType { get; set; }
     }
 }
