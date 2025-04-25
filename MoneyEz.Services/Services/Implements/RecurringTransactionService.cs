@@ -71,6 +71,14 @@ namespace MoneyEz.Services.Services.Implements
             );
 
             var models = _mapper.Map<List<RecurringTransactionModel>>(transactions);
+            
+            // Calculate next occurrence date for each recurring transaction
+            DateTime today = CommonUtils.GetCurrentTime().Date;
+            foreach (var model in models)
+            {
+                model.NextOccurrence = CalculateNextOccurrence(model, today);
+            }
+            
             var result = PaginationHelper.GetPaginationResult(transactions, models);
 
             return new BaseResultModel
@@ -289,6 +297,141 @@ namespace MoneyEz.Services.Services.Implements
             return result;
         }
 
+        private DateTime? CalculateNextOccurrence(RecurringTransactionModel rt, DateTime fromDate)
+        {
+            // If the transaction has ended, there's no next occurrence
+            if (rt.EndDate.HasValue && rt.EndDate.Value.Date < fromDate)
+            {
+                return null;
+            }
+
+            // If the start date is in the future, the next occurrence is the start date
+            if (rt.StartDate.Date > fromDate)
+            {
+                return rt.StartDate.Date;
+            }
+
+            // Ensure interval is at least 1
+            int interval = rt.Interval <= 0 ? 1 : rt.Interval;
+            
+            // Start with the start date or the current date, whichever is later
+            DateTime current = rt.StartDate.Date > fromDate ? rt.StartDate.Date : fromDate;
+            
+            // If we're starting from the current date and it's after the start date,
+            // we need to find the next occurrence based on the frequency pattern
+            if (current > rt.StartDate.Date)
+            {
+                // Calculate how many intervals have passed
+                switch (rt.FrequencyType)
+                {
+                    case FrequencyType.DAILY:
+                        // If current date is a due date, move to the next one
+                        if ((current - rt.StartDate.Date).Days % interval == 0)
+                        {
+                            current = current.AddDays(interval);
+                        }
+                        else
+                        {
+                            // Find the next occurrence
+                            int daysElapsed = (current - rt.StartDate.Date).Days;
+                            int daysToAdd = interval - (daysElapsed % interval);
+                            current = current.AddDays(daysToAdd);
+                        }
+                        break;
+                        
+                    case FrequencyType.WEEKLY:
+                        int weeksElapsed = (current - rt.StartDate.Date).Days / 7;
+                        if (weeksElapsed % interval == 0)
+                        {
+                            // If today is the occurrence day, move to next interval
+                            current = current.AddDays(7 * interval);
+                        }
+                        else
+                        {
+                            // Find the next weekly occurrence
+                            int weeksToAdd = interval - (weeksElapsed % interval);
+                            current = current.AddDays(7 * weeksToAdd);
+                        }
+                        break;
+                        
+                    case FrequencyType.MONTHLY:
+                        int monthsElapsed = MonthsBetween(rt.StartDate.Date, current);
+                        if (monthsElapsed % interval == 0 && current.Day == rt.StartDate.Day)
+                        {
+                            // If today is the occurrence day (same day of month), move to next interval
+                            current = current.AddMonths(interval);
+                        }
+                        else
+                        {
+                            // Find the next monthly occurrence
+                            int monthsToAdd = interval - (monthsElapsed % interval);
+                            // Try to maintain the same day of month
+                            DateTime nextDate = current.AddMonths(monthsToAdd);
+                            // Adjust if the day doesn't exist in the target month
+                            int targetDay = Math.Min(rt.StartDate.Day, DateTime.DaysInMonth(nextDate.Year, nextDate.Month));
+                            current = new DateTime(nextDate.Year, nextDate.Month, targetDay);
+                        }
+                        break;
+                        
+                    case FrequencyType.YEARLY:
+                        int yearsElapsed = current.Year - rt.StartDate.Year;
+                        if (yearsElapsed % interval == 0 && current.Month == rt.StartDate.Month && current.Day == rt.StartDate.Day)
+                        {
+                            // If today is the anniversary, move to next interval
+                            current = current.AddYears(interval);
+                        }
+                        else
+                        {
+                            // Find the next yearly occurrence
+                            int yearsToAdd = interval - (yearsElapsed % interval);
+                            if (yearsElapsed % interval != 0 || 
+                                (current.Month < rt.StartDate.Month) || 
+                                (current.Month == rt.StartDate.Month && current.Day < rt.StartDate.Day))
+                            {
+                                // We haven't reached this year's occurrence yet
+                                yearsToAdd = yearsElapsed % interval == 0 ? 0 : yearsToAdd;
+                            }
+                            
+                            // Try to maintain same month and day
+                            int targetYear = current.Year + yearsToAdd;
+                            int targetMonth = rt.StartDate.Month;
+                            int targetDay = Math.Min(rt.StartDate.Day, DateTime.DaysInMonth(targetYear, targetMonth));
+                            current = new DateTime(targetYear, targetMonth, targetDay);
+                        }
+                        break;
+                        
+                    default:
+                        current = current.AddDays(interval);
+                        break;
+                }
+            }
+            else
+            {
+                // If we're starting from the start date, just add one interval
+                current = rt.FrequencyType switch
+                {
+                    FrequencyType.DAILY => current.AddDays(interval),
+                    FrequencyType.WEEKLY => current.AddDays(7 * interval),
+                    FrequencyType.MONTHLY => current.AddMonths(interval),
+                    FrequencyType.YEARLY => current.AddYears(interval),
+                    _ => current.AddDays(interval)
+                };
+            }
+            
+            // Check if the calculated next occurrence is after the end date
+            if (rt.EndDate.HasValue && current > rt.EndDate.Value.Date)
+            {
+                return null; // No more occurrences
+            }
+            
+            return current;
+        }
+
+        private int MonthsBetween(DateTime from, DateTime to)
+        {
+            return (to.Year - from.Year) * 12 + (to.Month - from.Month);
+        }
+
         #endregion helper
 
         #region job
@@ -383,11 +526,6 @@ namespace MoneyEz.Services.Services.Implements
 
                 _ => false
             };
-        }
-
-        private int MonthsBetween(DateTime from, DateTime to)
-        {
-            return (to.Year - from.Year) * 12 + (to.Month - from.Month);
         }
 
         #endregion job

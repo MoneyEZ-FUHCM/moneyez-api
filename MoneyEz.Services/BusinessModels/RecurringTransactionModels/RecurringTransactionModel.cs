@@ -29,7 +29,8 @@ namespace MoneyEz.Services.BusinessModels.RecurringTransactionModels
         public CommonsStatus Status { get; set; }
 
         public string? SubcategoryName { get; set; }
-
+        
+        public DateTime? NextOccurrence { get; set; }
     }
 
     public class RecurringDateTransactionModel
@@ -37,5 +38,4 @@ namespace MoneyEz.Services.BusinessModels.RecurringTransactionModels
         public DateTime Date { get; set; }
         public List<RecurringTransactionModel> Transactions { get; set; } = new List<RecurringTransactionModel>();
     }
-
 }
