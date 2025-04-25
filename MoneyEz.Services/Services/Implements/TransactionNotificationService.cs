@@ -162,15 +162,33 @@ namespace MoneyEz.Services.Services.Implements
             });
         }
 
-        public async Task NotifyGoalDueAsync(FinancialGoal goal)
+        public async Task NotifyGoalPersonalDueAsync(FinancialGoal goal)
         {
             await _notificationService.AddNotificationByUserId(goal.UserId, new Notification
             {
                 Title = "Mục tiêu tài chính kết thúc!",
-                Message = $"Mục tiêu '{goal.Name}' đã kết thúc!",
+                Message = $"Mục tiêu {goal.Name} đã kết thúc vào [{goal.Deadline:dd.MM.yyyy}]. Hãy kiểm tra tiến độ mục tiêu nhé.",
                 Type = NotificationType.USER,
                 EntityId = goal.Id
             });
+        }
+
+        public async Task NotifyGoalGroupDueAsync(FinancialGoal goal, GroupFund groupFund)
+        {
+            var groupMembers = groupFund.GroupMembers.Where(gm => gm.Status == GroupMemberStatus.ACTIVE);
+
+            var notification = new Notification
+            {
+                Title = $"[{groupFund.Name}] Mục tiêu nhóm",
+                Message = $"Mục tiêu {goal.Name} đã kết thúc vào [{goal.Deadline:dd.MM.yyyy}]. Hãy kiểm tra tiến độ mục tiêu nhé.",
+                Type = NotificationType.GROUP,
+                EntityId = goal.Id,
+                CreatedDate = CommonUtils.GetCurrentTime()
+            };
+
+            await _notificationService.AddNotificationByListUser(
+                groupMembers.Select(gm => gm.UserId).ToList(),
+                notification);
         }
     }
 

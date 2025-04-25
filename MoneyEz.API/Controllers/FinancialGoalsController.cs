@@ -13,7 +13,7 @@ namespace MoneyEz.API.Controllers
 {
     [Route("api/v1/financial-goals")]
     [ApiController]
-    [Authorize(Roles = nameof(RolesEnum.USER))]
+    [Authorize]
     public class FinancialGoalsController : BaseController
     {
         private readonly IFinancialGoalService _financialGoalService;
@@ -133,6 +133,16 @@ namespace MoneyEz.API.Controllers
         public Task<IActionResult> ApproveGroupFinancialGoal([FromBody] ApproveGroupFinancialGoalRequestModel model)
         {
             return ValidateAndExecute(() => _financialGoalService.ApproveGroupFinancialGoalAsync(model));
+        }
+
+        #endregion
+
+        #region scan due goal
+
+        [HttpGet("scan")]
+        public Task<IActionResult> ScanDueGoal()
+        {
+            return ValidateAndExecute(() => _financialGoalService.ScanAndChangeStatusWithDueGoalAsync());
         }
 
         #endregion

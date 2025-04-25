@@ -154,6 +154,7 @@ namespace MoneyEz.API
             services.ConfigureOptions<SampleJobSetup>();
             services.ConfigureOptions<ScanUserSpendingModelJobSetup>();
             services.ConfigureOptions<RecurringTransactionJobSetup>();
+            services.ConfigureOptions<ScanFinancialGoalJobSetup>();
             #endregion
 
             // config webhook setting

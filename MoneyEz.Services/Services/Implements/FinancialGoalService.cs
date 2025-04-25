@@ -1546,14 +1546,22 @@ namespace MoneyEz.Services.Services.Implements
 
             return availableBudget;
         }
-        public async Task ScanAndChangeStatusWithDueGoalAsync()
+
+        #region job
+
+        public async Task<BaseResultModel> ScanAndChangeStatusWithDueGoalAsync()
         {
             var currentDate = CommonUtils.GetCurrentTime();
+            var updatedGoals = new List<(string GoalName, string GoalType, string GoalStatus)>();
+            int personalGoalsUpdated = 0;
+            int groupGoalsUpdated = 0;
 
+            // Get all active goals that are due
             var dueGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
                 filter: fg => fg.Status == FinancialGoalStatus.ACTIVE
-                            && fg.Deadline <= currentDate
-                            && !fg.IsDeleted
+                            && fg.Deadline < currentDate
+                            && !fg.IsDeleted,
+                include: query => query.Include(fg => fg.Group)
             );
 
             foreach (var goal in dueGoals)
@@ -1564,17 +1572,53 @@ namespace MoneyEz.Services.Services.Implements
 
                 _unitOfWork.FinancialGoalRepository.UpdateAsync(goal);
 
-                var user = await _unitOfWork.UsersRepository.GetByIdAsync(goal.UserId);
-                if (user != null)
+                // Handle personal goals
+                if (goal.GroupId == null)
                 {
-                    await _transactionNotificationService.NotifyGoalDueAsync(goal);
+                    var user = await _unitOfWork.UsersRepository.GetByIdAsync(goal.UserId);
+                    if (user != null)
+                    {
+                        await _transactionNotificationService.NotifyGoalPersonalDueAsync(goal);
+                        personalGoalsUpdated++;
+                        updatedGoals.Add((goal.Name, "Personal", "Archived"));
+                    }
+                }
+                // Handle group goals
+                else
+                {
+                    var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(
+                        goal.GroupId.Value,
+                        include: query => query.Include(g => g.GroupMembers)
+                    );
+
+                    if (groupFund != null)
+                    {
+                        await _transactionNotificationService.NotifyGoalGroupDueAsync(goal, groupFund);
+                        groupGoalsUpdated++;
+                        updatedGoals.Add((goal.Name, $"Group: {groupFund.Name}", "Archived"));
+                    }
                 }
             }
 
             await _unitOfWork.SaveAsync();
-        }
 
-        #region job
+            // Prepare response data
+            var responseData = new
+            {
+                TotalGoalsUpdated = dueGoals.Count(),
+                PersonalGoalsUpdated = personalGoalsUpdated,
+                GroupGoalsUpdated = groupGoalsUpdated,
+                UpdatedGoals = updatedGoals
+            };
+
+            return new BaseResultModel
+            {
+                Status = StatusCodes.Status200OK,
+                Message = $"Successfully updated {dueGoals.Count()} due goals to ARCHIVED status.",
+                Data = responseData
+            };
+
+        }
 
         #endregion job
     }
