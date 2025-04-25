@@ -931,32 +931,33 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
-            var userRole = groupMember.First().Role;
+            //var userRole = groupMember.First().Role;
 
-            var allowedStatuses = new List<FinancialGoalStatus>();
+            //var allowedStatuses = new List<FinancialGoalStatus>();
 
-            if (userRole == RoleGroup.LEADER || userRole == RoleGroup.MOD)
-            {
-                // Leader và MOD thấy tất cả
-                allowedStatuses.AddRange(new[]
-                {
-                    FinancialGoalStatus.PENDING,
-                    FinancialGoalStatus.ACTIVE,
-                    FinancialGoalStatus.ARCHIVED
-                });
-            }
-            else
-            {
-                // Member chỉ thấy mục tiêu đã duyệt hoặc đã lưu trữ
-                allowedStatuses.AddRange(new[]
-                {
-                    FinancialGoalStatus.ACTIVE,
-                    FinancialGoalStatus.ARCHIVED
-                });
-            }
+            //if (userRole == RoleGroup.LEADER || userRole == RoleGroup.MOD)
+            //{
+            //    // Leader và MOD thấy tất cả
+            //    allowedStatuses.AddRange(new[]
+            //    {
+            //        FinancialGoalStatus.PENDING,
+            //        FinancialGoalStatus.ACTIVE,
+            //        FinancialGoalStatus.ARCHIVED
+            //    });
+            //}
+            //else
+            //{
+            //    // Member chỉ thấy mục tiêu đã duyệt hoặc đã lưu trữ
+            //    allowedStatuses.AddRange(new[]
+            //    {
+            //        FinancialGoalStatus.ACTIVE,
+            //        FinancialGoalStatus.ARCHIVED
+            //    });
+            //}
 
             var financialGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
-                filter: fg => fg.GroupId == model.GroupId && allowedStatuses.Contains(fg.Status)
+                filter: fg => fg.GroupId == model.GroupId && !fg.IsDeleted,
+                orderBy: fg => fg.OrderByDescending(fg => fg.CreatedDate)
             );
 
             var mappedGoals = _mapper.Map<List<GroupFinancialGoalModel>>(financialGoals);
