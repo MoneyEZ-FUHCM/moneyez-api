@@ -67,7 +67,7 @@ namespace MoneyEz.Services.Services.Implements
             var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
                 paginationParameter,
                 transactionFilter,
-                condition: t => t.UserId == user.Id,
+                condition: t => t.UserId == user.Id && t.GroupId == null,
                 include: query => query.Include(t => t.Subcategory)
             );
 
