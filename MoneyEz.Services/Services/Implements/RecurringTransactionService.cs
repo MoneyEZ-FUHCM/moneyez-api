@@ -152,15 +152,17 @@ namespace MoneyEz.Services.Services.Implements
         {
             var user = await GetCurrentUserAsync();
             DateTime today = CommonUtils.GetCurrentTime();
-            var startOfMonth = new DateTime(today.Year, today.Month, 1);
-            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+            var startOfMonth = new DateTime(today.Year, today.Month, 1).Date;
+            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1).Date;
 
             var recurrings = await _unitOfWork.RecurringTransactionRepository.GetByConditionAsync(
-                 filter: rt => rt.UserId == user.Id
-                     && rt.Status == CommonsStatus.ACTIVE
-                     && rt.StartDate <= endOfMonth
-                     && (!rt.EndDate.HasValue || rt.EndDate.Value >= startOfMonth)
-                );
+                filter: rt => rt.UserId == user.Id
+                    && rt.Status == CommonsStatus.ACTIVE
+                    && rt.StartDate.Date <= endOfMonth
+                    && (!rt.EndDate.HasValue || rt.EndDate.Value.Date >= startOfMonth)
+                    && !rt.IsDeleted,
+                include: q => q.Include(rt => rt.Subcategory)
+            );
 
             HashSet<int> recurringDays = new();
 
@@ -179,6 +181,41 @@ namespace MoneyEz.Services.Services.Implements
                 Message = "Fetched recurring transaction days successfully.",
                 Data = recurringDays.OrderBy(d => d).ToList()
             };
+
+            //// Groups transactions by date
+            //Dictionary<DateTime, List<RecurringTransaction>> dateTransactionsMap = new();
+            //foreach (var rt in recurrings)
+            //{
+            //    var dates = GetRecurringDatesInRange(rt, startOfMonth, endOfMonth);
+            //    foreach (var date in dates)
+            //    {
+            //        if (!dateTransactionsMap.ContainsKey(date))
+            //        {
+            //            dateTransactionsMap[date] = new List<RecurringTransaction>();
+            //        }
+            //        dateTransactionsMap[date].Add(rt);
+            //    }
+            //}
+
+            //// Creates result objects with dates and their transactions
+            //var result = new List<RecurringDateTransactionModel>();
+            //foreach (var kvp in dateTransactionsMap.OrderBy(x => x.Key))
+            //{
+            //    var dateModel = new RecurringDateTransactionModel
+            //    {
+            //        Date = kvp.Key,
+            //        Transactions = _mapper.Map<List<RecurringTransactionModel>>(kvp.Value)
+            //    };
+            //    result.Add(dateModel);
+            //}
+
+            //// Returns the structured data
+            //return new BaseResultModel
+            //{
+            //    Status = StatusCodes.Status200OK,
+            //    Message = "Fetched recurring transactions by date successfully.",
+            //    Data = result
+            //};
         }
 
         #region helper
@@ -229,15 +266,15 @@ namespace MoneyEz.Services.Services.Implements
         private List<DateTime> GetRecurringDatesInRange(RecurringTransaction rt, DateTime from, DateTime to)
         {
             List<DateTime> result = new();
-            DateTime current = rt.StartDate > from ? rt.StartDate : from;
-            DateTime end = rt.EndDate.HasValue && rt.EndDate < to ? rt.EndDate.Value : to;
+            DateTime current = rt.StartDate.Date > from ? rt.StartDate.Date : from;
+            DateTime end = rt.EndDate.HasValue && rt.EndDate.Value.Date < to ? rt.EndDate.Value.Date : to;
 
             int interval = rt.Interval <= 0 ? 1 : rt.Interval;
 
             while (current <= end)
             {
                 if (current >= from && current <= to)
-                    result.Add(current);
+                    result.Add(current.Date);
 
                 current = rt.FrequencyType switch
                 {

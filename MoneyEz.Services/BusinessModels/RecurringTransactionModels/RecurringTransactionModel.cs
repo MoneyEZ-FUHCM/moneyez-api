@@ -15,7 +15,7 @@ namespace MoneyEz.Services.BusinessModels.RecurringTransactionModels
 
         public TransactionType Type { get; set; }
 
-        public string Tags { get; set; }
+        public string? Tags { get; set; }
         public decimal Amount { get; set; }
 
         public FrequencyType FrequencyType { get; set; }
@@ -24,11 +24,18 @@ namespace MoneyEz.Services.BusinessModels.RecurringTransactionModels
         public DateTime StartDate { get; set; }
         public DateTime? EndDate { get; set; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         public CommonsStatus Status { get; set; }
 
-        public string SubcategoryName { get; set; }
+        public string? SubcategoryName { get; set; }
 
     }
+
+    public class RecurringDateTransactionModel
+    {
+        public DateTime Date { get; set; }
+        public List<RecurringTransactionModel> Transactions { get; set; } = new List<RecurringTransactionModel>();
+    }
+
 }
