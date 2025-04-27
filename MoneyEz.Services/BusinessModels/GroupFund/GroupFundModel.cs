@@ -1,5 +1,6 @@
 ﻿using MoneyEz.Repositories.Entities;
 using MoneyEz.Repositories.Enums;
+using MoneyEz.Services.BusinessModels.BankAccountModels;
 using MoneyEz.Services.BusinessModels.ImageModels;
 using System;
 using System.Collections.Generic;
@@ -21,5 +22,6 @@ namespace MoneyEz.Services.BusinessModels.GroupFund
         public bool IsGoalActive { get; set; } = false;
         public List<GroupMemberModel> GroupMembers { get; set; } = new List<GroupMemberModel>();
         //public ImageModel? Image { get; set; }
+        public BankAccountModel? BankAccount { get; set; }
     }
 }

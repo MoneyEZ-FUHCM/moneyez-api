@@ -374,6 +374,14 @@ namespace MoneyEz.Services.Services.Implements
                 groupFundModel.IsGoalActive = true;
             }
 
+            // get bank account
+            var bankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(groupFund.AccountBankId.Value);
+
+            if (bankAccount != null)
+            {
+                groupFundModel.BankAccount = _mapper.Map<BankAccountModel>(bankAccount);
+            }
+
             var allGroupTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
                 filter: t => t.GroupId == groupId && t.Type == TransactionType.INCOME && t.Status == TransactionStatus.APPROVED
             );
