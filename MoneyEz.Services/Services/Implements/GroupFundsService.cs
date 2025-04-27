@@ -532,11 +532,11 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
 
-            var bankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(model.AccountBankId);
-            if (bankAccount == null)
-            {
-                throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
-            }
+            //var bankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(model.AccountBankId);
+            //if (bankAccount == null)
+            //{
+            //    throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            //}
 
             // get group fund
             var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(model.Id,
@@ -871,16 +871,6 @@ namespace MoneyEz.Services.Services.Implements
                     memberExist.IsDeleted = false;
                     memberExist.Status = GroupMemberStatus.PENDING;
                     _unitOfWork.GroupMemberRepository.UpdateAsync(memberExist);
-
-                    // Add a log entry for the invite member action
-                    groupFund.GroupFundLogs.Add(new GroupFundLog
-                    {
-                        ChangedBy = currentUser.FullName,
-                        ChangeDescription = $"đã mời {invitedUser.FullName} vào nhóm qua email",
-                        Action = GroupAction.INVITED.ToString(),
-                        CreatedDate = CommonUtils.GetCurrentTime(),
-                        CreatedBy = currentUser.Email
-                    });
                 }
                 else if (memberExist == null)
                 {

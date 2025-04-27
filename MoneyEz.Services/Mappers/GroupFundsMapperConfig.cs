@@ -16,6 +16,7 @@ namespace MoneyEz.Services.Mappers
         partial void GroupFundConfig()
         {
             CreateMap<CreateGroupModel, GroupFund>();
+            CreateMap<UpdateGroupModel, GroupFund>();
             CreateMap<GroupFund, GroupFundModel>();
             CreateMap<GroupMember, GroupMemberModel>()
                 .ForMember(dest => dest.UserInfo, opt => opt.MapFrom(src => src.User));
