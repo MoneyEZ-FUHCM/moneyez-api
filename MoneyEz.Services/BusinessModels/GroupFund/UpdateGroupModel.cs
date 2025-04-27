@@ -19,8 +19,8 @@ namespace MoneyEz.Services.BusinessModels.GroupFund
         public string? Description { get; set; }
 
 
-        [Required(ErrorMessage = "Vui lòng chọn tài khoản ngân hàng.")]
-        public Guid AccountBankId { get; set; }
+        //[Required(ErrorMessage = "Vui lòng chọn tài khoản ngân hàng.")]
+        //public Guid AccountBankId { get; set; }
 
         public string? Image { get; set; }
     }

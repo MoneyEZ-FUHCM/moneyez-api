@@ -532,11 +532,11 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
             }
 
-            var bankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(model.AccountBankId);
-            if (bankAccount == null)
-            {
-                throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
-            }
+            //var bankAccount = await _unitOfWork.BankAccountRepository.GetByIdAsync(model.AccountBankId);
+            //if (bankAccount == null)
+            //{
+            //    throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
+            //}
 
             // get group fund
             var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(model.Id,
