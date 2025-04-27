@@ -540,7 +540,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var chartData = new List<ChartSpendingCategoryModel>();
             decimal totalSpent = 0;
-            //decimal totalSavingCategoriesSpent = 0;
+            decimal totalSavingCategoriesSpent = 0;
 
             // Get total income for the spending model period
             decimal totalIncome = await _unitOfWork.TransactionsRepository.GetTotalIncomeAsync(
@@ -598,18 +598,14 @@ namespace MoneyEz.Services.Services.Implements
                             cs.CategoryId == spendingModelCategory.CategoryId));
 
                     var categoryTotal = categoryTransactions.Sum(t => t.Amount);
-                    //totalSpent += categoryTotal;
+                    totalSpent += categoryTotal;
 
                     // If this is a saving category (type is EXPENSE and IsSaving is true),
                     // add its spent amount to the savings total
                     if (spendingModelCategory.Category.Type == TransactionType.EXPENSE &&
-                        spendingModelCategory.Category.IsSaving == false)
+                        spendingModelCategory.Category.IsSaving == true)
                     {
-                    //    totalSavingCategoriesSpent += categoryTotal;
-                    //}
-                    //else
-                    //{
-                        totalSpent += categoryTotal;
+                        totalSavingCategoriesSpent += categoryTotal;
                     }
 
                     // Calculate planned spending amount based on percentage of total income
@@ -630,7 +626,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Calculate total savings (income - totalSpent + saving categories spent)
-            decimal totalSaving = totalIncome - totalSpent;
+            decimal totalSaving = totalIncome - totalSpent + totalSavingCategoriesSpent;
 
             // Calculate TotalOverspent only for non-saving EXPENSE categories
             decimal totalOverspent = chartData
@@ -660,7 +656,7 @@ namespace MoneyEz.Services.Services.Implements
                     Categories = chartData,
                     TotalSpent = totalSpent,
                     TotalIncome = totalIncome,
-                    Balance = totalSaving,
+                    TotalSaving = totalSaving,
                     TotalOverspent = totalOverspent,
                     StartDate = currentModel.StartDate,
                     EndDate = currentModel.EndDate
@@ -758,14 +754,14 @@ namespace MoneyEz.Services.Services.Implements
                             cs.CategoryId == spendingModelCategory.CategoryId));
 
                     var categoryTotal = categoryTransactions.Sum(t => t.Amount);
-                    //totalSpent += categoryTotal;
+                    totalSpent += categoryTotal;
 
                     // If this is a saving category (type is EXPENSE and IsSaving is true),
                     // add its spent amount to the savings total
                     if (spendingModelCategory.Category.Type == TransactionType.EXPENSE &&
-                        spendingModelCategory.Category.IsSaving == false)
+                        spendingModelCategory.Category.IsSaving == true)
                     {
-                        totalSpent += categoryTotal;
+                        totalSavingCategoriesSpent += categoryTotal;
                     }
 
                     // Calculate planned spending amount based on percentage of total income
@@ -786,7 +782,7 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // Calculate total savings (income - totalSpent + saving categories spent)
-            decimal totalSaving = totalIncome - totalSpent;
+            decimal totalSaving = totalIncome - totalSpent + totalSavingCategoriesSpent;
 
             // Calculate TotalOverspent only for non-saving EXPENSE categories
             decimal totalOverspent = chartData
@@ -816,7 +812,7 @@ namespace MoneyEz.Services.Services.Implements
                     Categories = chartData,
                     TotalSpent = totalSpent,
                     TotalIncome = totalIncome,
-                    Balance = totalSaving,
+                    TotalSaving = totalSaving,
                     TotalOverspent = totalOverspent,
                     StartDate = userSpendingModel.StartDate,
                     EndDate = userSpendingModel.EndDate
