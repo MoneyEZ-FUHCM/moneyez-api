@@ -383,23 +383,30 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             var allGroupTransactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.GroupId == groupId && t.Type == TransactionType.INCOME && t.Status == TransactionStatus.APPROVED
+                filter: t => t.GroupId == groupId && t.Status == TransactionStatus.APPROVED
             );
 
+            // Filter transactions by type
+            var incomeTransactions = allGroupTransactions.Where(t => t.Type == TransactionType.INCOME).ToList();
+            var expenseTransactions = allGroupTransactions.Where(t => t.Type == TransactionType.EXPENSE).ToList();
+
+            groupFundModel.TotalIncome = incomeTransactions.Sum(t => t.Amount);
+            groupFundModel.TotalExpense = expenseTransactions.Sum(t => t.Amount);
+
             // Calculate total group income from all approved income transactions
-            decimal totalGroupIncome = allGroupTransactions.Sum(t => t.Amount);
+            decimal totalGroupIncome = incomeTransactions.Sum(t => t.Amount);
 
             if (groupFundModel.GroupMembers != null && groupFundModel.GroupMembers.Any())
             {
                 foreach (var member in groupFundModel.GroupMembers)
                 {
-                    var memberTransactions = allGroupTransactions.Where(t => t.UserId == member.UserId).ToList();
+                    var memberTransactions = incomeTransactions.Where(t => t.UserId == member.UserId).ToList();
 
                     decimal totalContribution = memberTransactions.Sum(t => t.Amount);
 
                     member.TotalContribution = totalContribution;
                     member.TransactionCount = memberTransactions.Count;
-                    
+
                     // Calculate contribution percentage for this member
                     if (totalGroupIncome > 0)
                     {
@@ -418,6 +425,7 @@ namespace MoneyEz.Services.Services.Implements
                 Data = groupFundModel
             };
         }
+
 
         public async Task<GroupMember> GetGroupLeader(Guid groupId)
         {
@@ -531,7 +539,8 @@ namespace MoneyEz.Services.Services.Implements
             }
 
             // get group fund
-            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(model.Id);
+            var groupFund = await _unitOfWork.GroupFundRepository.GetByIdIncludeAsync(model.Id,
+                include: g => g.Include(g => g.GroupMembers));
             if (groupFund == null)
             {
                 throw new NotExistException("", MessageConstants.GROUP_NOT_EXIST);
