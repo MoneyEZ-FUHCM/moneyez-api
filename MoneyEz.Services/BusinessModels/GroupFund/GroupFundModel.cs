@@ -16,6 +16,8 @@ namespace MoneyEz.Services.BusinessModels.GroupFund
         public string? NameUnsign { get; set; }
         public string? Description { get; set; }
         public decimal? CurrentBalance { get; set; }
+        public decimal? TotalIncome { get; set; }
+        public decimal? TotalExpense { get; set; }
         public string? Status { get; set; }
         public string? Visibility { get; set; }
         public string? ImageUrl { get; set; }
