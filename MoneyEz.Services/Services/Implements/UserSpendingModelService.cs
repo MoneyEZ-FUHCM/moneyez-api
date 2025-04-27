@@ -578,6 +578,8 @@ namespace MoneyEz.Services.Services.Implements
                 chartData.Add(new ChartSpendingCategoryModel
                 {
                     CategoryName = spendingModelCategory.Category.Name,
+                    CategoryType = spendingModelCategory.Category.Type.ToString(),
+                    IsSaving = spendingModelCategory.Category.IsSaving,
                     TotalSpent = categoryTotal,
                     PlanningSpent = planningSpent,
                     PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
@@ -686,6 +688,8 @@ namespace MoneyEz.Services.Services.Implements
                 chartData.Add(new ChartSpendingCategoryModel
                 {
                     CategoryName = spendingModelCategory.Category.Name,
+                    CategoryType = spendingModelCategory.Category.Type.ToString(),
+                    IsSaving = spendingModelCategory.Category.IsSaving,
                     TotalSpent = categoryTotal,
                     PlanningSpent = planningSpent,
                     PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
