@@ -508,7 +508,7 @@ namespace MoneyEz.Services.Services.Implements
             var currentModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
                 filter: usm => usm.UserId == user.Id
                     && usm.EndDate > CommonUtils.GetCurrentTime()
-                    && usm.Status == UserSpendingModelStatus.ACTIVE 
+                    && usm.Status == UserSpendingModelStatus.ACTIVE
                     && !usm.IsDeleted,
                 include: query => query
                     .Include(usm => usm.SpendingModel)
@@ -540,6 +540,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var chartData = new List<ChartSpendingCategoryModel>();
             decimal totalSpent = 0;
+            decimal totalSavingCategoriesSpent = 0;
 
             // Get total income for the spending model period
             decimal totalIncome = await _unitOfWork.TransactionsRepository.GetTotalIncomeAsync(
@@ -564,29 +565,73 @@ namespace MoneyEz.Services.Services.Implements
             // Group transactions by category and calculate totals
             foreach (var spendingModelCategory in currentModel.SpendingModel.SpendingModelCategories)
             {
-                var categoryTransactions = transactions.Where(t =>
-                    t.Subcategory != null &&
-                    t.Subcategory.CategorySubcategories.Any(cs =>
-                        cs.CategoryId == spendingModelCategory.CategoryId));
-
-                var categoryTotal = categoryTransactions.Sum(t => t.Amount);
-                totalSpent += categoryTotal;
-
-                // Calculate planned spending amount based on percentage of total income
-                var planningSpent = (spendingModelCategory.PercentageAmount.Value / 100) * totalIncome;
-
-                chartData.Add(new ChartSpendingCategoryModel
+                // Skip INCOME categories in totalSpent calculation
+                if (spendingModelCategory.Category.Type == TransactionType.INCOME)
                 {
-                    CategoryName = spendingModelCategory.Category.Name,
-                    CategoryType = spendingModelCategory.Category.Type.ToString(),
-                    IsSaving = spendingModelCategory.Category.IsSaving,
-                    TotalSpent = categoryTotal,
-                    PlanningSpent = planningSpent,
-                    PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
-                    ActualPercentage = 0, // Will be calculated after we have the total
-                    OverSpent = categoryTotal > planningSpent ? categoryTotal - planningSpent : 0 // Calculate overspent amount
-                });
+                    var categoryTransactions = transactions.Where(t =>
+                        t.Subcategory != null &&
+                        t.Subcategory.CategorySubcategories.Any(cs =>
+                            cs.CategoryId == spendingModelCategory.CategoryId));
+
+                    var categoryTotal = categoryTransactions.Sum(t => t.Amount);
+
+                    // Calculate planned spending amount based on percentage of total income
+                    var planningSpent = (spendingModelCategory.PercentageAmount.Value / 100) * totalIncome;
+
+                    chartData.Add(new ChartSpendingCategoryModel
+                    {
+                        CategoryName = spendingModelCategory.Category.Name,
+                        CategoryType = spendingModelCategory.Category.Type.ToString(),
+                        IsSaving = spendingModelCategory.Category.IsSaving,
+                        TotalSpent = categoryTotal,
+                        PlanningSpent = planningSpent,
+                        PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
+                        ActualPercentage = 0, // Will be calculated after we have the total
+                        OverSpent = categoryTotal > planningSpent ? categoryTotal - planningSpent : 0 // Calculate overspent amount
+                    });
+                }
+                else // For EXPENSE categories
+                {
+                    var categoryTransactions = transactions.Where(t =>
+                        t.Subcategory != null &&
+                        t.Subcategory.CategorySubcategories.Any(cs =>
+                            cs.CategoryId == spendingModelCategory.CategoryId));
+
+                    var categoryTotal = categoryTransactions.Sum(t => t.Amount);
+                    totalSpent += categoryTotal;
+
+                    // If this is a saving category (type is EXPENSE and IsSaving is true),
+                    // add its spent amount to the savings total
+                    if (spendingModelCategory.Category.Type == TransactionType.EXPENSE &&
+                        spendingModelCategory.Category.IsSaving == true)
+                    {
+                        totalSavingCategoriesSpent += categoryTotal;
+                    }
+
+                    // Calculate planned spending amount based on percentage of total income
+                    var planningSpent = (spendingModelCategory.PercentageAmount.Value / 100) * totalIncome;
+
+                    chartData.Add(new ChartSpendingCategoryModel
+                    {
+                        CategoryName = spendingModelCategory.Category.Name,
+                        CategoryType = spendingModelCategory.Category.Type.ToString(),
+                        IsSaving = spendingModelCategory.Category.IsSaving,
+                        TotalSpent = categoryTotal,
+                        PlanningSpent = planningSpent,
+                        PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
+                        ActualPercentage = 0, // Will be calculated after we have the total
+                        OverSpent = categoryTotal > planningSpent ? categoryTotal - planningSpent : 0 // Calculate overspent amount
+                    });
+                }
             }
+
+            // Calculate total savings (income - totalSpent + saving categories spent)
+            decimal totalSaving = totalIncome - totalSpent + totalSavingCategoriesSpent;
+
+            // Calculate TotalOverspent only for non-saving EXPENSE categories
+            decimal totalOverspent = chartData
+                .Where(c => c.CategoryType == TransactionType.EXPENSE.ToString() && (c.IsSaving == false || c.IsSaving == null))
+                .Sum(c => c.OverSpent);
 
             // Calculate actual percentages
             foreach (var category in chartData)
@@ -611,7 +656,8 @@ namespace MoneyEz.Services.Services.Implements
                     Categories = chartData,
                     TotalSpent = totalSpent,
                     TotalIncome = totalIncome,
-                    TotalOverspent = chartData.Sum(c => c.OverSpent), // Add total overspent
+                    TotalSaving = totalSaving,
+                    TotalOverspent = totalOverspent,
                     StartDate = currentModel.StartDate,
                     EndDate = currentModel.EndDate
                 }
@@ -650,6 +696,7 @@ namespace MoneyEz.Services.Services.Implements
 
             var chartData = new List<ChartSpendingCategoryModel>();
             decimal totalSpent = 0;
+            decimal totalSavingCategoriesSpent = 0;
 
             // Get total income for the spending model period
             decimal totalIncome = await _unitOfWork.TransactionsRepository.GetTotalIncomeAsync(
@@ -674,29 +721,73 @@ namespace MoneyEz.Services.Services.Implements
             // Group transactions by category and calculate totals
             foreach (var spendingModelCategory in userSpendingModel.SpendingModel.SpendingModelCategories)
             {
-                var categoryTransactions = transactions.Where(t =>
-                    t.Subcategory != null &&
-                    t.Subcategory.CategorySubcategories.Any(cs =>
-                        cs.CategoryId == spendingModelCategory.CategoryId));
-
-                var categoryTotal = categoryTransactions.Sum(t => t.Amount);
-                totalSpent += categoryTotal;
-
-                // Calculate planned spending amount based on percentage of total income
-                var planningSpent = (spendingModelCategory.PercentageAmount.Value / 100) * totalIncome;
-
-                chartData.Add(new ChartSpendingCategoryModel
+                // Skip INCOME categories in totalSpent calculation
+                if (spendingModelCategory.Category.Type == TransactionType.INCOME)
                 {
-                    CategoryName = spendingModelCategory.Category.Name,
-                    CategoryType = spendingModelCategory.Category.Type.ToString(),
-                    IsSaving = spendingModelCategory.Category.IsSaving,
-                    TotalSpent = categoryTotal,
-                    PlanningSpent = planningSpent,
-                    PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
-                    ActualPercentage = 0, // Will be calculated after we have the total
-                    OverSpent = categoryTotal > planningSpent ? categoryTotal - planningSpent : 0 // Calculate overspent amount
-                });
+                    var categoryTransactions = transactions.Where(t =>
+                        t.Subcategory != null &&
+                        t.Subcategory.CategorySubcategories.Any(cs =>
+                            cs.CategoryId == spendingModelCategory.CategoryId));
+
+                    var categoryTotal = categoryTransactions.Sum(t => t.Amount);
+
+                    // Calculate planned spending amount based on percentage of total income
+                    var planningSpent = (spendingModelCategory.PercentageAmount.Value / 100) * totalIncome;
+
+                    chartData.Add(new ChartSpendingCategoryModel
+                    {
+                        CategoryName = spendingModelCategory.Category.Name,
+                        CategoryType = spendingModelCategory.Category.Type.ToString(),
+                        IsSaving = spendingModelCategory.Category.IsSaving,
+                        TotalSpent = categoryTotal,
+                        PlanningSpent = planningSpent,
+                        PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
+                        ActualPercentage = 0, // Will be calculated after we have the total
+                        OverSpent = categoryTotal > planningSpent ? categoryTotal - planningSpent : 0 // Calculate overspent amount
+                    });
+                }
+                else // For EXPENSE categories
+                {
+                    var categoryTransactions = transactions.Where(t =>
+                        t.Subcategory != null &&
+                        t.Subcategory.CategorySubcategories.Any(cs =>
+                            cs.CategoryId == spendingModelCategory.CategoryId));
+
+                    var categoryTotal = categoryTransactions.Sum(t => t.Amount);
+                    totalSpent += categoryTotal;
+
+                    // If this is a saving category (type is EXPENSE and IsSaving is true),
+                    // add its spent amount to the savings total
+                    if (spendingModelCategory.Category.Type == TransactionType.EXPENSE &&
+                        spendingModelCategory.Category.IsSaving == true)
+                    {
+                        totalSavingCategoriesSpent += categoryTotal;
+                    }
+
+                    // Calculate planned spending amount based on percentage of total income
+                    var planningSpent = (spendingModelCategory.PercentageAmount.Value / 100) * totalIncome;
+
+                    chartData.Add(new ChartSpendingCategoryModel
+                    {
+                        CategoryName = spendingModelCategory.Category.Name,
+                        CategoryType = spendingModelCategory.Category.Type.ToString(),
+                        IsSaving = spendingModelCategory.Category.IsSaving,
+                        TotalSpent = categoryTotal,
+                        PlanningSpent = planningSpent,
+                        PlannedPercentage = spendingModelCategory.PercentageAmount.Value,
+                        ActualPercentage = 0, // Will be calculated after we have the total
+                        OverSpent = categoryTotal > planningSpent ? categoryTotal - planningSpent : 0 // Calculate overspent amount
+                    });
+                }
             }
+
+            // Calculate total savings (income - totalSpent + saving categories spent)
+            decimal totalSaving = totalIncome - totalSpent + totalSavingCategoriesSpent;
+
+            // Calculate TotalOverspent only for non-saving EXPENSE categories
+            decimal totalOverspent = chartData
+                .Where(c => c.CategoryType == TransactionType.EXPENSE.ToString() && (c.IsSaving == false || c.IsSaving == null))
+                .Sum(c => c.OverSpent);
 
             // Calculate actual percentages
             foreach (var category in chartData)
@@ -721,7 +812,8 @@ namespace MoneyEz.Services.Services.Implements
                     Categories = chartData,
                     TotalSpent = totalSpent,
                     TotalIncome = totalIncome,
-                    TotalOverspent = chartData.Sum(c => c.OverSpent), // Add total overspent
+                    TotalSaving = totalSaving,
+                    TotalOverspent = totalOverspent,
                     StartDate = userSpendingModel.StartDate,
                     EndDate = userSpendingModel.EndDate
                 }
