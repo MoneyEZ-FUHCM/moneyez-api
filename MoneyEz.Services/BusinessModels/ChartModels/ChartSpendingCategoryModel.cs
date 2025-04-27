@@ -9,6 +9,8 @@ namespace MoneyEz.Services.BusinessModels.ChartModels
     public class ChartSpendingCategoryModel
     {
         public string? CategoryName { get; set; }
+        public string? CategoryType { get; set; }
+        public bool? IsSaving { get; set; }
         public decimal TotalSpent { get; set; }
         public decimal PlanningSpent { get; set; }
         public decimal OverSpent { get; set; }
