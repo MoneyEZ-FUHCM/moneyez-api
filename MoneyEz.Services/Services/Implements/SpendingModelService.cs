@@ -301,15 +301,15 @@ namespace MoneyEz.Services.Services.Implements
             if (!spendingModel.SpendingModelCategories.Any())
             {
                 // Nếu đây là lần đầu thêm danh mục, `PercentageAmount` là bắt buộc
-                if (newCategoriesData.Any(c => c.PercentageAmount == 0))
-                {
-                    return new BaseResultModel
-                    {
-                        Status = StatusCodes.Status400BadRequest,
-                        ErrorCode = MessageConstants.PERCENTAGE_REQUIRED,
-                        Message = "Percentage amounts must be provided when adding categories for the first time."
-                    };
-                }
+                //if (newCategoriesData.Any(c => c.PercentageAmount == 0))
+                //{
+                //    return new BaseResultModel
+                //    {
+                //        Status = StatusCodes.Status400BadRequest,
+                //        ErrorCode = MessageConstants.PERCENTAGE_REQUIRED,
+                //        Message = "Percentage amounts must be provided when adding categories for the first time."
+                //    };
+                //}
 
                 var totalPercentage = newCategoriesData.Sum(c => c.PercentageAmount);
                 if (totalPercentage != 100)
