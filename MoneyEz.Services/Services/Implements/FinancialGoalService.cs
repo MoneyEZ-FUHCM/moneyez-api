@@ -865,7 +865,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_DEADLINE,
-                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai và phải sau ngày bắt đầu 3 ngày."
+                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai và tối thiểu phải sau ngày bắt đầu 3 ngày."
                 };
             }
 
@@ -1071,7 +1071,7 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_DEADLINE,
-                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai và phải sau ngày bắt đầu 3 ngày."
+                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai và tối thiểu phải sau ngày bắt đầu 3 ngày."
                 };
             }
 
