@@ -36,10 +36,10 @@ namespace MoneyEz.Services.Services.Implements
         private readonly ITransactionNotificationService _transactionNotificationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public TransactionService(IUnitOfWork unitOfWork, 
-            IMapper mapper, 
-            IClaimsService claimsService, 
-            ITransactionNotificationService transactionNotificationService, 
+        public TransactionService(IUnitOfWork unitOfWork,
+            IMapper mapper,
+            IClaimsService claimsService,
+            ITransactionNotificationService transactionNotificationService,
             IHttpContextAccessor httpContextAccessor)
         {
             _unitOfWork = unitOfWork;
@@ -972,7 +972,7 @@ namespace MoneyEz.Services.Services.Implements
             {
                 // Adjust the amount based on transaction type
                 decimal adjustedAmount = transaction.Type == TransactionType.INCOME ? amount : -amount;
-                
+
                 activeGoal.CurrentAmount += adjustedAmount;
 
                 // Ensure CurrentAmount doesn't go below zero
@@ -1161,50 +1161,75 @@ namespace MoneyEz.Services.Services.Implements
             }
             else
             {
-                // trường hợp không liên kết ngân hàng với nhóm
-                // tạo mới transaction cho user
-                // chỉ hỗ trợ thêm giao dịch vào nếu user đã có mô hình chi tiêu
-
-                // search user spending model
-                var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id);
-                if (userSpendingModel == null)
+                // trường hợp đã liên kết ngân hàng với nhóm
+                if (groupBankAccount != null)
                 {
-                    throw new NotExistException("User spending model not found", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
-                }
-
-                // create new transaction
-                var newTransaction = new Transaction
-                {
-                    Amount = webhookPayload.Amount,
-                    Description = "[Ngân hàng] " + webhookPayload.Description,
-                    Status = TransactionStatus.PENDING,
-                    Type = webhookPayload.TransactionType,
-                    TransactionDate = webhookPayload.Timestamp,
-                    UserId = bankAccount.UserId,
-                    CreatedBy = user.Email,
-                    ApprovalRequired = false,
-                    InsertType = InsertType.BANKING,
-                    UserSpendingModelId = userSpendingModel.Id,
-                    BankTransactionDate = webhookPayload.Timestamp,
-                    BankTransactionId = webhookPayload.TransactionId,
-                    AccountBankNumber = webhookPayload.AccountNumber,
-                    AccountBankName = webhookPayload.BankName
-                };
-
-                // tự phân loại giao dịch với tiền lương
-                var isSalary = StringUtils.IsDescriptionContainsSalaryKeywords(webhookPayload.Description);
-                if (isSalary)
-                {
-                    var salarySubcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(
-                        filter: sc => sc.Code == "sc-luong" && !sc.IsDeleted);
-                    if (salarySubcategory.Any())
+                    // trường hợp giao dịch số tiền không hợp lệ
+                    // tạo transaction mới cho group
+                    var newTransactionGroup = new CreateGroupTransactionModel
                     {
-                        newTransaction.SubcategoryId = salarySubcategory.First().Id;
+                        Amount = webhookPayload.Amount,
+                        Description = "[Ngân hàng] " + webhookPayload.Description,
+                        Type = webhookPayload.TransactionType,
+                        TransactionDate = webhookPayload.Timestamp,
+                        GroupId = groupBankAccount.Id,
+                        InsertType = InsertType.BANKING,
+                        AccountBankNumber = webhookPayload.AccountNumber,
+                        AccountBankName = webhookPayload.BankName,
+                        BankTransactionDate = webhookPayload.Timestamp,
+                        BankTransactionId = webhookPayload.TransactionId
+                    };
+
+                    return await CreateGroupTransactionAsync(newTransactionGroup, user.Email);
+                }
+                else
+                {
+                    // trường hợp không liên kết ngân hàng với nhóm
+                    // tạo mới transaction cho user
+                    // chỉ hỗ trợ thêm giao dịch vào nếu user đã có mô hình chi tiêu
+
+                    // search user spending model
+                    var userSpendingModel = await _unitOfWork.UserSpendingModelRepository.GetCurrentSpendingModelByUserId(user.Id);
+                    if (userSpendingModel == null)
+                    {
+                        throw new NotExistException("User spending model not found", MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
                     }
+
+                    // create new transaction
+                    var newTransaction = new Transaction
+                    {
+                        Amount = webhookPayload.Amount,
+                        Description = "[Ngân hàng] " + webhookPayload.Description,
+                        Status = TransactionStatus.PENDING,
+                        Type = webhookPayload.TransactionType,
+                        TransactionDate = webhookPayload.Timestamp,
+                        UserId = bankAccount.UserId,
+                        CreatedBy = user.Email,
+                        ApprovalRequired = false,
+                        InsertType = InsertType.BANKING,
+                        UserSpendingModelId = userSpendingModel.Id,
+                        BankTransactionDate = webhookPayload.Timestamp,
+                        BankTransactionId = webhookPayload.TransactionId,
+                        AccountBankNumber = webhookPayload.AccountNumber,
+                        AccountBankName = webhookPayload.BankName
+                    };
+
+                    // tự phân loại giao dịch với tiền lương
+                    var isSalary = StringUtils.IsDescriptionContainsSalaryKeywords(webhookPayload.Description);
+                    if (isSalary)
+                    {
+                        var salarySubcategory = await _unitOfWork.SubcategoryRepository.GetByConditionAsync(
+                            filter: sc => sc.Code == "sc-luong" && !sc.IsDeleted);
+                        if (salarySubcategory.Any())
+                        {
+                            newTransaction.SubcategoryId = salarySubcategory.First().Id;
+                        }
+                    }
+
+                    await _unitOfWork.TransactionsRepository.AddAsync(newTransaction);
+                    await _unitOfWork.SaveAsync();
                 }
 
-                await _unitOfWork.TransactionsRepository.AddAsync(newTransaction);
-                await _unitOfWork.SaveAsync();
             }
 
             return new BaseResultModel
@@ -1598,175 +1623,175 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-     /*   public async Task<BaseResultModel> GetAllTimeCategoryReportAsyncV2(string type)
-        {
-            var userEmail = _claimsService.GetCurrentUserEmail;
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
-            if (user == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
-                    Message = "User not found."
-                };
-            }
+        /*   public async Task<BaseResultModel> GetAllTimeCategoryReportAsyncV2(string type)
+           {
+               var userEmail = _claimsService.GetCurrentUserEmail;
+               var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+               if (user == null)
+               {
+                   return new BaseResultModel
+                   {
+                       Status = StatusCodes.Status404NotFound,
+                       ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                       Message = "User not found."
+                   };
+               }
 
-            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.UserId == user.Id,
-                include: q => q.Include(t => t.Subcategory)
-                    .ThenInclude(c => c.CategorySubcategories)
-                    .ThenInclude(cs => cs.Category)
-            );
+               var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                   filter: t => t.UserId == user.Id,
+                   include: q => q.Include(t => t.Subcategory)
+                       .ThenInclude(c => c.CategorySubcategories)
+                       .ThenInclude(cs => cs.Category)
+               );
 
-            // parse type to enum
-            ReportTransactionType reportTransactionType;
-            switch (type.ToLower())
-            {
-                case "expense":
-                    reportTransactionType = ReportTransactionType.Expense;
-                    break;
-                case "income":
-                    reportTransactionType = ReportTransactionType.Income;
-                    break;
-                case "total":
-                    reportTransactionType = ReportTransactionType.Total;
-                    break;
-                default:
-                    reportTransactionType = ReportTransactionType.Total;
-                    break;
-            }
+               // parse type to enum
+               ReportTransactionType reportTransactionType;
+               switch (type.ToLower())
+               {
+                   case "expense":
+                       reportTransactionType = ReportTransactionType.Expense;
+                       break;
+                   case "income":
+                       reportTransactionType = ReportTransactionType.Income;
+                       break;
+                   case "total":
+                       reportTransactionType = ReportTransactionType.Total;
+                       break;
+                   default:
+                       reportTransactionType = ReportTransactionType.Total;
+                       break;
+               }
 
-            // Filter transactions and join with category information
-            var transactionsWithCategory = transactions
-                .Where(t => t.Subcategory != null)
-                .SelectMany(t => t.Subcategory.CategorySubcategories
-                    .Select(cs => new {
-                        Transaction = t,
-                        CategoryType = cs.Category.Type
-                    }))
-                .Where(x => reportTransactionType == ReportTransactionType.Total ||
-                           (reportTransactionType == ReportTransactionType.Expense && x.CategoryType == TransactionType.EXPENSE) ||
-                           (reportTransactionType == ReportTransactionType.Income && x.CategoryType == TransactionType.INCOME))
-                .ToList();
+               // Filter transactions and join with category information
+               var transactionsWithCategory = transactions
+                   .Where(t => t.Subcategory != null)
+                   .SelectMany(t => t.Subcategory.CategorySubcategories
+                       .Select(cs => new {
+                           Transaction = t,
+                           CategoryType = cs.Category.Type
+                       }))
+                   .Where(x => reportTransactionType == ReportTransactionType.Total ||
+                              (reportTransactionType == ReportTransactionType.Expense && x.CategoryType == TransactionType.EXPENSE) ||
+                              (reportTransactionType == ReportTransactionType.Income && x.CategoryType == TransactionType.INCOME))
+                   .ToList();
 
-            var total = transactionsWithCategory.Sum(t => t.Transaction.Amount);
+               var total = transactionsWithCategory.Sum(t => t.Transaction.Amount);
 
-            var categories = transactionsWithCategory
-                .GroupBy(x => new {
-                    SubcategoryId = x.Transaction.SubcategoryId,
-                    SubcategoryName = x.Transaction.Subcategory.Name,
-                    SubcategoryIcon = x.Transaction.Subcategory.Icon,
-                    CategoryType = x.CategoryType
-                })
-                .Select(g => new CategoryAmountModel
-                {
-                    Name = g.Key.SubcategoryName,
-                    Icon = g.Key.SubcategoryIcon,
-                    Amount = g.Sum(x => x.Transaction.Amount),
-                    Percentage = total == 0 ? 0 : Math.Round((double)(g.Sum(x => x.Transaction.Amount) / total * 100), 2),
-                    CategoryType = g.Key.CategoryType.ToString()
-                })
-                .OrderByDescending(c => c.Amount)
-                .ToList();
+               var categories = transactionsWithCategory
+                   .GroupBy(x => new {
+                       SubcategoryId = x.Transaction.SubcategoryId,
+                       SubcategoryName = x.Transaction.Subcategory.Name,
+                       SubcategoryIcon = x.Transaction.Subcategory.Icon,
+                       CategoryType = x.CategoryType
+                   })
+                   .Select(g => new CategoryAmountModel
+                   {
+                       Name = g.Key.SubcategoryName,
+                       Icon = g.Key.SubcategoryIcon,
+                       Amount = g.Sum(x => x.Transaction.Amount),
+                       Percentage = total == 0 ? 0 : Math.Round((double)(g.Sum(x => x.Transaction.Amount) / total * 100), 2),
+                       CategoryType = g.Key.CategoryType.ToString()
+                   })
+                   .OrderByDescending(c => c.Amount)
+                   .ToList();
 
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Data = new AllTimeCategoryTransactionReportModel
-                {
-                    Type = reportTransactionType.ToString().ToUpper(),
-                    Total = total,
-                    Categories = categories
-                }
-            };
-        }
+               return new BaseResultModel
+               {
+                   Status = StatusCodes.Status200OK,
+                   Data = new AllTimeCategoryTransactionReportModel
+                   {
+                       Type = reportTransactionType.ToString().ToUpper(),
+                       Total = total,
+                       Categories = categories
+                   }
+               };
+           }
 
-        public async Task<BaseResultModel> GetCategoryYearReportAsyncV2(int year, string type)
-        {
-            var userEmail = _claimsService.GetCurrentUserEmail;
-            var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
-            if (user == null)
-            {
-                return new BaseResultModel
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
-                    Message = "User not found."
-                };
-            }
+           public async Task<BaseResultModel> GetCategoryYearReportAsyncV2(int year, string type)
+           {
+               var userEmail = _claimsService.GetCurrentUserEmail;
+               var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail);
+               if (user == null)
+               {
+                   return new BaseResultModel
+                   {
+                       Status = StatusCodes.Status404NotFound,
+                       ErrorCode = MessageConstants.ACCOUNT_NOT_EXIST,
+                       Message = "User not found."
+                   };
+               }
 
-            var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
-                filter: t => t.UserId == user.Id &&
-                             t.TransactionDate!.Value.Year == year,
-                include: q => q.Include(t => t.Subcategory)
-                    .ThenInclude(c => c.CategorySubcategories)
-                    .ThenInclude(cs => cs.Category)
-            );
+               var transactions = await _unitOfWork.TransactionsRepository.GetByConditionAsync(
+                   filter: t => t.UserId == user.Id &&
+                                t.TransactionDate!.Value.Year == year,
+                   include: q => q.Include(t => t.Subcategory)
+                       .ThenInclude(c => c.CategorySubcategories)
+                       .ThenInclude(cs => cs.Category)
+               );
 
-            // parse type to enum
-            ReportTransactionType reportTransactionType;
-            switch (type.ToLower())
-            {
-                case "expense":
-                    reportTransactionType = ReportTransactionType.Expense;
-                    break;
-                case "income":
-                    reportTransactionType = ReportTransactionType.Income;
-                    break;
-                case "total":
-                    reportTransactionType = ReportTransactionType.Total;
-                    break;
-                default:
-                    reportTransactionType = ReportTransactionType.Total;
-                    break;
-            }
+               // parse type to enum
+               ReportTransactionType reportTransactionType;
+               switch (type.ToLower())
+               {
+                   case "expense":
+                       reportTransactionType = ReportTransactionType.Expense;
+                       break;
+                   case "income":
+                       reportTransactionType = ReportTransactionType.Income;
+                       break;
+                   case "total":
+                       reportTransactionType = ReportTransactionType.Total;
+                       break;
+                   default:
+                       reportTransactionType = ReportTransactionType.Total;
+                       break;
+               }
 
-            // Filter transactions and join with category information
-            var transactionsWithCategory = transactions
-                .Where(t => t.Subcategory != null)
-                .SelectMany(t => t.Subcategory.CategorySubcategories
-                    .Select(cs => new {
-                        Transaction = t,
-                        CategoryType = cs.Category.Type
-                    }))
-                .Where(x => reportTransactionType == ReportTransactionType.Total ||
-                           (reportTransactionType == ReportTransactionType.Expense && x.CategoryType == TransactionType.EXPENSE) ||
-                           (reportTransactionType == ReportTransactionType.Income && x.CategoryType == TransactionType.INCOME))
-                .ToList();
+               // Filter transactions and join with category information
+               var transactionsWithCategory = transactions
+                   .Where(t => t.Subcategory != null)
+                   .SelectMany(t => t.Subcategory.CategorySubcategories
+                       .Select(cs => new {
+                           Transaction = t,
+                           CategoryType = cs.Category.Type
+                       }))
+                   .Where(x => reportTransactionType == ReportTransactionType.Total ||
+                              (reportTransactionType == ReportTransactionType.Expense && x.CategoryType == TransactionType.EXPENSE) ||
+                              (reportTransactionType == ReportTransactionType.Income && x.CategoryType == TransactionType.INCOME))
+                   .ToList();
 
-            var total = transactionsWithCategory.Sum(t => t.Transaction.Amount);
+               var total = transactionsWithCategory.Sum(t => t.Transaction.Amount);
 
-            var categories = transactionsWithCategory
-                .GroupBy(x => new {
-                    SubcategoryId = x.Transaction.SubcategoryId,
-                    SubcategoryName = x.Transaction.Subcategory.Name,
-                    SubcategoryIcon = x.Transaction.Subcategory.Icon,
-                    CategoryType = x.CategoryType
-                })
-                .Select(g => new CategoryAmountModel
-                {
-                    Name = g.Key.SubcategoryName,
-                    Icon = g.Key.SubcategoryIcon,
-                    Amount = g.Sum(x => x.Transaction.Amount),
-                    Percentage = total == 0 ? 0 : Math.Round((double)(g.Sum(x => x.Transaction.Amount) / total * 100), 2),
-                    CategoryType = g.Key.CategoryType.ToString()
-                })
-                .OrderByDescending(c => c.Amount)
-                .ToList();
+               var categories = transactionsWithCategory
+                   .GroupBy(x => new {
+                       SubcategoryId = x.Transaction.SubcategoryId,
+                       SubcategoryName = x.Transaction.Subcategory.Name,
+                       SubcategoryIcon = x.Transaction.Subcategory.Icon,
+                       CategoryType = x.CategoryType
+                   })
+                   .Select(g => new CategoryAmountModel
+                   {
+                       Name = g.Key.SubcategoryName,
+                       Icon = g.Key.SubcategoryIcon,
+                       Amount = g.Sum(x => x.Transaction.Amount),
+                       Percentage = total == 0 ? 0 : Math.Round((double)(g.Sum(x => x.Transaction.Amount) / total * 100), 2),
+                       CategoryType = g.Key.CategoryType.ToString()
+                   })
+                   .OrderByDescending(c => c.Amount)
+                   .ToList();
 
-            return new BaseResultModel
-            {
-                Status = StatusCodes.Status200OK,
-                Data = new CategoryYearTransactionReportModel
-                {
-                    Year = year,
-                    Type = reportTransactionType.ToString().ToUpper(),
-                    Total = total,
-                    Categories = categories
-                }
-            };
-        }*/
+               return new BaseResultModel
+               {
+                   Status = StatusCodes.Status200OK,
+                   Data = new CategoryYearTransactionReportModel
+                   {
+                       Year = year,
+                       Type = reportTransactionType.ToString().ToUpper(),
+                       Total = total,
+                       Categories = categories
+                   }
+               };
+           }*/
 
         #endregion report
 
