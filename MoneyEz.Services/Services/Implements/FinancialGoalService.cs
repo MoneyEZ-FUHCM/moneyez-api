@@ -859,13 +859,13 @@ namespace MoneyEz.Services.Services.Implements
             //    };
             //}
 
-            if (model.Deadline.Date <= CommonUtils.GetCurrentTime().Date)
+            if (model.Deadline.Date <= CommonUtils.GetCurrentTime().Date.AddDays(3))
             {
                 return new BaseResultModel
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_DEADLINE,
-                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai."
+                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai và tối thiểu phải sau ngày bắt đầu 3 ngày."
                 };
             }
 
@@ -1061,7 +1061,17 @@ namespace MoneyEz.Services.Services.Implements
                 {
                     Status = StatusCodes.Status400BadRequest,
                     ErrorCode = MessageConstants.INVALID_DEADLINE,
-                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai."
+                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai"
+                };
+            }
+
+            if (model.Deadline.Date <= goalToUpdate.StartDate.Date.AddDays(3))
+            {
+                return new BaseResultModel
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    ErrorCode = MessageConstants.INVALID_DEADLINE,
+                    Message = "Ngày hoàn thành mục tiêu phải là ngày trong tương lai và tối thiểu phải sau ngày bắt đầu 3 ngày."
                 };
             }
 
