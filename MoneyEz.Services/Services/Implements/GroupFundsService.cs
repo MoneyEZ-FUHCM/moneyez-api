@@ -77,6 +77,14 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.BANK_ACCOUNT_NOT_FOUND);
             }
 
+            // check bank account is existed in any group
+            var bankAccountIsUsing = await _unitOfWork.GroupFundRepository.GetByAccountBankId(model.AccountBankId);
+            if (bankAccountIsUsing != null)
+            {
+                throw new DefaultException("", MessageConstants.BANK_ACCOUNT_IS_USED);
+            }
+
+
             // Map the model to a new GroupFund entity and set its Id to the one generated for groupEntity
             var groupFund = _mapper.Map<GroupFund>(model);
             groupFund.NameUnsign = StringUtils.ConvertToUnSign(model.Name);
