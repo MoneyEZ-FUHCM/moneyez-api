@@ -79,7 +79,7 @@ namespace MoneyEz.Services.Services.Implements
 
             // check bank account is existed in any group
             var bankAccountIsUsing = await _unitOfWork.GroupFundRepository.GetByAccountBankId(model.AccountBankId);
-            if (bankAccountIsUsing != null)
+            if (bankAccountIsUsing.Any())
             {
                 throw new DefaultException("", MessageConstants.BANK_ACCOUNT_IS_USED);
             }
