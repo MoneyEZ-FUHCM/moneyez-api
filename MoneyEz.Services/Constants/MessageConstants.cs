@@ -263,6 +263,8 @@ namespace MoneyEz.Services.Constants
 
         public const string GROUP_CREATE_TRANSACTION_INVALID_DESCRIPTION = "GroupCreateTransactionInvalidDescription";
 
+        public const string BANK_ACCOUNT_IS_USED = "BankAccountIsUsed";
+
         // fundraising request
         public const string FUNDRAISING_REQUEST_NOT_FOUND = "FundraisingRequestNotFound";
         public const string FUNDRAISING_REQUEST_ACCESS_DENIED = "FundraisingRequestAccessDenied";
