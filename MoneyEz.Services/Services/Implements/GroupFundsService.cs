@@ -229,7 +229,8 @@ namespace MoneyEz.Services.Services.Implements
             var groupFund = await _unitOfWork.GroupFundRepository
                 .GetByIdIncludeAsync(groupId, include: q => q
                     .Include(x => x.GroupFundLogs)
-                    .Include(x => x.GroupMembers));
+                    .Include(x => x.GroupMembers)
+                    .Include(x => x.Transactions));
             if (groupFund == null)
             {
                 return new BaseResultModel
