@@ -11,7 +11,7 @@ namespace MoneyEz.Services.Services.Interfaces
     {
         Task<BaseResultModel> ChooseSpendingModelAsync(ChooseSpendingModelModel model);
         Task<BaseResultModel> SwitchSpendingModelAsync(SwitchSpendingModelModel model);
-        Task<BaseResultModel> CancelSpendingModelAsync(Guid spendingModelId);
+        Task<BaseResultModel> CancelSpendingModelAsync(Guid spendingModelId, bool isBypassGoal);
         Task<BaseResultModel> GetCurrentSpendingModelAsync();
         Task<BaseResultModel> GetUsedSpendingModelByIdAsync(Guid id);
         Task<BaseResultModel> GetUsedSpendingModelsPaginationAsync(PaginationParameter paginationParameter);

@@ -40,9 +40,9 @@ namespace MoneyEz.API.Controllers
 
         [HttpDelete("cancel")]
         [Authorize(Roles = nameof(RolesEnum.USER))]
-        public Task<IActionResult> CancelSpendingModel([FromQuery] Guid spendingModelId)
+        public Task<IActionResult> CancelSpendingModel([FromQuery] Guid spendingModelId, [FromQuery] bool isBypassGoal)
         {
-            return ValidateAndExecute(() => _userSpendingModelService.CancelSpendingModelAsync(spendingModelId));
+            return ValidateAndExecute(() => _userSpendingModelService.CancelSpendingModelAsync(spendingModelId, isBypassGoal));
         }
 
         [HttpGet("current")]
