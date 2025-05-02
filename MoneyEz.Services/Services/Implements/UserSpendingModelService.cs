@@ -216,7 +216,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> CancelSpendingModelAsync(Guid spendingModelId)
+        public async Task<BaseResultModel> CancelSpendingModelAsync(Guid spendingModelId, bool isBypassGoal)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
@@ -273,10 +273,10 @@ namespace MoneyEz.Services.Services.Implements
                     && !fg.IsDeleted
             );
 
-            if (existingGoals.Any())
+            if (existingGoals.Count > 0)
             {
                 // nếu có mục tiêu nào đang active sẽ không được xóa
-                if (existingGoals.Any(g => g.Status == FinancialGoalStatus.ACTIVE))
+                if (existingGoals.Any(g => g.Status == FinancialGoalStatus.ACTIVE) && !isBypassGoal)
                 {
                     // nếu có transaction và mục tiêu - không xóa
                     return new BaseResultModel
@@ -286,23 +286,43 @@ namespace MoneyEz.Services.Services.Implements
                         Message = "You cannot cancel this spending model because some subcategories are linked to active financial goals."
                     };
                 }
-                else
+
+                if (isBypassGoal)
                 {
                     // cập nhật lại deadline cho goal trùng với ngày xóa
                     foreach (var goal in existingGoals)
                     {
-                        goal.Deadline = CommonUtils.GetCurrentTime();
-                        _unitOfWork.FinancialGoalRepository.UpdateAsync(goal);
+                        if (goal.Status == FinancialGoalStatus.ACTIVE)
+                        {
+                            goal.Status = FinancialGoalStatus.ARCHIVED;
+                            goal.Deadline = CommonUtils.GetCurrentTime();
+                            _unitOfWork.FinancialGoalRepository.UpdateAsync(goal);
+                        }
+                        else
+                        {
+                            goal.Deadline = CommonUtils.GetCurrentTime();
+                            _unitOfWork.FinancialGoalRepository.UpdateAsync(goal);
+                        }
                     }
                 }
+                //else
+                //{
+                //    // cập nhật lại deadline cho goal trùng với ngày xóa
+                //    foreach (var goal in existingGoals)
+                //    {
+                //        goal.Deadline = CommonUtils.GetCurrentTime();
+                //        _unitOfWork.FinancialGoalRepository.UpdateAsync(goal);
+                //    }
+                //}
             }
 
-            if (!transactions.Any() && !existingGoals.Any())
+            if (transactions.Count > 0 && existingGoals.Count > 0)
             {
                 // nếu có transaction và mục tiêu - xóa mềm
                 // update lại deadline cho mô hình trùng với ngày xóa
                 spendingModel.EndDate = CommonUtils.GetCurrentTime();
-                spendingModel.IsDeleted = true;
+                spendingModel.Status = UserSpendingModelStatus.EXPIRED;
+                //spendingModel.IsDeleted = true;
                 _unitOfWork.UserSpendingModelRepository.UpdateAsync(spendingModel);
             }
             else
