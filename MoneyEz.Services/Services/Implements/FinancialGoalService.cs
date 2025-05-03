@@ -859,7 +859,7 @@ namespace MoneyEz.Services.Services.Implements
             //    };
             //}
 
-            if (model.Deadline.Date <= CommonUtils.GetCurrentTime().Date.AddDays(3))
+            if (model.Deadline.Date < CommonUtils.GetCurrentTime().Date.AddDays(3))
             {
                 return new BaseResultModel
                 {
