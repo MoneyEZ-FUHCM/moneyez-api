@@ -18,6 +18,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task NotifyGoalProgressTrackingAsync(User user, FinancialGoal goal);
         Task NotifyTransactionApprovalRequestAsync(GroupFund group, Transaction transaction, User user);
         Task NotifyTransactionCreatedAsync(GroupFund group, Transaction transaction, User user);
+        Task NotifyTransactionGroupResponseAsync(GroupFund group, Transaction transaction, User requester, bool isAccepted);
     }
 
 }

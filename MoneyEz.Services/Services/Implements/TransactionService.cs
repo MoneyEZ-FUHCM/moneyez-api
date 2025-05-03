@@ -805,7 +805,11 @@ namespace MoneyEz.Services.Services.Implements
 
                 await UpdateFinancialGoalAndBalance(transaction, transaction.Amount);
 
-                await _transactionNotificationService.NotifyTransactionApprovalRequestAsync(group, transaction, user);
+                // send noti to member
+                var member = await _unitOfWork.UsersRepository.GetByIdAsync(transaction.UserId.Value) ??
+                    throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+
+                await _transactionNotificationService.NotifyTransactionGroupResponseAsync(group, transaction, member, true);
 
                 return new BaseResultModel
                 {
@@ -823,8 +827,6 @@ namespace MoneyEz.Services.Services.Implements
                 _unitOfWork.TransactionsRepository.UpdateAsync(transaction);
                 await _unitOfWork.SaveAsync();
 
-                await _transactionNotificationService.NotifyTransactionApprovalRequestAsync(group, transaction, user);
-
                 string transactionContext = transaction.Type == TransactionType.INCOME ? "góp quỹ" : "rút quỹ";
 
                 // get info transaction fundraising request
@@ -834,6 +836,7 @@ namespace MoneyEz.Services.Services.Implements
                     await LogGroupFundChange(group, $"Giao dịch {transactionContext} [{transaction.Description}] của [{userRequest.FullName}] đã bị từ chối. " +
                         $"\n[Lí do:] {model.Note}",
                         GroupAction.TRANSACTION_UPDATED, userEmail);
+                    await _transactionNotificationService.NotifyTransactionGroupResponseAsync(group, transaction, userRequest, false);
                 }
                 else
                 {

@@ -190,6 +190,20 @@ namespace MoneyEz.Services.Services.Implements
                 groupMembers.Select(gm => gm.UserId).ToList(),
                 notification);
         }
+
+        public async Task NotifyTransactionGroupResponseAsync(GroupFund group, Transaction transaction, User requester, bool isAccepted)
+        {
+            string action = transaction.Type == TransactionType.INCOME ? "góp quỹ" : "rút quỹ";
+            string response = isAccepted ? "chấp nhận" : "từ chối";
+
+            await _notificationService.AddNotificationByUserId(requester.Id, new Notification
+            {
+                Title = $"Giao dịch trong nhóm [{group.Name}]",
+                Message = $"Trưởng nhóm đã {response} yêu cầu {action} của bạn trong nhóm [{group.Name}]: {transaction.Description}.",
+                Type = NotificationType.GROUP,
+                EntityId = transaction.Id
+            });
+        }
     }
 
 }
