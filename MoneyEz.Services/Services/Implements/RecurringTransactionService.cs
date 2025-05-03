@@ -109,7 +109,9 @@ namespace MoneyEz.Services.Services.Implements
                 };
             }
 
+            DateTime today = CommonUtils.GetCurrentTime().Date;
             var model = _mapper.Map<RecurringTransactionModel>(transaction);
+            model.NextOccurrence = CalculateNextOccurrence(model, today);
             return new BaseResultModel
             {
                 Status = StatusCodes.Status200OK,
@@ -297,134 +299,164 @@ namespace MoneyEz.Services.Services.Implements
             return result;
         }
 
-        private DateTime? CalculateNextOccurrence(RecurringTransactionModel rt, DateTime fromDate)
+        private static DateTime? CalculateNextOccurrence(RecurringTransactionModel rt, DateTime fromDate)
         {
-            // If the transaction has ended, there's no next occurrence
-            if (rt.EndDate.HasValue && rt.EndDate.Value.Date < fromDate)
+            // Nếu giao dịch đã kết thúc, không có lần tiếp theo
+            if (rt.EndDate.HasValue && rt.EndDate.Value.Date < fromDate.Date)
             {
                 return null;
             }
 
-            // If the start date is in the future, the next occurrence is the start date
-            if (rt.StartDate.Date > fromDate)
+            // Nếu ngày bắt đầu ở tương lai, lần tiếp theo là ngày bắt đầu
+            if (rt.StartDate.Date > fromDate.Date)
             {
                 return rt.StartDate.Date;
             }
 
-            // Ensure interval is at least 1
-            int interval = rt.Interval <= 0 ? 1 : rt.Interval;
-            
-            // Start with the start date or the current date, whichever is later
-            DateTime current = rt.StartDate.Date > fromDate ? rt.StartDate.Date : fromDate;
-            
-            // If we're starting from the current date and it's after the start date,
-            // we need to find the next occurrence based on the frequency pattern
-            if (current > rt.StartDate.Date)
+            // Đảm bảo interval ít nhất là 1
+            int interval = Math.Max(1, rt.Interval);
+
+            // Tính toán dựa trên loại tần suất
+            DateTime nextOccurrence;
+
+            switch (rt.FrequencyType)
             {
-                // Calculate how many intervals have passed
-                switch (rt.FrequencyType)
-                {
-                    case FrequencyType.DAILY:
-                        // If current date is a due date, move to the next one
-                        if ((current - rt.StartDate.Date).Days % interval == 0)
+                case FrequencyType.DAILY:
+                    // Tính số ngày kể từ ngày bắt đầu
+                    int daysSinceStart = (fromDate.Date - rt.StartDate.Date).Days;
+
+                    // Tính ngày tiếp theo
+                    if (daysSinceStart % interval == 0)
+                    {
+                        // Nếu hôm nay là ngày xảy ra, lấy ngày tiếp theo
+                        nextOccurrence = fromDate.Date.AddDays(interval);
+                    }
+                    else
+                    {
+                        // Tìm ngày tiếp theo dựa trên mẫu
+                        int daysRemaining = interval - (daysSinceStart % interval);
+                        nextOccurrence = fromDate.Date.AddDays(daysRemaining);
+                    }
+                    break;
+
+                case FrequencyType.WEEKLY:
+
+                    // Nếu ngày bắt đầu chưa qua
+                    if (rt.StartDate.Date > fromDate.Date)
+                    {
+                        return rt.StartDate.Date;
+                    }
+
+                    // Nếu fromDate là ngày bắt đầu hoặc trước ngày bắt đầu, lần đầu tiên là ngày bắt đầu
+                    if (fromDate.Date <= rt.StartDate.Date)
+                    {
+                        nextOccurrence = rt.StartDate.Date;
+                    }
+                    else
+                    {
+                        // Tính số ngày từ ngày bắt đầu
+                        int daysDiff = (fromDate.Date - rt.StartDate.Date).Days;
+
+                        // Tính số tuần đã trôi qua
+                        int weeksPassed = daysDiff / 7;
+
+                        // Tính số lần xảy ra đã qua (dựa vào chu kỳ interval)
+                        int occurrencesPassed = weeksPassed / interval;
+
+                        // Tính ngày của lần xảy ra gần nhất
+                        DateTime lastOccurrence = rt.StartDate.Date.AddDays(occurrencesPassed * interval * 7);
+
+                        // Nếu ngày hiện tại chưa qua ngày này
+                        if (fromDate.Date < lastOccurrence)
                         {
-                            current = current.AddDays(interval);
+                            nextOccurrence = lastOccurrence;
                         }
                         else
                         {
-                            // Find the next occurrence
-                            int daysElapsed = (current - rt.StartDate.Date).Days;
-                            int daysToAdd = interval - (daysElapsed % interval);
-                            current = current.AddDays(daysToAdd);
+                            // Lần xảy ra tiếp theo
+                            nextOccurrence = lastOccurrence.Date.AddDays(interval * 7);
                         }
-                        break;
-                        
-                    case FrequencyType.WEEKLY:
-                        int weeksElapsed = (current - rt.StartDate.Date).Days / 7;
-                        if (weeksElapsed % interval == 0)
-                        {
-                            // If today is the occurrence day, move to next interval
-                            current = current.AddDays(7 * interval);
-                        }
-                        else
-                        {
-                            // Find the next weekly occurrence
-                            int weeksToAdd = interval - (weeksElapsed % interval);
-                            current = current.AddDays(7 * weeksToAdd);
-                        }
-                        break;
-                        
-                    case FrequencyType.MONTHLY:
-                        int monthsElapsed = MonthsBetween(rt.StartDate.Date, current);
-                        if (monthsElapsed % interval == 0 && current.Day == rt.StartDate.Day)
-                        {
-                            // If today is the occurrence day (same day of month), move to next interval
-                            current = current.AddMonths(interval);
-                        }
-                        else
-                        {
-                            // Find the next monthly occurrence
-                            int monthsToAdd = interval - (monthsElapsed % interval);
-                            // Try to maintain the same day of month
-                            DateTime nextDate = current.AddMonths(monthsToAdd);
-                            // Adjust if the day doesn't exist in the target month
-                            int targetDay = Math.Min(rt.StartDate.Day, DateTime.DaysInMonth(nextDate.Year, nextDate.Month));
-                            current = new DateTime(nextDate.Year, nextDate.Month, targetDay);
-                        }
-                        break;
-                        
-                    case FrequencyType.YEARLY:
-                        int yearsElapsed = current.Year - rt.StartDate.Year;
-                        if (yearsElapsed % interval == 0 && current.Month == rt.StartDate.Month && current.Day == rt.StartDate.Day)
-                        {
-                            // If today is the anniversary, move to next interval
-                            current = current.AddYears(interval);
-                        }
-                        else
-                        {
-                            // Find the next yearly occurrence
-                            int yearsToAdd = interval - (yearsElapsed % interval);
-                            if (yearsElapsed % interval != 0 || 
-                                (current.Month < rt.StartDate.Month) || 
-                                (current.Month == rt.StartDate.Month && current.Day < rt.StartDate.Day))
-                            {
-                                // We haven't reached this year's occurrence yet
-                                yearsToAdd = yearsElapsed % interval == 0 ? 0 : yearsToAdd;
-                            }
-                            
-                            // Try to maintain same month and day
-                            int targetYear = current.Year + yearsToAdd;
-                            int targetMonth = rt.StartDate.Month;
-                            int targetDay = Math.Min(rt.StartDate.Day, DateTime.DaysInMonth(targetYear, targetMonth));
-                            current = new DateTime(targetYear, targetMonth, targetDay);
-                        }
-                        break;
-                        
-                    default:
-                        current = current.AddDays(interval);
-                        break;
-                }
-            }
-            else
-            {
-                // If we're starting from the start date, just add one interval
-                current = rt.FrequencyType switch
-                {
-                    FrequencyType.DAILY => current.AddDays(interval),
-                    FrequencyType.WEEKLY => current.AddDays(7 * interval),
-                    FrequencyType.MONTHLY => current.AddMonths(interval),
-                    FrequencyType.YEARLY => current.AddYears(interval),
-                    _ => current.AddDays(interval)
-                };
-            }
+                    }
             
-            // Check if the calculated next occurrence is after the end date
-            if (rt.EndDate.HasValue && current > rt.EndDate.Value.Date)
-            {
-                return null; // No more occurrences
+                    break;
+
+                case FrequencyType.MONTHLY:
+                    // Tính số tháng từ ngày bắt đầu
+                    int monthsSinceStart = (fromDate.Year - rt.StartDate.Year) * 12 + (fromDate.Month - rt.StartDate.Month);
+
+                    // Ngày trong tháng (điều chỉnh cho tháng ngắn hơn)
+                    int dayOfMonthToUse = Math.Min(rt.StartDate.Day, DateTime.DaysInMonth(fromDate.Year, fromDate.Month));
+
+                    if (monthsSinceStart % interval == 0 && fromDate.Day == dayOfMonthToUse)
+                    {
+                        // Hôm nay là ngày xảy ra, chuyển đến chu kỳ tiếp theo
+                        nextOccurrence = fromDate.Date.AddMonths(interval);
+                    }
+                    else
+                    {
+                        if (fromDate.Day < dayOfMonthToUse && monthsSinceStart % interval == 0)
+                        {
+                            // Nếu chúng ta chưa vượt qua ngày trong tháng này và tháng này phù hợp với mẫu
+                            nextOccurrence = new DateTime(fromDate.Year, fromDate.Month, dayOfMonthToUse);
+                        }
+                        else
+                        {
+                            // Tính số tháng cần thêm vào
+                            int monthsToAdd = interval - (monthsSinceStart % interval);
+                            if (monthsSinceStart % interval == 0) monthsToAdd = interval;
+
+                            // Tính ngày tiếp theo
+                            DateTime nextMonth = new DateTime(fromDate.Year, fromDate.Month, 1).AddMonths(monthsToAdd);
+                            int daysInNextMonth = DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month);
+                            int nextMonthDay = Math.Min(rt.StartDate.Day, daysInNextMonth);
+
+                            nextOccurrence = new DateTime(nextMonth.Year, nextMonth.Month, nextMonthDay);
+                        }
+                    }
+                    break;
+
+                case FrequencyType.YEARLY:
+                    // Tính số năm từ ngày bắt đầu
+                    int yearsSinceStart = fromDate.Year - rt.StartDate.Year;
+
+                    // Ngày trong năm nay phù hợp với mẫu
+                    int daysInMonthThisYear = DateTime.DaysInMonth(fromDate.Year, rt.StartDate.Month);
+                    int dayToUse = Math.Min(rt.StartDate.Day, daysInMonthThisYear);
+
+                    DateTime thisYearDate = new DateTime(fromDate.Year, rt.StartDate.Month, dayToUse);
+
+                    if (yearsSinceStart % interval == 0 && fromDate.Date <= thisYearDate.Date)
+                    {
+                        // Năm nay phù hợp và chúng ta chưa vượt qua ngày
+                        nextOccurrence = thisYearDate;
+                    }
+                    else
+                    {
+                        // Tính năm tiếp theo phù hợp với mẫu
+                        int yearsToAdd = interval - (yearsSinceStart % interval);
+                        if (yearsSinceStart % interval == 0) yearsToAdd = interval;
+
+                        int nextYear = fromDate.Year + yearsToAdd;
+                        int daysInMonth = DateTime.DaysInMonth(nextYear, rt.StartDate.Month);
+                        int nextDay = Math.Min(rt.StartDate.Day, daysInMonth);
+
+                        nextOccurrence = new DateTime(nextYear, rt.StartDate.Month, nextDay);
+                    }
+                    break;
+
+                default:
+                    // Mặc định nếu có lỗi
+                    nextOccurrence = fromDate.Date.AddDays(interval);
+                    break;
             }
-            
-            return current;
+
+            // Kiểm tra xem ngày tiếp theo có vượt quá ngày kết thúc không
+            if (rt.EndDate.HasValue && nextOccurrence.Date > rt.EndDate.Value.Date)
+            {
+                return null; // Không còn lần tiếp theo
+            }
+
+            return nextOccurrence;
         }
 
         private int MonthsBetween(DateTime from, DateTime to)
