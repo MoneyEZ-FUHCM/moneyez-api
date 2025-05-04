@@ -256,10 +256,10 @@ namespace MoneyEz.Services.Services.Implements
             var images = await _unitOfWork.ImageRepository.GetImagesByEntityAsync(transaction.Id, EntityName.TRANSACTION.ToString());
             if (images.Any())
             {
-                _unitOfWork.ImageRepository.PermanentDeletedListAsync(images);
+                _unitOfWork.ImageRepository.SoftDeleteRangeAsync(images);
             }
 
-            _unitOfWork.TransactionsRepository.PermanentDeletedAsync(transaction);
+            _unitOfWork.TransactionsRepository.SoftDeleteAsync(transaction);
 
             await _unitOfWork.SaveAsync();
 

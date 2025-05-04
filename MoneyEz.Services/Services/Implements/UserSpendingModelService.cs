@@ -31,19 +31,22 @@ namespace MoneyEz.Services.Services.Implements
         private readonly IClaimsService _claimsService;
         private readonly ISpendingModelService _spendingModelService;
         private readonly INotificationService _notificationService;
+        private readonly ITransactionService _transactionService;
 
         public UserSpendingModelService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             IClaimsService claimsService,
             ISpendingModelService spendingModelService,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ITransactionService transactionService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _claimsService = claimsService;
             _spendingModelService = spendingModelService;
             _notificationService = notificationService;
+            _transactionService = transactionService;
         }
 
         public async Task<BaseResultModel> ChooseSpendingModelAsync(ChooseSpendingModelModel model)
@@ -335,7 +338,10 @@ namespace MoneyEz.Services.Services.Implements
                 }
                 else
                 {
-                    _unitOfWork.TransactionsRepository.SoftDeleteRangeAsync(transactionsInDate);
+                    foreach (var delTransaction in transactionsInDate)
+                    {
+                        await _transactionService.DeleteTransactionAsync(delTransaction.Id);
+                    }
                 }
 
                 spendingModel.EndDate = CommonUtils.GetCurrentTime();
