@@ -36,8 +36,14 @@ namespace MoneyEz.Services.Services.Implements
             );
 
             var now = CommonUtils.GetCurrentTime();
+            bool isOverdue = goal.Deadline.Date <= now.Date;
+
             // Tính toán số ngày còn lại của goal
-            var remainingDays = Math.Max(1, (goal.Deadline - now).Days) + 1;
+            int remainingDays = 1;
+            if (goal.Deadline.Date > now.Date)
+            {
+                remainingDays = Math.Max(1, (goal.Deadline.Date - now.Date).Days) + 1;
+            }
 
             // tính toán dailyChanges từ transactions
             var dailyChanges = CalculateDailyChanges(transactions.ToList());
@@ -53,6 +59,29 @@ namespace MoneyEz.Services.Services.Implements
 
             if (isSaving)
             {
+                // trường hợp goal hết hạn
+                if (isOverdue)
+                {
+                    // Use actual progress for overdue goals rather than prediction
+                    var totalProgress = decimal.Round((goal.CurrentAmount / goal.TargetAmount) * 100, 2);
+                    var daysSinceStart = (now.Date - goal.StartDate.Date).Days;
+                    var currentTrend = decimal.Round(CalculateCurrentTrend(dailyChanges), 2);
+
+                    return new GoalPredictionModel
+                    {
+                        AverageChangePerDay = decimal.Round(averageChangePerDay, 2),
+                        ProjectedDaysToCompletion = 0,
+                        PredictedCompletionDate = goal.Deadline, // ngày hoàn thành là deadline
+                        CurrentTrend = currentTrend,
+                        IsOnTrack = false,
+                        TrendDescription = $"Mục tiêu đã quá hạn. Tiến độ hiện tại đạt {totalProgress}% " +
+                                         $"với mức tiết kiệm trung bình {Math.Abs(averageChangePerDay):N0}đ/ngày trong {daysSinceStart} ngày qua.",
+                        RequiredDailyChange = decimal.Round(requiredDailyChange, 2),
+                        TotalProgress = totalProgress,
+                        RemainingDays = 0
+                    };
+                }
+
                 // tính toán số ngày dự báo (projectedDays) và ngày dự báo (predictedDate)
                 // giới hạn số ngày dự báo tối đa là 2 lần thời gian còn lại
                 // số ngày dự báo = số tiền còn lại / đổi biến hiệu quả mỗi ngày
@@ -81,6 +110,60 @@ namespace MoneyEz.Services.Services.Implements
             }
             else 
             {
+                // xử lí ngân sách đã hết hạn
+                if (isOverdue)
+                {
+                    // Use actual progress for overdue goals rather than prediction
+                    var totalProgress = decimal.Round((goal.CurrentAmount / goal.TargetAmount) * 100, 2);
+                    var daysSinceStart = (now.Date - goal.StartDate.Date).Days;
+                    var currentTrend = decimal.Round(CalculateCurrentTrend(dailyChanges), 2);
+
+                    return new GoalPredictionModel
+                    {
+                        AverageChangePerDay = decimal.Round(averageChangePerDay, 2),
+                        ProjectedDaysToCompletion = 0,
+                        PredictedCompletionDate = goal.Deadline,
+                        CurrentTrend = currentTrend,
+                        IsOnTrack = false,
+                        TrendDescription = $"Ngân sách đã quá hạn. Mức chi tiêu hiện tại ở mức {totalProgress}% so với hạn mức, " +
+                                         $"với chi tiêu trung bình {Math.Abs(averageChangePerDay):N0}đ/ngày trong {daysSinceStart} ngày qua.",
+                        RequiredDailyChange = decimal.Round(requiredDailyChange, 2),
+                        TotalProgress = totalProgress,
+                        RemainingDays = 0
+                    };
+                }
+
+                // Kiểm tra nếu đã vượt ngân sách (remainingAmount < 0)
+                bool isBudgetExceeded = remainingAmount < 0;
+
+                if (isBudgetExceeded)
+                {
+                    // Tính % vượt ngân sách
+                    var totalProgress = decimal.Round((goal.CurrentAmount / goal.TargetAmount) * 100, 2);
+                    var exceededAmount = Math.Abs(remainingAmount);
+                    var exceededPercent = decimal.Round((exceededAmount / goal.TargetAmount) * 100, 2);
+                    var daysSinceStart = (now.Date - goal.StartDate.Date).Days;
+                    var currentTrend = decimal.Round(CalculateCurrentTrend(dailyChanges), 2);
+                    var dailyExceedAmount = exceededAmount / Math.Max(daysSinceStart, 1);
+
+                    return new GoalPredictionModel
+                    {
+                        AverageChangePerDay = decimal.Round(averageChangePerDay, 2),
+                        ProjectedDaysToCompletion = 0,
+                        PredictedCompletionDate = now,
+                        CurrentTrend = currentTrend,
+                        IsOnTrack = false,
+                        TrendDescription = $"Bạn đã vượt ngân sách {exceededAmount:N0}đ " +
+                                          $"(tương đương {exceededPercent}% vượt hạn mức). " +
+                                          $"Với xu hướng chi tiêu trung bình {Math.Abs(averageChangePerDay):N0}đ/ngày, " +
+                                          $"bạn đang vượt khoảng {dailyExceedAmount:N0}đ mỗi ngày. " +
+                                          $"Hãy cân nhắc điều chỉnh chi tiêu để quản lý tài chính hiệu quả hơn.",
+                        RequiredDailyChange = 0,
+                        TotalProgress = totalProgress,
+                        RemainingDays = remainingDays
+                    };
+                }
+
                 // tính toán số ngày dự báo (projectedDays) và ngày dự báo (predictedDate)
                 // giới hạn số ngày dự báo tối đa là 2 lần thời gian còn lại
                 // số ngày dự báo = số tiền còn lại / đổi biến hiệu quả mỗi ngày
@@ -219,14 +302,65 @@ namespace MoneyEz.Services.Services.Implements
             // Tính toán các chỉ số bổ sung
             int daysUntilPrediction = (predictedDate - CommonUtils.GetCurrentTime()).Days;
             int extraDays = (predictedDate - deadline).Days;
-            decimal projectedDailySpending = remainingBudget / remainingDays;
-            decimal spendingDifference = projectedDailySpending - requiredChange;
-            decimal cumulativeDifference = spendingDifference * remainingDays;
+
+            // Xử lý trường hợp projectedDailySpending âm (đã vượt quá ngân sách)
+            bool isBudgetExceeded = remainingBudget < 0;
+
+            // mức chi tiêu dự kiến hàng ngày dựa trên ngân sách còn lại
+            decimal projectedDailySpending;
+
+            // chênh lệch giữa mức chi tiêu dự kiến hàng ngày và mức chi tiêu mục tiêu hàng ngày
+            decimal spendingDifference;
+
+            // tổng chênh lệch tích lũy dự kiến trong thời gian còn lại
+            decimal cumulativeDifference;
+
+            if (isBudgetExceeded)
+            {
+                // Đã vượt quá ngân sách, tính toán mức vượt quá mỗi ngày
+                projectedDailySpending = remainingBudget / remainingDays;
+                spendingDifference = projectedDailySpending - requiredChange;
+                cumulativeDifference = spendingDifference * remainingDays;
+            }
+            else
+            {
+                // Ngân sách vẫn còn dư, tính toán bình thường
+                projectedDailySpending = remainingBudget / remainingDays;
+                spendingDifference = projectedDailySpending - requiredChange;
+                cumulativeDifference = spendingDifference * remainingDays;
+            }
+
+            //decimal projectedDailySpending = remainingBudget / remainingDays;
+            //decimal spendingDifference = projectedDailySpending - requiredChange;
+            //decimal cumulativeDifference = spendingDifference * remainingDays;
 
             // Khởi tạo thông báo dự báo
             string trendMessage = "";
+            // Xử lý trường hợp đã vượt quá ngân sách
+            if (isBudgetExceeded)
+            {
+                // Tính số tiền đã vượt quá ngân sách
+                decimal exceededAmount = Math.Abs(remainingBudget);
 
-            // Đánh giá dựa trên mức chi tiêu dự kiến so với mục tiêu
+                if (averageChange >= 0)
+                {
+                    trendMessage = $"Bạn đã vượt quá ngân sách {exceededAmount:N0}đ và xu hướng chi tiêu đang tăng " +
+                        $"({averageChange:N0}đ/ngày). ";
+                }
+                else
+                {
+                    trendMessage = $"Mặc dù xu hướng chi tiêu đang giảm ({Math.Abs(averageChange):N0}đ/ngày), " +
+                        $"nhưng bạn đã vượt quá ngân sách {exceededAmount:N0}đ. ";
+                }
+
+                // Thêm lời khuyên
+                trendMessage += $"Hãy hạn chế chi tiêu ngay lập tức. Ước tính mỗi ngày bạn vượt {Math.Abs(projectedDailySpending):N0}đ " +
+                    $"so với mục tiêu hàng ngày {requiredChange:N0}đ.";
+
+                return trendMessage;
+            }
+
+            // Đánh giá dựa trên mức chi tiêu dự kiến so với mục tiêu (trường hợp bình thường)
             if (projectedDailySpending > requiredChange)
             {
                 if (averageChange >= 0)
