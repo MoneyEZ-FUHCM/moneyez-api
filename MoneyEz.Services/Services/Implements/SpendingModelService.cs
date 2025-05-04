@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using MoneyEz.Services.BusinessModels.CategoryModels;
 using MoneyEz.Repositories.Commons.Filters;
 using MoneyEz.Services.Utils;
+using MoneyEz.Services.Exceptions;
 
 namespace MoneyEz.Services.Services.Implements
 {
@@ -185,6 +186,13 @@ namespace MoneyEz.Services.Services.Implements
                     ErrorCode = MessageConstants.SPENDING_MODEL_NOT_FOUND,
                     Message = "The spending model does not exist or has been deleted."
                 };
+            }
+
+            // kiểm tra xem mô hình có đang sử dụng không
+            var isUsed = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(filter: s => s.SpendingModelId == spendingModel.Id && !s.IsDeleted);
+            if (isUsed.Count > 0)
+            {
+                throw new DefaultException("This spending model is currently in use and cannot be deleted.", "SpendingModelIsCurrentlyUsed");
             }
 
             // Kiểm tra nếu SpendingModel có các danh mục phụ thuộc
