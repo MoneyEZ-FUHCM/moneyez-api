@@ -27,7 +27,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
         public async Task<decimal> GetTotalIncomeAsync(Guid? userId, Guid? groupId, DateTime startDate, DateTime endDate)
         {
             var query = _context.Transactions
-                .Where(t => t.TransactionDate >= startDate && t.TransactionDate <= endDate && t.Type == TransactionType.INCOME);
+                .Where(t => t.TransactionDate >= startDate && t.TransactionDate <= endDate && t.Type == TransactionType.INCOME && !t.IsDeleted);
 
             if (userId.HasValue)
                 query = query.Where(t => t.UserId == userId.Value);
@@ -43,7 +43,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
         public async Task<decimal> GetTotalExpenseAsync(Guid? userId, Guid? groupId, DateTime startDate, DateTime endDate)
         {
             var query = _context.Transactions
-                .Where(t => t.TransactionDate >= startDate && t.TransactionDate <= endDate && t.Type == TransactionType.EXPENSE);
+                .Where(t => t.TransactionDate >= startDate && t.TransactionDate <= endDate && t.Type == TransactionType.EXPENSE && !t.IsDeleted);
 
             if (userId.HasValue)
                 query = query.Where(t => t.UserId == userId.Value);
@@ -62,7 +62,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
             return await _context.Transactions
                 .Where(t => t.UserId == userId &&
                             t.TransactionDate >= startDate && t.TransactionDate <= endDate &&
-                            t.Type == TransactionType.EXPENSE &&
+                            t.Type == TransactionType.EXPENSE && !t.IsDeleted &&
                             t.Subcategory.CategorySubcategories.Any(cs => cs.CategoryId == categoryId))
                 .SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
@@ -73,7 +73,7 @@ namespace MoneyEz.Repositories.Repositories.Implements
             return await _context.Transactions
                 .Where(t => t.UserId == userId &&
                             t.TransactionDate >= startDate && t.TransactionDate <= endDate &&
-                            t.Type == TransactionType.INCOME &&
+                            t.Type == TransactionType.INCOME && !t.IsDeleted &&
                             t.Subcategory.CategorySubcategories.Any(cs => cs.CategoryId == categoryId))
                 .SumAsync(t => (decimal?)t.Amount) ?? 0;
         }
