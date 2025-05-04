@@ -1092,6 +1092,11 @@ namespace MoneyEz.Services.Services.Implements
                         await _unitOfWork.SaveAsync();
 
                         await UpdateFinancialGoalAndBalance(updatedTransactions, updatedTransactions.Amount);
+
+                        // get transaction owner
+                        var transactionOwner = await _unitOfWork.UsersRepository.GetByIdAsync(updatedTransactions.UserId.Value) ??
+                            throw new NotExistException("", MessageConstants.ACCOUNT_NOT_EXIST);
+                        await _transactionNotificationService.NotifyTransactionGroupAutoResponseAsync(groupBankAccount, updatedTransactions, transactionOwner, true);
                     }
                     else
                     {

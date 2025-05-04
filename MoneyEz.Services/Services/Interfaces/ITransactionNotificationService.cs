@@ -19,6 +19,7 @@ namespace MoneyEz.Services.Services.Interfaces
         Task NotifyTransactionApprovalRequestAsync(GroupFund group, Transaction transaction, User user);
         Task NotifyTransactionCreatedAsync(GroupFund group, Transaction transaction, User user);
         Task NotifyTransactionGroupResponseAsync(GroupFund group, Transaction transaction, User requester, bool isAccepted);
+        Task NotifyTransactionGroupAutoResponseAsync(GroupFund group, Transaction transaction, User requester, bool isAccepted);
     }
 
 }
