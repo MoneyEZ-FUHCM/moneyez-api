@@ -335,7 +335,7 @@ namespace MoneyEz.Services.Services.Implements
                 }
                 else
                 {
-                    _unitOfWork.TransactionsRepository.PermanentDeletedListAsync(transactionsInDate);
+                    _unitOfWork.TransactionsRepository.SoftDeleteRangeAsync(transactionsInDate);
                 }
 
                 spendingModel.EndDate = CommonUtils.GetCurrentTime();
