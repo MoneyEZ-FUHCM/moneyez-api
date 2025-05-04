@@ -1071,6 +1071,8 @@ namespace MoneyEz.Services.Services.Implements
                 filter: t => t.RequestCode == webhookPayload.Description);
             var updatedTransactions = transactions.FirstOrDefault();
 
+            TransactionType webhookTransactionType = webhookPayload.NewBalance - webhookPayload.OldBalance > 0 ? TransactionType.INCOME : TransactionType.EXPENSE;
+
             // trường hợp có giao dịch trùng với request code
             if (updatedTransactions != null)
             {
@@ -1078,7 +1080,7 @@ namespace MoneyEz.Services.Services.Implements
                 if (groupBankAccount != null)
                 {
                     // trường hợp số tiền giao dịch hợp lệ
-                    if (updatedTransactions.Amount == webhookPayload.Amount)
+                    if (updatedTransactions.Amount == webhookPayload.Amount && updatedTransactions.Type == webhookTransactionType)
                     {
                         // cập nhật lại giao dịch đã có trước đó (từ việc góp quỹ, rút quỹ)
                         updatedTransactions.Status = TransactionStatus.APPROVED;
@@ -1106,7 +1108,7 @@ namespace MoneyEz.Services.Services.Implements
                         {
                             Amount = webhookPayload.Amount,
                             Description = "[Ngân hàng] " + webhookPayload.Description,
-                            Type = webhookPayload.TransactionType,
+                            Type = webhookTransactionType,
                             TransactionDate = webhookPayload.Timestamp,
                             GroupId = groupBankAccount.Id,
                             InsertType = InsertType.BANKING,
@@ -1138,7 +1140,7 @@ namespace MoneyEz.Services.Services.Implements
                         Amount = webhookPayload.Amount,
                         Description = "[Ngân hàng] " + webhookPayload.Description,
                         Status = TransactionStatus.PENDING,
-                        Type = webhookPayload.TransactionType,
+                        Type = webhookTransactionType,
                         TransactionDate = webhookPayload.Timestamp,
                         UserId = bankAccount.UserId,
                         CreatedBy = user.Email,
@@ -1178,7 +1180,7 @@ namespace MoneyEz.Services.Services.Implements
                     {
                         Amount = webhookPayload.Amount,
                         Description = "[Ngân hàng] " + webhookPayload.Description,
-                        Type = webhookPayload.TransactionType,
+                        Type = webhookTransactionType,
                         TransactionDate = webhookPayload.Timestamp,
                         GroupId = groupBankAccount.Id,
                         InsertType = InsertType.BANKING,
@@ -1209,7 +1211,7 @@ namespace MoneyEz.Services.Services.Implements
                         Amount = webhookPayload.Amount,
                         Description = "[Ngân hàng] " + webhookPayload.Description,
                         Status = TransactionStatus.PENDING,
-                        Type = webhookPayload.TransactionType,
+                        Type = webhookTransactionType,
                         TransactionDate = webhookPayload.Timestamp,
                         UserId = bankAccount.UserId,
                         CreatedBy = user.Email,
