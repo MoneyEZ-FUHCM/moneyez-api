@@ -216,7 +216,7 @@ namespace MoneyEz.Services.Services.Implements
             };
         }
 
-        public async Task<BaseResultModel> CancelSpendingModelAsync(Guid spendingModelId, bool isBypassGoal)
+        public async Task<BaseResultModel> CancelSpendingModelAsync(Guid spendingModelId, bool isBypassGoal, bool isBypassTransaction)
         {
             string userEmail = _claimsService.GetCurrentUserEmail;
             var user = await _unitOfWork.UsersRepository.GetUserByEmailAsync(userEmail)
@@ -255,7 +255,6 @@ namespace MoneyEz.Services.Services.Implements
                             && t.UserSpendingModelId == spendingModel.Id
                             && t.Status == TransactionStatus.APPROVED
             );
-
 
             // Lấy danh sách Subcategory
             var subcategoryIds = spendingModel.SpendingModel.SpendingModelCategories
@@ -320,6 +319,25 @@ namespace MoneyEz.Services.Services.Implements
             {
                 // nếu có transaction và mục tiêu - xóa mềm
                 // update lại deadline cho mô hình trùng với ngày xóa
+                // check giao dịch có trong ngày xóa không
+                var transactionsInDate = transactions.Where(t => t.TransactionDate.Value.Date == CommonUtils.GetCurrentTime().Date).ToList();
+                if (!isBypassTransaction)
+                {
+                    if (transactionsInDate.Count > 0)
+                    {
+                        return new BaseResultModel
+                        {
+                            Status = StatusCodes.Status400BadRequest,
+                            ErrorCode = MessageConstants.CANNOT_CANCEL_SPENDING_MODEL_HAS_TRANSACTION_TODAY,
+                            Message = "You cannot cancel this spending model today because it has transactions."
+                        };
+                    }
+                }
+                else
+                {
+                    _unitOfWork.TransactionsRepository.PermanentDeletedListAsync(transactionsInDate);
+                }
+
                 spendingModel.EndDate = CommonUtils.GetCurrentTime();
                 spendingModel.Status = UserSpendingModelStatus.EXPIRED;
                 //spendingModel.IsDeleted = true;
