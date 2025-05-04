@@ -257,6 +257,7 @@ namespace MoneyEz.Services.Services.Implements
                             && t.GroupId == null
                             && t.UserSpendingModelId == spendingModel.Id
                             && t.Status == TransactionStatus.APPROVED
+                            && !t.IsDeleted
             );
 
             // Lấy danh sách Subcategory
@@ -395,6 +396,7 @@ namespace MoneyEz.Services.Services.Implements
 
             // Calculate totals for each model
             var modelTransactions = allTransactions.Where(t =>
+                t.UserSpendingModelId == currentModel.Id &&
                 t.TransactionDate >= currentModel.StartDate &&
                 t.TransactionDate <= currentModel.EndDate);
 
@@ -452,6 +454,7 @@ namespace MoneyEz.Services.Services.Implements
 
             // Calculate totals for each model
             var modelTransactions = allTransactions.Where(t =>
+                t.UserSpendingModelId == userSpendingModel.Id &&
                 t.TransactionDate >= userSpendingModel.StartDate &&
                 t.TransactionDate <= userSpendingModel.EndDate);
 
@@ -599,7 +602,8 @@ namespace MoneyEz.Services.Services.Implements
                 filter: t => t.UserId == user.Id && t.GroupId == null &&
                             t.TransactionDate >= currentModel.StartDate &&
                             t.TransactionDate <= currentModel.EndDate &&
-                            t.Status == TransactionStatus.APPROVED,
+                            t.Status == TransactionStatus.APPROVED &&
+                            !t.IsDeleted,
                 include: query => query
                     .Include(t => t.Subcategory)
                     .ThenInclude(s => s.CategorySubcategories)
@@ -755,7 +759,7 @@ namespace MoneyEz.Services.Services.Implements
                 filter: t => t.UserId == userSpendingModel.UserId && t.GroupId == null &&
                             t.TransactionDate >= userSpendingModel.StartDate &&
                             t.TransactionDate <= userSpendingModel.EndDate &&
-                            t.Status == TransactionStatus.APPROVED,
+                            t.Status == TransactionStatus.APPROVED && !t.IsDeleted,
                 include: query => query
                     .Include(t => t.Subcategory)
                     .ThenInclude(s => s.CategorySubcategories)
@@ -1005,7 +1009,7 @@ namespace MoneyEz.Services.Services.Implements
                     filter: t => t.UserId == user.Id 
                         && t.GroupId == null 
                         && t.Status == TransactionStatus.APPROVED
-                        && t.SubcategoryId != null,
+                        && t.SubcategoryId != null && !t.IsDeleted,
                     orderBy: query => query.OrderByDescending(t => t.TransactionDate)
                 );
 
