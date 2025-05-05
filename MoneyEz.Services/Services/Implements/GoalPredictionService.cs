@@ -42,7 +42,7 @@ namespace MoneyEz.Services.Services.Implements
             int remainingDays = 1;
             if (goal.Deadline.Date > now.Date)
             {
-                remainingDays = Math.Max(1, (goal.Deadline.Date - now.Date).Days) + 1;
+                remainingDays = Math.Max(1, (goal.Deadline.Date - now.Date).Days);
             }
 
             // tính toán dailyChanges từ transactions
