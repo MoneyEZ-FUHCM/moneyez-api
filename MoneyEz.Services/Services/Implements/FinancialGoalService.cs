@@ -483,7 +483,7 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("", MessageConstants.USER_SPENDING_MODEL_ACCESS_DENY);
             }
 
-           var financialGoals = await _unitOfWork.FinancialGoalRepository.GetPersonalFinancialGoalsFilterAsync(
+            var financialGoals = await _unitOfWork.FinancialGoalRepository.GetPersonalFinancialGoalsFilterAsync(
                user.Id,
                paginationParameter,
                filter,
