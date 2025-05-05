@@ -483,14 +483,14 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("", MessageConstants.USER_SPENDING_MODEL_ACCESS_DENY);
             }
 
-            var financialGoals = await _unitOfWork.FinancialGoalRepository.GetPersonalFinancialGoalsFilterAsync(
-                user.Id,
-                paginationParameter,
-                filter,
-                condition: fg => fg.StartDate == userSpendingModel.StartDate
-                            && fg.Deadline == userSpendingModel.EndDate,
-                include: fg => fg.Include(fg => fg.Subcategory)
-            );
+           var financialGoals = await _unitOfWork.FinancialGoalRepository.GetPersonalFinancialGoalsFilterAsync(
+               user.Id,
+               paginationParameter,
+               filter,
+               condition: fg => fg.StartDate.Date == userSpendingModel.StartDate.Value.Date
+                           && fg.Deadline.Date == userSpendingModel.EndDate.Value.Date,
+               include: fg => fg.Include(fg => fg.Subcategory)
+           );
 
             var financialGoalModels = _mapper.Map<List<PersonalFinancialGoalModel>>(financialGoals);
 
