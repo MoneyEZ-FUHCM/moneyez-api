@@ -483,14 +483,14 @@ namespace MoneyEz.Services.Services.Implements
                 throw new DefaultException("", MessageConstants.USER_SPENDING_MODEL_ACCESS_DENY);
             }
 
-           var financialGoals = await _unitOfWork.FinancialGoalRepository.GetPersonalFinancialGoalsFilterAsync(
-               user.Id,
-               paginationParameter,
-               filter,
-               condition: fg => fg.StartDate.Date == userSpendingModel.StartDate.Value.Date
-                           && fg.Deadline.Date == userSpendingModel.EndDate.Value.Date,
-               include: fg => fg.Include(fg => fg.Subcategory)
-           );
+            var financialGoals = await _unitOfWork.FinancialGoalRepository.GetPersonalFinancialGoalsFilterAsync(
+                user.Id,
+                paginationParameter,
+                filter,
+                condition: fg => fg.StartDate.Date == userSpendingModel.StartDate.Value.Date
+                            && fg.Deadline.Date == userSpendingModel.EndDate.Value.Date,
+                include: fg => fg.Include(fg => fg.Subcategory)
+            );
 
             var financialGoalModels = _mapper.Map<List<PersonalFinancialGoalModel>>(financialGoals);
 
@@ -1507,16 +1507,6 @@ namespace MoneyEz.Services.Services.Implements
                     MessageConstants.SUBCATEGORY_NOT_IN_SPENDING_MODEL
                 );
 
-            //// Check if there's already an active goal for this subcategory
-            //var existingGoal = await _unitOfWork.FinancialGoalRepository.GetActiveGoalByUserAndSubcategory(userId, subcategoryId);
-            //if (existingGoal != null)
-            //{
-            //    throw new DefaultException(
-            //        "Subcategory này đã có mục tiêu tài chính đang hoạt động.",
-            //        MessageConstants.SUBCATEGORY_ALREADY_HAS_GOAL
-            //    );
-            //}
-
             // Get the spending model category to get the percentage
             var spendingModelCategory = await _unitOfWork.SpendingModelCategoryRepository
                 .GetByModelAndCategory(currentModel.SpendingModelId.Value, category.Id)
@@ -1536,14 +1526,34 @@ namespace MoneyEz.Services.Services.Implements
             var activeGoals = await _unitOfWork.FinancialGoalRepository.GetByConditionAsync(
                 filter: fg => fg.UserId == userId
                     && subcategoryIds.Contains(fg.SubcategoryId.Value)
-                    && fg.Status == FinancialGoalStatus.ACTIVE
+                    && fg.Status == FinancialGoalStatus.ACTIVE || fg.Status == FinancialGoalStatus.COMPLETED
                     && !fg.IsDeleted
-                    && fg.CreatedDate >= currentModel.StartDate
-                    && fg.Deadline <= currentModel.EndDate
+                    && fg.StartDate.Date == currentModel.StartDate.Value.Date
+                    && fg.Deadline.Date <= currentModel.EndDate.Value.Date
             );
+
+            // If not already an update operation, check if there's an existing active goal 
+            // for this subcategory with the same conditions as in the activeGoals query
+            bool isUpdate = false;
+
+            var existingGoal = activeGoals.FirstOrDefault(g => g.SubcategoryId == subcategoryId);
+            if (existingGoal != null)
+            {
+                isUpdate = true;
+            }
 
             // Calculate total target amount already allocated in this category
             var allocatedAmount = activeGoals.Sum(g => g.TargetAmount);
+
+            // If this is an update operation, find the current goal being updated
+            decimal currentGoalTargetAmount = 0;
+            if (isUpdate && existingGoal != null)
+            {
+                // When updating, we exclude the current goal's target amount from the allocated amount
+                // since we're going to set a new target amount for this goal
+                currentGoalTargetAmount = existingGoal.TargetAmount;
+                allocatedAmount -= currentGoalTargetAmount;
+            }
 
             // Get the subcategory details
             var subcategory = await _unitOfWork.SubcategoryRepository.GetByIdAsync(subcategoryId)
@@ -1557,6 +1567,7 @@ namespace MoneyEz.Services.Services.Implements
 
             return availableBudget;
         }
+
 
         #region job
 
