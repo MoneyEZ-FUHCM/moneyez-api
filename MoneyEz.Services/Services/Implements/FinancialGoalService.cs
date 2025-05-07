@@ -417,20 +417,20 @@ namespace MoneyEz.Services.Services.Implements
                 throw new NotExistException("", MessageConstants.FINANCIAL_GOAL_NOT_FOUND);
             }
 
-            // Get current spending model
-            var currentModel = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
+            // Get user spending model
+            var userSpendingModels = await _unitOfWork.UserSpendingModelRepository.GetByConditionAsync(
                 filter: usm => usm.UserId == user.Id
-                    && usm.EndDate > CommonUtils.GetCurrentTime()
-                    && usm.Status == UserSpendingModelStatus.ACTIVE
+                    && usm.StartDate.Value.Date == goal.StartDate.Date
+                    && usm.EndDate.Value.Date == goal.Deadline.Date
                     && !usm.IsDeleted
             );
 
-            if (!currentModel.Any())
+            if (userSpendingModels.Count < 0)
             {
                 throw new NotExistException(MessageConstants.USER_HAS_NO_ACTIVE_SPENDING_MODEL);
             }
 
-            var userSpendingModel = currentModel.First();
+            var userSpendingModel = userSpendingModels.First();
 
             // Get transactions 
             var transactions = await _unitOfWork.TransactionsRepository.GetTransactionsFilterAsync(
