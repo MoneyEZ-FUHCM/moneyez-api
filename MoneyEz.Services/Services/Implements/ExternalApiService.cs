@@ -272,7 +272,7 @@ namespace MoneyEz.Services.Services.Implements
                 var jsonString = JsonConvert.SerializeObject(request);
                 Console.WriteLine("JSON payload: " + jsonString);
 
-                var response = await _httpClient.PostAsJsonAsync("http://178.128.118.171:8888/api/receive_message", new
+                var response = await _httpClient.PostAsJsonAsync("http://139.59.226.1:8888/api/receive_message", new
                 {
                     data = jsonString
                 });
@@ -335,7 +335,7 @@ namespace MoneyEz.Services.Services.Implements
                 var jsonString = JsonConvert.SerializeObject(answerPairs);
                 Console.WriteLine("JSON payload: " + jsonString);
 
-                var response = await _httpClient.PostAsJsonAsync("http://178.128.118.171:8888/api/suggestion", new
+                var response = await _httpClient.PostAsJsonAsync("http://139.59.226.1:8888/api/suggestion", new
                 {
                     data = jsonString
                 });
