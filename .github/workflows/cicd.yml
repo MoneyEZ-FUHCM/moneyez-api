@@ -44,26 +44,26 @@ jobs:
           push: true  # Set to true to push the image to a registry
           tags: |
             ducdang03/money-ez:latest
-  deploy:
-    runs-on: self-hosted
-    needs: docker-build
+  # deploy:
+  #   runs-on: self-hosted
+  #   needs: docker-build
 
-    steps:
+  #   steps:
 
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          clean: false
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #       with:
+  #         clean: false
 
-      - name: Clean up old Docker resources
-        run: |
-          docker stop money-ez-api || true
-          docker rm money-ez-api || true
+  #     - name: Clean up old Docker resources
+  #       run: |
+  #         docker stop money-ez-api || true
+  #         docker rm money-ez-api || true
     
-      - name: Deploy to VPS
-        run: |
-          docker pull ducdang03/money-ez:latest
-          docker run -d --name money-ez-api -p 8080:8080 ducdang03/money-ez:latest
+  #     - name: Deploy to VPS
+  #       run: |
+  #         docker pull ducdang03/money-ez:latest
+  #         docker run -d --name money-ez-api -p 8080:8080 ducdang03/money-ez:latest
   
-      - name: Verify running containers
-        run: docker ps -a
+  #     - name: Verify running containers
+  #       run: docker ps -a
