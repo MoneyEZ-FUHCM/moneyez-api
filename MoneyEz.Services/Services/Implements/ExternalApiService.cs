@@ -272,7 +272,7 @@ namespace MoneyEz.Services.Services.Implements
                 var jsonString = JsonConvert.SerializeObject(request);
                 Console.WriteLine("JSON payload: " + jsonString);
 
-                var response = await _httpClient.PostAsJsonAsync("http://139.59.226.1:8888/api/receive_message", new
+                var response = await _httpClient.PostAsJsonAsync("http://160.191.88.194:8888/api/receive_message", new
                 {
                     data = jsonString
                 });
@@ -335,7 +335,7 @@ namespace MoneyEz.Services.Services.Implements
                 var jsonString = JsonConvert.SerializeObject(answerPairs);
                 Console.WriteLine("JSON payload: " + jsonString);
 
-                var response = await _httpClient.PostAsJsonAsync("http://139.59.226.1:8888/api/suggestion", new
+                var response = await _httpClient.PostAsJsonAsync("http://160.191.88.194:8888/api/suggestion", new
                 {
                     data = jsonString
                 });
@@ -386,7 +386,7 @@ namespace MoneyEz.Services.Services.Implements
                 var jsonString = JsonConvert.SerializeObject(answerPairs);
                 Console.WriteLine("JSON payload: " + jsonString);
 
-                var response = await _httpClient.PostAsJsonAsync("http://139.59.226.1:8888/api/suggestion", new
+                var response = await _httpClient.PostAsJsonAsync("http://160.191.88.194:8888/api/suggestion", new
                 {
                     data = jsonString
                 });
@@ -444,7 +444,7 @@ namespace MoneyEz.Services.Services.Implements
 
         public async Task<BaseResultModel> GetKnowledgeDocuments(PaginationParameter paginationParameter)
         {
-            var response = await _httpClient.GetAsync("http://139.59.226.1:8888/api/knowledge/documents");
+            var response = await _httpClient.GetAsync("http://160.191.88.194:8888/api/knowledge/documents");
             //var response = await _httpClient.GetAsync("http://127.0.0.1:8000/api/knowledge/documents");
             if (response.IsSuccessStatusCode)
             {
@@ -500,7 +500,7 @@ namespace MoneyEz.Services.Services.Implements
                 _httpClient.DefaultRequestHeaders.Add("X-External-Secret", "thisIsSerectKeyPythonService");
 
                 // Make the POST request to the external API - use the production server URL
-                var response = await _httpClient.PostAsync("http://139.59.226.1:8888/api/knowledge/upload", formContent);
+                var response = await _httpClient.PostAsync("http://160.191.88.194:8888/api/knowledge/upload", formContent);
                 //var response = await _httpClient.PostAsync("http://127.0.0.1:8000/api/knowledge/upload", formContent);
 
                 // Process the response
@@ -555,7 +555,7 @@ namespace MoneyEz.Services.Services.Implements
                 _httpClient.DefaultRequestHeaders.Add("X-External-Secret", "thisIsSerectKeyPythonService");
 
                 // Make the DELETE request to the external API
-                var response = await _httpClient.DeleteAsync($"http://139.59.226.1:8888/api/knowledge/delete/{id}");
+                var response = await _httpClient.DeleteAsync($"http://160.191.88.194:8888/api/knowledge/delete/{id}");
                 //var response = await _httpClient.DeleteAsync($"http://127.0.0.1:8000/api/knowledge/delete/{id}");
 
                 // Process the response
